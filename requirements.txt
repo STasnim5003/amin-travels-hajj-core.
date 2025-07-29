@@ -1,0 +1,8 @@
+fastapi==0.112.0
+sqlalchemy==2.0.32
+sqlalchemy-utils==0.41.2
+python-dotenv==1.0.1
+asyncpg==0.29.0
+uvicorn==0.30.6
+pydantic==2.8.2
+tenacity==9.0.0
