@@ -7,10 +7,10 @@ from alembic import context
 
 
 
-from data.model.package_model import PackageModel
-from data.model.user_model import UserModel
-from data.model.review_model import ReviewModel
-from data.model.payment_model import PaymentInfoModel
+# from data.model.package_model import PackageModel
+# from data.model.user_model import UserModel
+# from data.model.review_model import ReviewModel
+# from data.model.payment_model import PaymentInfoModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
