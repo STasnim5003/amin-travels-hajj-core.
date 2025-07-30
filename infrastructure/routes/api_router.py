@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
-from app.api.v1.controller import ( problem_category_controller )
+from app.api.v1.controller import (user_controller)
 
 router = APIRouter()
 
 # routers
-# router.include_router(problem_category_controller.router)
+router.include_router(user_controller.router)
 
