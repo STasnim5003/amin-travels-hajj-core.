@@ -13,7 +13,7 @@ logging.config.dictConfig(LOGGING_CONFIG)
 
 app = FastAPI(
     title="API Documentation",
-    description="Voganti Core Service",
+    description="Amin-Travels-Hajj Core Service",
     version="0.1.0",
     lifespan=lifespan
 )
