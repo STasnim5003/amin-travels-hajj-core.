@@ -1,0 +1,36 @@
+name: Deploy Amin-Travels-Hajj App
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Deploy via SSH
+        env:
+          PASSWORD: ${{ secrets.PASSWORD }}
+          PORT: ${{ secrets.PORT }}
+          USERNAME: ${{ secrets.USERNAME }}
+          IP: ${{ secrets.IP }}
+        run: |
+          sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no -p "$PORT" "$USERNAME@$IP" bash << EOF
+            set -e
+          
+            cd /home/alwyzon/amin-travels/amin-travels-hajj-core
+            sudo su
+          
+            echo "[INFO] Stopping containers..."
+            docker compose down
+          
+            echo "[INFO] Pulling latest code..."
+            git pull origin dev
+        
+            docker-compose up --build -d
+          EOF
