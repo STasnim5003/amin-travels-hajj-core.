@@ -32,5 +32,5 @@ jobs:
             echo "[INFO] Pulling latest code..."
             git pull origin dev
         
-            docker-compose up --build -d
+            docker compose up --build -d
           EOF
