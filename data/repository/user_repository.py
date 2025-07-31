@@ -8,7 +8,7 @@ from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema
 
 
 async def insert_user(user: UserBaseSchema, db: AsyncSession) -> UserResponseSchema:
-    user_data = user.model_dump(by_alias=False, exclude_unset=True, exclude_none=True)
+    user_data = user.model_dump(exclude_unset=True, exclude_none=True)
     query = insert(UserModel).values(**user_data).returning(UserModel)
     try:
         result = await db.execute(query)
@@ -40,6 +40,5 @@ async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None
             user_responses.append(UserResponseSchema.model_validate(user).model_dump())
         return user_responses
     except Exception as e:
-        await db.rollback()
         logging.error("Error : ", str(e))
         raise
