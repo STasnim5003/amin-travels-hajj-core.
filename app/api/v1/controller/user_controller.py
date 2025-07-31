@@ -1,5 +1,4 @@
 import fastapi
-from dependency_injector.wiring import inject, Provide
 from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +12,6 @@ router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 
 
 @router.post("/users", response_model=UserResponseSchema, tags=["users"])
-@inject
 async def create_user_endpoint(
         user: UserBaseSchema,
         db: AsyncSession = Depends(get_async_db)
@@ -24,7 +22,6 @@ async def create_user_endpoint(
 
 
 @router.get("/users", response_model=UsersResponseSchema, tags=["users"])
-@inject
 async def get_users_endpoint(
         name:str =None,
         whats_app_no: str=None,

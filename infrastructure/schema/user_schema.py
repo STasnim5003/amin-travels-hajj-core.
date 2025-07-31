@@ -6,11 +6,11 @@ from pydantic import BaseModel, Field
 
 class UserBaseSchema(BaseModel):
     name: str
-    whats_app_no : str = Field(alias="whatsAppNo")
-    nid_images : List[dict] = Field(alias="nidImages")
-    hajj_year : Optional[int] = Field(None, alias="hajjYear")
-    discount_category: Optional[int] = Field(None, alias="discountCategory")
-    package_id: Optional[int] = Field(None, alias="packageId")
+    whats_app_no : str
+    nid_images : List[dict]
+    hajj_year : Optional[int]
+    discount_category: Optional[int]
+    package_id: Optional[int]
 
     class Config:
         from_attributes = True
@@ -18,14 +18,14 @@ class UserBaseSchema(BaseModel):
 
 class UserResponseSchema(UserBaseSchema):
     id: int
-    created_at: Optional[datetime] = Field(None, alias="createdAt")
-    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
-    created_by: Optional[str] = Field(None, alias="createdBy")
-    updated_by: Optional[str] = Field(None, alias="updatedBy")
-    is_active: Optional[bool] = Field(None, alias="isActive")
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    created_by: Optional[str]
+    updated_by: Optional[str]
+    is_active: Optional[bool]
 
 
-class UsersResponseSchema(UserBaseSchema):
+class UsersResponseSchema(BaseModel):
     users: List[UserResponseSchema]
     class Config:
         from_attributes = True
