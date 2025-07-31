@@ -24,3 +24,9 @@ class UserResponseSchema(UserBaseSchema):
     updated_by: Optional[str] = Field(None, alias="updatedBy")
     is_active: Optional[bool] = Field(None, alias="isActive")
 
+
+class UsersResponseSchema(UserBaseSchema):
+    users: List[UserResponseSchema]
+    class Config:
+        from_attributes = True
+        populate_by_name = True
