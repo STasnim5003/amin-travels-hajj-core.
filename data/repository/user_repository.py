@@ -1,4 +1,6 @@
-from sqlalchemy import insert
+from logging import setLoggerClass
+import logging
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.user_model import UserModel
@@ -21,5 +23,23 @@ async def insert_user(user: UserBaseSchema, db: AsyncSession) -> UserResponseSch
 
     except Exception as e:
         await db.rollback()
-        print("Error : ", str(e))
+        logging.error("Error : ", str(e))
+        raise
+
+async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None):
+    try:
+        query = select(UserModel)
+        if name:
+            query = query.where(UserModel.name == name)
+        if whats_app_no:
+            query = query.where(UserModel.whats_app_no == whats_app_no)
+        result = await db.execute(query)
+        result = result.scalars().all()
+        user_responses = []
+        for user in result:
+            user_responses.append(UserResponseSchema.model_validate(user).model_dump())
+        return user_responses
+    except Exception as e:
+        await db.rollback()
+        logging.error("Error : ", str(e))
         raise

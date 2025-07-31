@@ -16,6 +16,14 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
+
+import os
+
+# Inject environment variables into Alembic config for interpolation
+for key in ["DB_USERNAME", "DB_PASSWORD", "DB_HOST", "DB_NAME"]:
+    if os.getenv(key):
+        config.set_main_option(key, os.getenv(key))
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
