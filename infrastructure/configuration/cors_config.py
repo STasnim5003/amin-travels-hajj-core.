@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 def get_cors_middleware(app: FastAPI):
-    allowed_origins = ["*"]
+    allowed_origins = ["*", "https://vercel.com/tasmim-adibs-projects/amin-travels-hajj-frontend"]
     allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     allowed_headers = ["*", "Authorization", "Content-Type"]
 
