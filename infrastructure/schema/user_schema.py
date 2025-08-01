@@ -3,14 +3,16 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema
+
 
 class UserBaseSchema(BaseModel):
     name: str
-    whats_app_no : str = Field(alias="whatsAppNo")
-    nid_images : List[dict] = Field(alias="nidImages")
-    hajj_year : Optional[int] = Field(None, alias="hajjYear")
-    discount_category: Optional[int] = Field(None, alias="discountCategory")
-    package_id: Optional[int] = Field(None, alias="packageId")
+    whats_app_no : str
+    nid_images : List[dict]
+    hajj_year : Optional[int]
+    discount_category: Optional[int]
+    package_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -18,14 +20,15 @@ class UserBaseSchema(BaseModel):
 
 class UserResponseSchema(UserBaseSchema):
     id: int
-    created_at: Optional[datetime] = Field(None, alias="createdAt")
-    updated_at: Optional[datetime] = Field(None, alias="updatedAt")
-    created_by: Optional[str] = Field(None, alias="createdBy")
-    updated_by: Optional[str] = Field(None, alias="updatedBy")
-    is_active: Optional[bool] = Field(None, alias="isActive")
+    package: Optional[PackageResponseSchema] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
 
 
-class UsersResponseSchema(UserBaseSchema):
+
+class UsersResponseSchema(BaseModel):
     users: List[UserResponseSchema]
     class Config:
         from_attributes = True
