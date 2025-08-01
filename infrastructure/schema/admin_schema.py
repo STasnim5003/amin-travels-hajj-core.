@@ -28,3 +28,7 @@ class AdminResponseSchema(AdminBaseSchema):
 #     class Config:
 #         from_attributes = True
 #         populate_by_name = True
+
+class TokenSchema(BaseModel):
+    access_token: str
+    refresh_token: str

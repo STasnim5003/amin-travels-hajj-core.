@@ -32,3 +32,10 @@ async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminRespons
         await db.rollback()
         logging.error("Error : ", str(e))
         raise
+
+
+async def get_admin_by_username(db: AsyncSession, username: str):
+    stmt = select(AdminModel).where(AdminModel.user_name == username)
+    result = await db.execute(stmt)
+    admin = result.scalar_one_or_none()
+    return admin
