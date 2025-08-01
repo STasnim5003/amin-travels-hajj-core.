@@ -9,6 +9,7 @@ from data.db.db_config import get_async_db
 from infrastructure.schema.user_schema import UserResponseSchema, UserBaseSchema, UsersResponseSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
+private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
 
 @router.post("/users", response_model=UserResponseSchema, tags=["users"])
@@ -21,11 +22,12 @@ async def create_user_endpoint(
 
 
 
-@router.get("/users", response_model=UsersResponseSchema, tags=["users"])
+@private_router.get("/users", response_model=UsersResponseSchema, tags=["users"])
 async def get_users_endpoint(
         name:str =None,
         whats_app_no: str=None,
+        search: str=None,
         db: AsyncSession = Depends(get_async_db)
 ):
-    response = await user_service.get_users(name=name, whats_app_no=whats_app_no, db=db)
+    response = await user_service.get_users(name=name, whats_app_no=whats_app_no, search=search,db=db)
     return JSONResponse(content=jsonable_encoder(response))

@@ -13,7 +13,8 @@ router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 @router.get("/packages", response_model=PackagesResponseSchema, tags=["packages"])
 async def get_packages_endpoint(
         name:str =None,
+        search: str = None,
         db: AsyncSession = Depends(get_async_db)
 ):
-    response = await package_service.get_packages(name=name, db=db)
+    response = await package_service.get_packages(name=name,search=search, db=db)
     return JSONResponse(content=jsonable_encoder(response))

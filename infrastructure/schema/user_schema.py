@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema
+
 
 class UserBaseSchema(BaseModel):
     name: str
@@ -10,7 +12,7 @@ class UserBaseSchema(BaseModel):
     nid_images : List[dict]
     hajj_year : Optional[int]
     discount_category: Optional[int]
-    package_id: Optional[int]
+    package_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -18,11 +20,12 @@ class UserBaseSchema(BaseModel):
 
 class UserResponseSchema(UserBaseSchema):
     id: int
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
-    created_by: Optional[str]
-    updated_by: Optional[str]
-    is_active: Optional[bool]
+    package: Optional[PackageResponseSchema] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
+
 
 
 class UsersResponseSchema(BaseModel):
