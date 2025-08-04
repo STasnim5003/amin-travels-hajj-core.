@@ -1,12 +1,18 @@
 from typing import List
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.datastructures import UploadFile
 
-from data.repository import user_repository
+from data.repository import user_repository, file_repository
 from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema
 
 
-async def create_user(user_request_schema: UserBaseSchema, db: AsyncSession) -> UserResponseSchema:
+async def create_user(user_request_schema: UserBaseSchema, db: AsyncSession, nid:List[UploadFile]) -> UserResponseSchema:
+    nid_images = []
+    for pic in nid:
+       nid_images.append(await file_repository.upload_file(file=pic, name="users"))
+
+    user_request_schema.nid_images = nid_images
     result = await user_repository.insert_user(user_request_schema, db=db)
     return result
 

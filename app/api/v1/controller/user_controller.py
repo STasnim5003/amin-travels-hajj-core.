@@ -1,5 +1,7 @@
+from typing import List
+
 import fastapi
-from fastapi import Depends
+from fastapi import Depends, File, UploadFile, HTTPException
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
@@ -12,13 +14,35 @@ router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
 
+from fastapi import Form
+from pydantic import parse_obj_as
+import json
+
 @router.post("/users", response_model=UserResponseSchema, tags=["users"])
 async def create_user_endpoint(
-        user: UserBaseSchema,
-        db: AsyncSession = Depends(get_async_db)
+    user: str = Form(...),  # Accept as string
+    nid: List[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_async_db),
 ):
-    response = await user_service.create_user(user_request_schema=user, db=db)
+    try:
+        # Parse the stringified JSON into a Pydantic model
+        user_dict = json.loads(user)
+        user_obj = UserBaseSchema(**user_dict)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid user JSON: {e}")
+
+    response = await user_service.create_user(user_request_schema=user_obj, nid=nid, db=db)
     return JSONResponse(content=jsonable_encoder(response))
+
+
+# @router.post("/users", response_model=UserResponseSchema, tags=["users"])
+# async def create_user_endpoint(
+#         user: UserBaseSchema,
+#         db: AsyncSession = Depends(get_async_db),
+#         nid: List[UploadFile] = File(...),
+# ):
+#     response = await user_service.create_user(user_request_schema=user,nid=nid, db=db)
+#     return JSONResponse(content=jsonable_encoder(response))
 
 
 
