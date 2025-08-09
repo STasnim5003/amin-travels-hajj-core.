@@ -3,16 +3,18 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from infrastructure.schema.file_schema import FileUploadResponseSchema
 from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema
 
 
 class UserBaseSchema(BaseModel):
     name: str
     whats_app_no : str
-    nid_images : List[dict]
+    nid_images : Optional[List[FileUploadResponseSchema]]
     hajj_year : Optional[int]
     discount_category: Optional[int]
     package_id: Optional[int] = None
+
 
     class Config:
         from_attributes = True
@@ -21,10 +23,12 @@ class UserBaseSchema(BaseModel):
 class UserResponseSchema(UserBaseSchema):
     id: int
     package: Optional[PackageResponseSchema] = None
+    payment_status: Optional[str] = "Pending"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+
 
 
 

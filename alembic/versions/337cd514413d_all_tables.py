@@ -24,8 +24,9 @@ def upgrade() -> None:
     op.create_table('packages',
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('description', sa.Text(), nullable=False),
+    sa.Column('discount', sa.String(), nullable=True),
     sa.Column('price', sa.BigInteger(), nullable=False),
+    sa.Column('locations', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
     sa.Column('created_by', sa.String(), nullable=True),
@@ -34,9 +35,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     schema='core'
     )
-    op.create_index(op.f('ix_core_packages_description'), 'packages', ['description'], unique=False, schema='core')
     op.create_index(op.f('ix_core_packages_id'), 'packages', ['id'], unique=False, schema='core')
-    op.create_index(op.f('ix_core_packages_name'), 'packages', ['name'], unique=False, schema='core')
 
 
     op.create_table('users',
@@ -116,8 +115,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_core_users_name'), table_name='users', schema='core')
     op.drop_index(op.f('ix_core_users_id'), table_name='users', schema='core')
     op.drop_table('users', schema='core')
-    op.drop_index(op.f('ix_core_packages_name'), table_name='packages', schema='core')
     op.drop_index(op.f('ix_core_packages_id'), table_name='packages', schema='core')
-    op.drop_index(op.f('ix_core_packages_description'), table_name='packages', schema='core')
     op.drop_table('packages', schema='core')
     # ### end Alembic commands ###

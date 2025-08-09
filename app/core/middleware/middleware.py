@@ -14,7 +14,7 @@ ALGORITHM = os.getenv("ALGORITHM")
 
 
 def configure_middleware(app):
-    app.add_middleware(get_cors_middleware)
+    get_cors_middleware(app)
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:

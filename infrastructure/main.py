@@ -10,7 +10,12 @@ from app.core.exception.global_exception_handler import CustomExceptionHandler
 from infrastructure.routes.api_router import router
 
 logging.config.dictConfig(LOGGING_CONFIG)
+# Silence boto3/botocore/s3transfer debug logs
+for noisy_logger in ['boto3', 'botocore', 's3transfer', 'urllib3',"multipart"]:
+    logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
+# Also silence Starlette's multipart parser (used by FastAPI)
+logging.getLogger("multipart.multipart").setLevel(logging.ERROR)
 app = FastAPI(
     title="API Documentation",
     description="Amin-Travels-Hajj Core Service",
