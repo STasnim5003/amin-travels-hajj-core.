@@ -15,6 +15,7 @@ class UserBaseSchema(BaseModel):
     discount_category: Optional[int]
     package_id: Optional[int] = None
 
+
     class Config:
         from_attributes = True
         populate_by_name = True
@@ -22,10 +23,12 @@ class UserBaseSchema(BaseModel):
 class UserResponseSchema(UserBaseSchema):
     id: int
     package: Optional[PackageResponseSchema] = None
+    payment_status: Optional[str] = "Pending"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+
 
 
 
