@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 def get_cors_middleware(app: FastAPI):
     allowed_origins = [
         "https://amin-travels-hajj-frontend.vercel.app",
-        "http://localhost:3000",
+        "http://localhost:3001",
         "https://devusion.io"
     ]
 
