@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import insert, select, func
+from sqlalchemy import insert, select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.training_user_model import TrainingUserModel
@@ -31,6 +31,7 @@ async def insert_training_user(training_user: TrainingUserBaseSchema, db: AsyncS
 async def get_training_users(db: AsyncSession,
                              name: Optional[str] = None,
                              whats_app_no: Optional[str] = None,
+                             search: Optional[str] = None,
                              skip: int = 0,
                              limit: int = 10,
                              ):
@@ -40,6 +41,15 @@ async def get_training_users(db: AsyncSession,
         query = query.where(TrainingUserModel.name.ilike(f"%{name}%"))
     if whats_app_no:
         query = query.where(TrainingUserModel.whats_app_no.ilike(f"%{whats_app_no}%"))
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            or_(
+                TrainingUserModel.name.ilike(search_term),
+                TrainingUserModel.whats_app_no.ilike(search_term)
+            )
+        )
 
     total_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(total_query)

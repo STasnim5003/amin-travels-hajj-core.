@@ -17,11 +17,12 @@ async def fetch_training_users(
         db: AsyncSession,
         name: Optional[str],
         whats_app_no: Optional[str],
+        search: Optional[str],
         page: int,
         limit: int
 ) -> PaginatedTrainingUserResponseSchema:
     skip = (page - 1) * limit
-    users, total = await training_user_repository.get_training_users(db, name, whats_app_no, skip, limit)
+    users, total = await training_user_repository.get_training_users(db, name, whats_app_no,search, skip, limit)
 
     return PaginatedTrainingUserResponseSchema(
         users=users,
