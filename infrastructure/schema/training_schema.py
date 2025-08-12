@@ -22,9 +22,8 @@ class TrainingUserResponseSchema(TrainingUserBaseSchema):
     updated_by: Optional[str] = None
 
 
-class TrainingUserListResponseSchema(BaseModel):
+class PaginatedTrainingUserResponseSchema(BaseModel):
     users: List[TrainingUserResponseSchema]
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    total: int
+    page: int
+    limit: int
