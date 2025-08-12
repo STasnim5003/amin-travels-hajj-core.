@@ -20,3 +20,8 @@ async def create_user(user_request_schema: UserBaseSchema, db: AsyncSession, nid
 async def get_users( db: AsyncSession, name:str=None, whats_app_no: str=None, search: str=None) -> List[UserResponseSchema]:
     result = await user_repository.get_users(name=name, whats_app_no=whats_app_no,search=search, db=db)
     return result
+
+
+async def update_user(id, payment_status, db):
+    result = await user_repository.update_user(id=id, payment_status=payment_status, db=db)
+    return result

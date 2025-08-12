@@ -1,6 +1,6 @@
 from logging import setLoggerClass
 import logging
-from sqlalchemy import insert, select, or_
+from sqlalchemy import insert, select, or_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.package_model import PackageModel
@@ -46,6 +46,7 @@ async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None
                     UserModel.whats_app_no.ilike(search_term)
                 )
             )
+        query = query.order_by(UserModel.updated_at.asc())
 
         result = await db.execute(query)
         response = result.all()
@@ -65,4 +66,41 @@ def get_user_response_schema(responses):
         users_response.append(user_schema)
     return users_response
 
+async def update_user(id: int, payment_status:str, db: AsyncSession):
+    # Pick only specific fields to update manually
+    db_user = await db.get(UserModel, id)
 
+    if db_user is None:
+        return None  # Or raise 404
+
+    update_data = {}
+
+    if payment_status and db_user.payment_status != payment_status:
+        update_data["payment_status"] = payment_status
+    # if user.name is not None:
+    #     update_data["name"] = user.name
+    #
+    # if user.whats_app_no is not None:
+    #     update_data["whats_app_no"] = user.whats_app_no
+    #
+    # if user.hajj_year is not None:
+    #     update_data["hajj_year"] = user.hajj_year
+
+    # Add more fields as needed...
+
+    if not update_data:
+        return None  # Nothing to update
+
+    stmt = (
+        update(UserModel)
+        .where(UserModel.id == id)
+        .values(**update_data)
+        .execution_options(synchronize_session="fetch")
+    )
+
+    await db.execute(stmt)
+    await db.commit()
+
+    result = await db.execute(select(UserModel).where(UserModel.id == id))
+    result = result.scalar()
+    return UserResponseSchema.model_validate(result)

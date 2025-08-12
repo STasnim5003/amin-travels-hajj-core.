@@ -60,3 +60,17 @@ async def get_users_endpoint(
 
     response = await user_service.get_users(name=name, whats_app_no=whats_app_no, search=search,db=db)
     return JSONResponse(content=jsonable_encoder(response))
+
+
+@private_router.put("/users/{id}", response_model=UserResponseSchema, tags=["users"])
+async def update_user_status(
+        id: int,
+        payment_status: str ,
+        db: AsyncSession = Depends(get_async_db),
+        # current_user: dict = Depends(get_current_user)
+):
+    # if current_user["role"] != "ADMIN":
+    #     raise HTTPException(status_code=403, detail="Not authorized")
+
+    response = await user_service.update_user(id=id, payment_status=payment_status, db=db)
+    return JSONResponse(content=jsonable_encoder(response))
