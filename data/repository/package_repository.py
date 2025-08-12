@@ -5,23 +5,52 @@ from data.model.package_model import PackageModel
 from infrastructure.schema.package_schema import PackageResponseSchema
 
 
-async def get_packages(db:AsyncSession, name: str=None, search: str=None):
+async def get_packages(db: AsyncSession,
+                       name: str = None,
+                       search: str = None,
+                       hajj_year: int = None,
+                       package_type: str = None,
+                       duration: int = None,
+                       description_type: str = None,
+                       hajj_month: str = None):
     try:
         packages, count = await filter_query(
             db=db,
             model=PackageModel,
             name=name,
             search=search,
-            search_fields=["name"],
+            hajj_year=hajj_year,
+            package_type=package_type,
+            duration=duration,
+            description_type=description_type,
+            hajj_month=hajj_month,
+            search_fields=["name", "hajj_year", "package_type", "duration", "description_type", "hajj_month"],
             sort_by=[("id", "asc")],
             is_active=True,
         )
         packages_response = []
         for package in packages:
-            packages_response.append(PackageResponseSchema.model_validate(package).model_dump())
+            package_data = PackageResponseSchema.model_validate(package).model_dump()
+
+            package_data["locations"] = {
+                "makkah": package.makkah or [],
+                "madinah": package.madinah or [],
+                "azizia": package.azizia or [],
+                "others_feature": package.others_feature or [],
+                "includes": package.includes or [],
+                "hotel_info": package.hotel_info or [],
+                "excludes": package.excludes or []
+            }
+
+            package_data.pop("makkah", None)
+            package_data.pop("madinah", None)
+            package_data.pop("azizia", None)
+            package_data.pop("others_feature", None)
+            package_data.pop("includes", None)
+            package_data.pop("hotel_info", None)
+            package_data.pop("excludes", None)
+
+            packages_response.append(package_data)
         return packages_response
     except Exception as e:
         raise
-
-
-

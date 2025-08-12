@@ -25,8 +25,19 @@ def upgrade() -> None:
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('discount', sa.String(), nullable=True),
-    sa.Column('price', sa.BigInteger(), nullable=False),
-    sa.Column('locations', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('price', sa.BigInteger(), nullable=True),
+    sa.Column('hajj_year', sa.Integer(), nullable=False),
+    sa.Column('duration', sa.Integer(), nullable=True),
+    sa.Column('description_type', sa.String(), nullable=True),
+    sa.Column('package_type', sa.String(), nullable=False),
+    sa.Column('hajj_month', sa.String(), nullable=True),
+    sa.Column('others_feature', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('makkah', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('azizia', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('madinah', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('includes', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('hotel_info', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('excludes', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
     sa.Column('created_by', sa.String(), nullable=True),
@@ -99,6 +110,46 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_core_reviews_id'), 'reviews', ['id'], unique=False, schema='core')
     op.create_index(op.f('ix_core_reviews_reviewer'), 'reviews', ['reviewer'], unique=False, schema='core')
+
+    op.create_table('user_training_books',
+    sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('whats_app_no', sa.String(), nullable=False),
+    sa.Column('hajj_year', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(),
+              server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),
+              nullable=False),
+    sa.Column('updated_at', sa.DateTime(),
+              server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),
+              nullable=False),
+    sa.Column('created_by', sa.String(), nullable=True),
+    sa.Column('updated_by', sa.String(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    schema='core'
+    )
+    op.create_index(op.f('ix_core_training_user_id'), 'user_training_books', ['id'], unique=False, schema='core')
+
+    op.create_table('admin',
+    sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
+    sa.Column('user_name', sa.String(), nullable=False),
+    sa.Column('profile_pic', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('password', sa.String(), nullable=False),
+    sa.Column('role', sa.String(), nullable=False),
+    sa.Column('created_at', sa.DateTime(),
+              server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),
+              nullable=False),
+    sa.Column('updated_at', sa.DateTime(),
+              server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),
+              nullable=False),
+    sa.Column('created_by', sa.String(), nullable=True),
+    sa.Column('updated_by', sa.String(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    schema='core'
+    )
+    op.create_index(op.f('ix_core_admin_id'), 'admin', ['id'], unique=False, schema='core')
+
     # ### end Alembic commands ###
 
 
@@ -117,4 +168,8 @@ def downgrade() -> None:
     op.drop_table('users', schema='core')
     op.drop_index(op.f('ix_core_packages_id'), table_name='packages', schema='core')
     op.drop_table('packages', schema='core')
+    op.drop_index(op.f('ix_core_training_user_id'), table_name='user_training_books', schema='core')
+    op.drop_table('user_training_books', schema='core')
+    op.drop_index(op.f('ix_core_admin_id'), table_name='admin', schema='core')
+    op.drop_table('admin', schema='core')
     # ### end Alembic commands ###

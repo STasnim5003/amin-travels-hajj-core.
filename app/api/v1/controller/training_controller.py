@@ -4,7 +4,6 @@ import fastapi
 from fastapi import Depends, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 
 from app.service import training_user_service
