@@ -5,6 +5,7 @@ def get_cors_middleware(app: FastAPI):
     allowed_origins = [
         "https://amin-travels-hajj-frontend.vercel.app",
         "http://localhost:3001",
+        "http://localhost:3000",
         "https://devusion.io"
     ]
 
