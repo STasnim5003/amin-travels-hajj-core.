@@ -21,6 +21,7 @@ s3 = boto3.client(
     aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
     aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
     region_name=os.getenv('AWS_REGION_NAME'),
+    config=boto3.session.Config(signature_version='s3v4')
 )
 
 bucket_name = os.getenv('BUCKET_NAME')
@@ -43,14 +44,24 @@ async def upload_file(file: UploadFile, name:str = "default",):
 
 
 async def get_download_url(url: str):
-    url = s3.generate_presigned_url(
+    parsed = urlparse(url)
+
+    # If it's a full URL, strip to just the path
+    if parsed.scheme in ("http", "https"):
+        # EXTRACT key from full URL
+        object_key = parsed.path.replace(f"/{bucket_name}/", "").lstrip("/")
+    else:
+        # Treat as direct object key (safe fallback)
+        object_key = url.strip("/")
+
+    # Generate presigned URL
+    presigned_url = s3.generate_presigned_url(
         "get_object",
-        Params={"Bucket": bucket_name, "Key": url},
+        Params={"Bucket": bucket_name, "Key": object_key},
         ExpiresIn=3600
     )
-    return FileDownloadResponseSchema(
-        download_url=url,
-    )
+
+    return FileDownloadResponseSchema(download_url=presigned_url)
 
 
 
