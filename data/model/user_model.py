@@ -16,3 +16,4 @@ class UserModel(Base, BaseMixinModel):
     hajj_year = Column(Integer, nullable=True)
     discount_category = Column(Integer, nullable=True, default=0)
     package_id = Column(Integer, ForeignKey(PackageModel.id), nullable=True)
+    payment_status = Column(String, nullable=False, default="PENDING")

@@ -14,6 +14,7 @@ class UserBaseSchema(BaseModel):
     hajj_year : Optional[int]
     discount_category: Optional[int]
     package_id: Optional[int] = None
+    payment_status: Optional[str] = "PENDING"
 
 
     class Config:
@@ -23,7 +24,6 @@ class UserBaseSchema(BaseModel):
 class UserResponseSchema(UserBaseSchema):
     id: int
     package: Optional[PackageResponseSchema] = None
-    payment_status: Optional[str] = "Pending"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
