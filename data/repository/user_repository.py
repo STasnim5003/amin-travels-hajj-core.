@@ -52,19 +52,19 @@ async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None
         result = await db.execute(query)
         response = result.all()
 
-        return get_user_response_schema(response)
+        return get_user_response_schema(response,page, limit)
     except Exception as e:
         logging.error("Error : ", str(e))
         raise
 
-def get_user_response_schema(responses):
+def get_user_response_schema(responses, page, limit):
     users_response = []
     for user, package in responses:
         user_schema = UserResponseSchema.model_validate(user)
         user_schema.package = PackageResponseSchema.model_validate(package)
         users_response.append(user_schema)
 
-    return UsersResponseSchema(users=users_response, total=len(responses))
+    return UsersResponseSchema(users=users_response, total=len(responses), page=page,limit=limit)
 
 async def update_user(id: int, payment_status:str, db: AsyncSession):
     # Pick only specific fields to update manually
