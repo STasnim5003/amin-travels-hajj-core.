@@ -34,6 +34,7 @@ class UserResponseSchema(UserBaseSchema):
 
 class UsersResponseSchema(BaseModel):
     users: List[UserResponseSchema]
+    total: Optional[int] = 0
     class Config:
         from_attributes = True
         populate_by_name = True

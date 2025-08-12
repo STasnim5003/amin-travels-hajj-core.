@@ -17,8 +17,8 @@ async def create_user(user_request_schema: UserBaseSchema, db: AsyncSession, nid
     return result
 
 
-async def get_users( db: AsyncSession, name:str=None, whats_app_no: str=None, search: str=None) -> List[UserResponseSchema]:
-    result = await user_repository.get_users(name=name, whats_app_no=whats_app_no,search=search, db=db)
+async def get_users( db: AsyncSession, name:str=None, whats_app_no: str=None,page:int=0, limit:int=10, search: str=None) -> List[UserResponseSchema]:
+    result = await user_repository.get_users(name=name, whats_app_no=whats_app_no,search=search, page=page,limit=limit,db=db)
     return result
 
 
