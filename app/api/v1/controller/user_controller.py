@@ -1,7 +1,7 @@
 from typing import List
 
 import fastapi
-from fastapi import Depends, HTTPException, File, UploadFile
+from fastapi import Depends, HTTPException, File, UploadFile, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
@@ -52,13 +52,15 @@ async def get_users_endpoint(
         name:str =None,
         whats_app_no: str=None,
         search: str=None,
+        page: int = Query(1, ge=1),
+        limit: int = Query(10, ge=1, le=100),
         db: AsyncSession = Depends(get_async_db),
         # current_user: dict = Depends(get_current_user)
 ):
     # if current_user["role"] != "ADMIN":
     #     raise HTTPException(status_code=403, detail="Not authorized")
 
-    response = await user_service.get_users(name=name, whats_app_no=whats_app_no, search=search,db=db)
+    response = await user_service.get_users(name=name, whats_app_no=whats_app_no, search=search,page=page, limit=limit, db=db)
     return JSONResponse(content=jsonable_encoder(response))
 
 

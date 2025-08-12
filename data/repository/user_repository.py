@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data.model.package_model import PackageModel
 from data.model.user_model import UserModel
 from infrastructure.schema.package_schema import PackageResponseSchema
-from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema
+from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema, UsersResponseSchema
 
 
 async def insert_user(user: UserBaseSchema, db: AsyncSession) -> UserResponseSchema:
@@ -28,10 +28,10 @@ async def insert_user(user: UserBaseSchema, db: AsyncSession) -> UserResponseSch
         logging.error("Error : ", str(e))
         raise
 
-async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None, search: str = None,):
+async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None, search: str = None, page:int=0, limit: int=10, ):
     try:
         query = select(UserModel, PackageModel).join(PackageModel).where(PackageModel.id == UserModel.package_id)
-
+        offset = (page-1)*limit
         if name:
             query = query.where(UserModel.name == name)
 
@@ -48,6 +48,7 @@ async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None
             )
         query = query.order_by(UserModel.updated_at.asc())
 
+        query = query.offset(offset).limit(limit)
         result = await db.execute(query)
         response = result.all()
 
@@ -56,15 +57,14 @@ async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None
         logging.error("Error : ", str(e))
         raise
 
-
 def get_user_response_schema(responses):
     users_response = []
     for user, package in responses:
-        package_schema = PackageResponseSchema.model_validate(package).model_dump()
-        user_schema = UserResponseSchema.model_validate(user).model_dump()
-        user_schema['package'] = package_schema
+        user_schema = UserResponseSchema.model_validate(user)
+        user_schema.package = PackageResponseSchema.model_validate(package)
         users_response.append(user_schema)
-    return users_response
+
+    return UsersResponseSchema(users=users_response, total=len(responses))
 
 async def update_user(id: int, payment_status:str, db: AsyncSession):
     # Pick only specific fields to update manually
