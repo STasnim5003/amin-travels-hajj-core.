@@ -27,7 +27,8 @@ async def create_user_endpoint(
 async def get_training_user_endpoint(
         name: Optional[str] = Query(None),
         whats_app_no: Optional[str] = Query(None),
+        search: str = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(10, ge=1, le=100),
         db: AsyncSession = Depends(get_async_db)):
-    return await training_user_service.fetch_training_users(db, name, whats_app_no, page, limit)
+    return await training_user_service.fetch_training_users(db, name, whats_app_no,search, page, limit)

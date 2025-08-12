@@ -1,12 +1,12 @@
 from logging import setLoggerClass
 import logging
-from sqlalchemy import insert, select, or_
+from sqlalchemy import insert, select, or_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.package_model import PackageModel
 from data.model.user_model import UserModel
 from infrastructure.schema.package_schema import PackageResponseSchema
-from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema
+from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema, UsersResponseSchema
 
 
 async def insert_user(user: UserBaseSchema, db: AsyncSession) -> UserResponseSchema:
@@ -28,10 +28,10 @@ async def insert_user(user: UserBaseSchema, db: AsyncSession) -> UserResponseSch
         logging.error("Error : ", str(e))
         raise
 
-async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None, search: str = None,):
+async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None, search: str = None, page:int=0, limit: int=10, ):
     try:
         query = select(UserModel, PackageModel).join(PackageModel).where(PackageModel.id == UserModel.package_id)
-
+        offset = (page-1)*limit
         if name:
             query = query.where(UserModel.name == name)
 
@@ -46,23 +46,61 @@ async def get_users(db: AsyncSession, name: str = None, whats_app_no: str = None
                     UserModel.whats_app_no.ilike(search_term)
                 )
             )
+        query = query.order_by(UserModel.updated_at.asc())
 
+        query = query.offset(offset).limit(limit)
         result = await db.execute(query)
         response = result.all()
 
-        return get_user_response_schema(response)
+        return get_user_response_schema(response,page, limit)
     except Exception as e:
         logging.error("Error : ", str(e))
         raise
 
-
-def get_user_response_schema(responses):
+def get_user_response_schema(responses, page, limit):
     users_response = []
     for user, package in responses:
-        package_schema = PackageResponseSchema.model_validate(package).model_dump()
-        user_schema = UserResponseSchema.model_validate(user).model_dump()
-        user_schema['package'] = package_schema
+        user_schema = UserResponseSchema.model_validate(user)
+        user_schema.package = PackageResponseSchema.model_validate(package)
         users_response.append(user_schema)
-    return users_response
 
+    return UsersResponseSchema(users=users_response, total=len(responses), page=page,limit=limit)
 
+async def update_user(id: int, payment_status:str, db: AsyncSession):
+    # Pick only specific fields to update manually
+    db_user = await db.get(UserModel, id)
+
+    if db_user is None:
+        return None  # Or raise 404
+
+    update_data = {}
+
+    if payment_status and db_user.payment_status != payment_status:
+        update_data["payment_status"] = payment_status
+    # if user.name is not None:
+    #     update_data["name"] = user.name
+    #
+    # if user.whats_app_no is not None:
+    #     update_data["whats_app_no"] = user.whats_app_no
+    #
+    # if user.hajj_year is not None:
+    #     update_data["hajj_year"] = user.hajj_year
+
+    # Add more fields as needed...
+
+    if not update_data:
+        return None  # Nothing to update
+
+    stmt = (
+        update(UserModel)
+        .where(UserModel.id == id)
+        .values(**update_data)
+        .execution_options(synchronize_session="fetch")
+    )
+
+    await db.execute(stmt)
+    await db.commit()
+
+    result = await db.execute(select(UserModel).where(UserModel.id == id))
+    result = result.scalar()
+    return UserResponseSchema.model_validate(result)

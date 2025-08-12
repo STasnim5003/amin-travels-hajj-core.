@@ -14,3 +14,4 @@ router.include_router(file_controller.router)
 router.include_router(admin_controller.router)
 
 router.include_router(training_controller.router)
+
