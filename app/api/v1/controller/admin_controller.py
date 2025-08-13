@@ -1,10 +1,11 @@
 import fastapi
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
+from app.core.middleware.middleware import get_current_user
 from app.service import admin_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_schema import AdminResponseSchema, AdminBaseSchema, TokenSchema
@@ -15,8 +16,12 @@ router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 @router.post("/admin", response_model=AdminResponseSchema, tags=["admin"])
 async def create_admin_endpoint(
         admin: AdminBaseSchema,
-        db: AsyncSession = Depends(get_async_db)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+
 ):
+    if current_user["role"] != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized")
     response = await admin_service.create_admin(admin_request_schema=admin, db=db)
     return JSONResponse(content=jsonable_encoder(response))
 

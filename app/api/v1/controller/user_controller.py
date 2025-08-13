@@ -55,10 +55,10 @@ async def get_users_endpoint(
         page: int = Query(1, ge=1),
         limit: int = Query(10, ge=1, le=100),
         db: AsyncSession = Depends(get_async_db),
-        # current_user: dict = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ):
-    # if current_user["role"] != "ADMIN":
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user["role"] != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     response = await user_service.get_users(name=name, whats_app_no=whats_app_no, search=search,page=page, limit=limit, db=db)
     return JSONResponse(content=jsonable_encoder(response))
