@@ -6,7 +6,8 @@ def get_cors_middleware(app: FastAPI):
         "https://amin-travels-hajj-frontend.vercel.app",
         "http://localhost:3001",
         "http://localhost:3000",
-        "https://devusion.io"
+        "https://devusion.io",
+        "https://amintravels.com.bd"
     ]
 
     app.add_middleware(
