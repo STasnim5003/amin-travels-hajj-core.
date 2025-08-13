@@ -69,10 +69,10 @@ async def update_user_status(
         id: int,
         payment_status: str ,
         db: AsyncSession = Depends(get_async_db),
-        # current_user: dict = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ):
-    # if current_user["role"] != "ADMIN":
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user["role"] != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized")
 
     response = await user_service.update_user(id=id, payment_status=payment_status, db=db)
     return JSONResponse(content=jsonable_encoder(response))
