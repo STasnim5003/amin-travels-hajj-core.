@@ -1,11 +1,13 @@
+import logging
 from typing import Optional
 
 import fastapi
 from dotenv import load_dotenv
-from fastapi import Form, Query, UploadFile, File
+from fastapi import Form, Query, UploadFile, File, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
 
+from app.core.middleware.middleware import get_current_user
 from app.service import file_service
 from infrastructure.schema.file_schema import FileUploadResponseSchema, FileDownloadResponseSchema, \
     FileUpdateResponseSchema, FileDeleteResponsesSchema
@@ -13,7 +15,7 @@ from infrastructure.schema.file_schema import FileUploadResponseSchema, FileDown
 load_dotenv()
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
-
+private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
 
 
@@ -27,8 +29,14 @@ async def upload_file(
 
 
 
-@router.get("/download-url", response_model=FileDownloadResponseSchema ,tags=["files"])
-async def get_download_url(key: str):
+@private_router.get("/download-url", response_model=FileDownloadResponseSchema ,tags=["files"])
+async def get_download_url(
+        key: str,
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    logging.info(f"role : {current_user}")
     response = await file_service.get_download_url(key=key)
     return JSONResponse(content=jsonable_encoder(response))
 
