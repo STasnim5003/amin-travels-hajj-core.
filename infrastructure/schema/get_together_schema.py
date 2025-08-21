@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import date, datetime
 
@@ -56,3 +56,9 @@ class GetTogetherRegistrationResponse(GetTogetherRegistrationBase):
     class Config:
         orm_mode = True
         from_attributes = True
+
+class PaginatedGetTogetherParticipantsResponseSchema(BaseModel):
+    participants: List[GetTogetherRegistrationResponse]
+    total: int
+    page: int
+    limit: int
