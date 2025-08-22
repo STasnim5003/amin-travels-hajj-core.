@@ -33,3 +33,23 @@ class PackagesResponseSchema(BaseModel):
         from_attributes = True
         populate_by_name = True
         extra = "allow"
+
+class PackageMasterDataForFilterSchema(BaseModel):
+    hajj_month: str
+    hajj_year: int
+    name:Optional[str]
+    duration: Optional[int]
+    description_type: Optional[str]
+    package_type: str
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class PackageMasterDataForFilterListSchema(BaseModel):
+    master_data_for_filter : List[PackageMasterDataForFilterSchema]
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+        extra = "allow"
