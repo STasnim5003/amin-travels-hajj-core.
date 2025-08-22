@@ -1,8 +1,10 @@
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.filter.query_filter import filter_query
 from data.model.package_model import PackageModel
-from infrastructure.schema.package_schema import PackageResponseSchema
+from infrastructure.schema.package_schema import PackageResponseSchema, PackageMasterDataForFilterSchema, \
+    PackageMasterDataForFilterListSchema
 
 
 async def get_packages(db: AsyncSession,
@@ -54,3 +56,37 @@ async def get_packages(db: AsyncSession,
         return packages_response
     except Exception as e:
         raise
+
+
+async def get_package_master_data_for_filtering(
+        db: AsyncSession,
+        package_type: str = None,
+        description_type: str = None
+):
+    filters = []
+
+    if package_type:
+        filters.append(PackageModel.package_type == package_type)
+    if description_type:
+        filters.append(PackageModel.description_type == description_type)
+
+    stmt = (
+        select(
+            PackageModel.hajj_month,
+            PackageModel.hajj_year,
+            PackageModel.duration,
+            PackageModel.name,
+            PackageModel.description_type,
+            PackageModel.package_type,
+        )
+        .where(*filters)
+        .distinct()
+    )
+
+    result = await db.execute(stmt)
+    rows = result.all()
+    master_data = []
+    for row in rows:
+        master_data.append(PackageMasterDataForFilterSchema.model_validate(row).model_dump())
+    return master_data
+
