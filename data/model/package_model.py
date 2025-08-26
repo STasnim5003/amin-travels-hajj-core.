@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Text, Date
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -26,6 +26,7 @@ class PackageModel(Base, BaseMixinModel):
     includes = Column(JSONB(astext_type=String), nullable=True)
     hotel_info = Column(JSONB(astext_type=String), nullable=True)
     excludes = Column(JSONB(astext_type=String), nullable=True)
+    discount_deadline = Column(Date, nullable=True)
 
     @property
     def locations(self) -> dict:

@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List, Dict, Optional
 
 from pydantic import BaseModel
@@ -12,9 +13,8 @@ class PackageBaseSchema(BaseModel):
     duration: Optional[int]
     description_type: Optional[str]
     package_type: str
-    hajj_month : Optional[str]
-
-
+    hajj_month: Optional[str]
+    discount_deadline: Optional[date]
 
 
 class PackageResponseSchema(PackageBaseSchema):
@@ -34,10 +34,11 @@ class PackagesResponseSchema(BaseModel):
         populate_by_name = True
         extra = "allow"
 
+
 class PackageMasterDataForFilterSchema(BaseModel):
     hajj_month: str
     hajj_year: int
-    name:Optional[str]
+    name: Optional[str]
     duration: Optional[int]
     description_type: Optional[str]
     package_type: str
@@ -46,8 +47,9 @@ class PackageMasterDataForFilterSchema(BaseModel):
         from_attributes = True
         populate_by_name = True
 
+
 class PackageMasterDataForFilterListSchema(BaseModel):
-    master_data_for_filter : List[PackageMasterDataForFilterSchema]
+    master_data_for_filter: List[PackageMasterDataForFilterSchema]
 
     class Config:
         from_attributes = True
