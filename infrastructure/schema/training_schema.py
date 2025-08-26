@@ -8,6 +8,7 @@ class TrainingUserBaseSchema(BaseModel):
     name: str
     whats_app_no: str
     hajj_year: Optional[int]
+    no_of_attendance: Optional[int]
 
     class Config:
         from_attributes = True

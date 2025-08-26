@@ -1,9 +1,10 @@
-from sqlalchemy import Column, String, Integer, BigInteger, Date, DateTime, Boolean, ForeignKey, text
+from sqlalchemy import Column, String, Integer, BigInteger, Date, ForeignKey
 from sqlalchemy.orm import relationship
+
 from data.model.base_mixin_model import Base, BaseMixinModel  # assuming you have Base from declarative_base()
 
 
-class GetTogetherProgramCreate(Base, BaseMixinModel):
+class ProgramBaseModel(Base, BaseMixinModel):
     __tablename__ = "get_together_program_create"
     __table_args__ = {"schema": "core"}
 
@@ -14,12 +15,16 @@ class GetTogetherProgramCreate(Base, BaseMixinModel):
     program_venue = Column(String, nullable=True)
     total_seat = Column(Integer, nullable=True)
     description = Column(String, nullable=True)
+    venue_address = Column(String, nullable=True)
+    venue_map_location = Column(String, nullable=True)
+    start_time = Column(String, nullable=True)
+    program_type = Column(String, nullable=False)
 
     # relationship
-    registrations = relationship("GetTogetherRegistration", back_populates="program")
+    registrations = relationship("ProgramRegistrationBaseModel", back_populates="program")
 
 
-class GetTogetherRegistration(Base, BaseMixinModel):
+class ProgramRegistrationBaseModel(Base, BaseMixinModel):
     __tablename__ = "get_together_registration"
     __table_args__ = {"schema": "core"}
 
@@ -27,7 +32,7 @@ class GetTogetherRegistration(Base, BaseMixinModel):
     name = Column(String, nullable=False)
     phone_no = Column(String, nullable=False)
     no_of_attendance = Column(Integer, nullable=False)
-    get_together_program_id = Column(BigInteger, ForeignKey(GetTogetherProgramCreate.id), nullable=False)
+    get_together_program_id = Column(BigInteger, ForeignKey(ProgramBaseModel.id), nullable=False)
 
     # relationship
-    program = relationship("GetTogetherProgramCreate", back_populates="registrations")
+    program = relationship("ProgramBaseModel", back_populates="registrations")

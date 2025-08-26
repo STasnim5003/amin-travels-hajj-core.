@@ -11,3 +11,4 @@ class TrainingUserModel(Base, BaseMixinModel):
     name = Column(String, index=False, nullable=False)
     whats_app_no = Column(String, index=False, nullable=False)
     hajj_year = Column(Integer, nullable=True)
+    no_of_attendance = Column(Integer, nullable=True)
