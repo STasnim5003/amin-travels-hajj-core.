@@ -22,12 +22,22 @@ def upgrade() -> None:
     op.add_column("get_together_program_create", sa.Column("venue_address", sa.String(), nullable=True), schema="core")
     op.add_column("get_together_program_create", sa.Column("venue_map_location", sa.String(), nullable=True), schema="core")
     op.add_column("get_together_program_create", sa.Column("start_time", sa.String(), nullable=True), schema="core")
-    op.add_column("get_together_program_create", sa.Column("program_type", sa.String(), nullable=False), schema="core")
-    op.add_column("packages", sa.Column("discount_price_deadline", sa.DATE(), nullable=True), schema="core")
+    op.add_column("get_together_program_create", sa.Column("program_type", sa.String(), nullable=True), schema="core")
+    op.add_column("packages", sa.Column("discount_deadline", sa.Date(), nullable=True), schema="core")
+    op.execute("""
+                    UPDATE core.packages
+                    SET discount_deadline = '2025-08-30'
+                    WHERE hajj_month = 'October'
+                      AND hajj_year = 2025
+                      AND package_type = 'UMRAH'
+                """)
+    op.add_column("user_training_books", sa.Column("no_of_attendance", sa.Integer(), nullable=True), schema="core")
+
 
 def downgrade() -> None:
     op.drop_column("get_together_program_create", "venue_map_location", schema="core")
     op.drop_column("get_together_program_create", "venue_address", schema="core")
     op.drop_column("get_together_program_create", "start_time", schema="core")
-    op.drop_column("packages", "discount_price_deadline", schema="core")
     op.drop_column("get_together_program_create", "program_type", schema="core")
+    op.drop_column("packages", "discount_deadline", schema="core")
+    op.drop_column("user_training_books", "no_of_attendance", schema="core")
