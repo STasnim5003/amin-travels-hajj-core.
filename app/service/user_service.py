@@ -81,10 +81,13 @@ async def update_user_password(id, username, old_password, new_password, db, cur
     return result
 
 
-async def update_user_registration(id, user_update, passport, db):
+async def update_user_registration(id, user_update, passport, db, current_user):
+    if current_user['role'] not in  ['PREREGISTERED_USER']:
+        raise HTTPException(status_code=404, detail="You are not authorized for this action")
+
     passport_images = []
     for pic in passport:
-        passport_images.append(await file_repository.upload_file(file=pic, name="users/passport"))
+        passport_images.append(await file_repository.upload_file(file=pic, name="users/passports"))
 
     user_update.passport_images = passport_images
     result = await user_repository.update_user_registration(id=id, user_update=user_update, db=db)

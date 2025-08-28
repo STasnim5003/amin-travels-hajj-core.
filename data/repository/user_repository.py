@@ -1,5 +1,7 @@
 from logging import setLoggerClass
 import logging
+
+from fastapi import HTTPException
 from sqlalchemy import insert, select, or_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -147,27 +149,51 @@ async def get_user_by_id(id, db):
     return user
 
 
-async def update_user_registration(id, user_update, db):
-    values_to_update = {}
+async def update_user_registration(id, user_update, db: AsyncSession):
+    try:
+        # Fetch the user
+        user = await db.get(UserModel, id)
 
-    if user_update.passport_images is not None:
-        values_to_update["passport_images"] = user_update.passport_images
-    if user_update.vaccine_center is not None:
-        values_to_update["vaccine_center"] = user_update.vaccine_center
-    if user_update.registration_status is not None:
-        values_to_update["registration_status"] = user_update.registration_status
-    if user_update.role is not None:
-        values_to_update["role"] = user_update.role
+        if not user:
+            return {"status": "not_found", "message": "No user found with the given ID"}
 
-    if values_to_update:
-        stmt = (
-            update(UserModel)
-            .where(UserModel.id == id)
-            .values(**values_to_update)
-            .execution_options(synchronize_session="fetch")
-        )
-        await db.execute(stmt)
-        await db.commit()
-        return {"status": "success", "updated_fields": list(values_to_update.keys())}
-    else:
-        return {"status": "no_changes"}
+        updated_fields = []
+
+        # Handle passport_images with proper serialization
+        if user_update.passport_images is not None:
+            # Convert FileUploadResponseSchema objects to dictionaries
+            if isinstance(user_update.passport_images, list):
+                passport_images_data = [
+                    img.dict() if hasattr(img, 'dict') else img
+                    for img in user_update.passport_images
+                ]
+            else:
+                passport_images_data = user_update.passport_images.dict() if hasattr(user_update.passport_images,
+                                                                                     'dict') else user_update.passport_images
+
+            user.passport_images = passport_images_data
+            updated_fields.append("passport_images")
+
+        if user_update.vaccine_center is not None:
+            user.vaccine_center = user_update.vaccine_center
+            updated_fields.append("vaccine_center")
+        if user_update.registration_status is not None:
+            user.registration_status = user_update.registration_status
+            updated_fields.append("registration_status")
+        if user_update.role is not None:
+            user.role = user_update.role
+            updated_fields.append("role")
+
+        if updated_fields:
+            await db.commit()
+            return {
+                "status": "success",
+                "updated_fields": updated_fields,
+                "user_id": user.id
+            }
+        else:
+            return {"status": "no_changes"}
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

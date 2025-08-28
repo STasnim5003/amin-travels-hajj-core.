@@ -111,11 +111,14 @@ async def update_user_password(
 @private_router.put("/users/{id}/register",  tags=["users"])
 async def update_user_registration(
         id: int,
-        user_update: UpdateUserRequestSchema,
+        user_update: str = Form(...),
         passport: List[UploadFile] = File(...),
-        current_user: dict = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user),
+        db: AsyncSession = Depends(get_async_db),
 ):
-    response = await user_service.update_user_registration(id=id, user_update=user_update, passport=passport, db=current_user)
+    user_dict = json.loads(user_update)
+    user_obj = UpdateUserRequestSchema(**user_dict)
+    response = await user_service.update_user_registration(id=id, user_update=user_obj, passport=passport, db=db, current_user=current_user)
     return JSONResponse(content=jsonable_encoder(response))
 
 
