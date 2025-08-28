@@ -183,6 +183,9 @@ async def update_user_registration(id, user_update, db: AsyncSession):
         if user_update.role is not None:
             user.role = user_update.role
             updated_fields.append("role")
+        if user_update.package_id is not None:
+            user.package_id = user_update.package_id
+            updated_fields.append("package_id")
 
         if updated_fields:
             await db.commit()

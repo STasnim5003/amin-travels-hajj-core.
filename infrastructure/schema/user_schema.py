@@ -46,6 +46,7 @@ class UsersResponseSchema(BaseModel):
         populate_by_name = True
 
 class UpdateUserRequestSchema(BaseModel):
+    package_id: Optional[int] = None
     passport_images: Optional[List[FileUploadResponseSchema]]
     vaccine_center: Optional[str]
     registration_status: str = "REGISTERED"
