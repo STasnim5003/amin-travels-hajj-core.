@@ -15,7 +15,11 @@ class UserBaseSchema(BaseModel):
     discount_category: Optional[int]
     package_id: Optional[int] = None
     payment_status: Optional[str] = "PENDING"
-
+    passport_images: Optional[List[FileUploadResponseSchema]]
+    vaccine_center: Optional[int]
+    registration_status: str = "PREREGISTERED"
+    role: str = "PREREGISTERED_USER"
+    username: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, File, UploadFile, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
-
+from fastapi.security import OAuth2PasswordRequestForm
 from app.core.middleware.middleware import get_current_user
 from app.service import user_service
 from data.db.db_config import get_async_db
@@ -76,3 +76,21 @@ async def update_user_status(
 
     response = await user_service.update_user(id=id, payment_status=payment_status, db=db)
     return JSONResponse(content=jsonable_encoder(response))
+
+# @private_router.put("/users", tags=["users"])
+# async def create_user_credentials(
+#     password: str = Form(...),
+#     db: AsyncSession = Depends(get_async_db),
+# ):
+#     response = await user_service.create_credentials(password=password, db=db)
+#     return JSONResponse(content=jsonable_encoder(response))
+
+@router.post("/users/login", response_model=UserResponseSchema, tags=["users"])
+async def create_user_login(
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: AsyncSession = Depends(get_async_db)
+):
+    response = await user_service.user_login(request_credential=form_data, db=db)
+    return JSONResponse(content=jsonable_encoder(response))
+
+

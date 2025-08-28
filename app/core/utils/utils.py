@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from typing import Union, Any
 from jose import jwt
 from passlib.context import CryptContext
-
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -31,3 +30,5 @@ def create_refresh_token(subject: Union[str, Any], role : str, expires_delta: ti
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES))
     to_encode = {"exp": expire, "sub": str(subject), "role" : role}
     return jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+
+
