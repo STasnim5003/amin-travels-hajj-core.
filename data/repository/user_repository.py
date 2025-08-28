@@ -126,3 +126,48 @@ async def get_user_by_username(username, db):
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     return user
+
+
+async def update_user_password(id, username, old_password, new_password, db):
+    stmt = (
+        update(UserModel)
+        .where(UserModel.id == id)
+        .values(password=new_password)
+        .execution_options(synchronize_session="fetch")
+    )
+    await db.execute(stmt)
+    await db.commit()
+    return {"status": "success"}
+
+
+async def get_user_by_id(id, db):
+    stmt = select(UserModel).where(UserModel.id == id)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    return user
+
+
+async def update_user_registration(id, user_update, db):
+    values_to_update = {}
+
+    if user_update.passport_images is not None:
+        values_to_update["passport_images"] = user_update.passport_images
+    if user_update.vaccine_center is not None:
+        values_to_update["vaccine_center"] = user_update.vaccine_center
+    if user_update.registration_status is not None:
+        values_to_update["registration_status"] = user_update.registration_status
+    if user_update.role is not None:
+        values_to_update["role"] = user_update.role
+
+    if values_to_update:
+        stmt = (
+            update(UserModel)
+            .where(UserModel.id == id)
+            .values(**values_to_update)
+            .execution_options(synchronize_session="fetch")
+        )
+        await db.execute(stmt)
+        await db.commit()
+        return {"status": "success", "updated_fields": list(values_to_update.keys())}
+    else:
+        return {"status": "no_changes"}

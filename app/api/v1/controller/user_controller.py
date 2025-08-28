@@ -1,6 +1,7 @@
 from typing import List
 
 import fastapi
+
 from fastapi import Depends, HTTPException, File, UploadFile, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.core.middleware.middleware import get_current_user
 from app.service import user_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.user_schema import UserResponseSchema, UserBaseSchema, UsersResponseSchema
+from infrastructure.schema.user_schema import UserResponseSchema, UserBaseSchema, UsersResponseSchema, \
+    UpdateUserRequestSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -92,5 +94,30 @@ async def create_user_login(
 ):
     response = await user_service.user_login(request_credential=form_data, db=db)
     return JSONResponse(content=jsonable_encoder(response))
+
+
+@private_router.put("/users/{id}/reset-password", response_model=UserResponseSchema, tags=["users"])
+async def update_user_password(
+        id: int,
+        username: str = Form(...),
+        old_password: str = Form(...),
+        new_password: str = Form(...),
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    response = await user_service.update_user_password(id=id, username=username, old_password=old_password, new_password=new_password, db=db, current_user=current_user)
+    return JSONResponse(content=jsonable_encoder(response))
+
+@private_router.put("/users/{id}/register",  tags=["users"])
+async def update_user_registration(
+        id: int,
+        user_update: UpdateUserRequestSchema,
+        passport: List[UploadFile] = File(...),
+        current_user: dict = Depends(get_current_user)
+):
+    response = await user_service.update_user_registration(id=id, user_update=user_update, passport=passport, db=current_user)
+    return JSONResponse(content=jsonable_encoder(response))
+
+
 
 
