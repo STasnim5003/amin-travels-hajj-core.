@@ -58,3 +58,37 @@ async def user_login(request_credential: OAuth2PasswordRequestForm, db: AsyncSes
         "access_token": access_token,
         "refresh_token": refresh_token
     }
+
+
+async def update_user_password(id, username, old_password, new_password, db, current_user):
+    if current_user['role'] not in  ['PREREGISTERED_USER', 'REGISTERED_USER']:
+        raise HTTPException(status_code=404, detail="You are not authorized for this action")
+
+    user = await user_repository.get_user_by_id(id=id, db=db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are not authorized for this action"
+        )
+
+    if not verify_password(old_password, new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are not authorized for this action"
+        )
+
+    result = await user_repository.update_user_password(id=id, username=username, old_password=old_password, new_password=new_password, db=db)
+    return result
+
+
+async def update_user_registration(id, user_update, passport, db, current_user):
+    if current_user['role'] not in  ['PREREGISTERED_USER']:
+        raise HTTPException(status_code=404, detail="You are not authorized for this action")
+
+    passport_images = []
+    for pic in passport:
+        passport_images.append(await file_repository.upload_file(file=pic, name="users/passports"))
+
+    user_update.passport_images = passport_images
+    result = await user_repository.update_user_registration(id=id, user_update=user_update, db=db)
+    return result

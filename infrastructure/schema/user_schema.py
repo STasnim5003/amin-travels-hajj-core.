@@ -16,7 +16,7 @@ class UserBaseSchema(BaseModel):
     package_id: Optional[int] = None
     payment_status: Optional[str] = "PENDING"
     passport_images: Optional[List[FileUploadResponseSchema]]
-    vaccine_center: Optional[int]
+    vaccine_center: Optional[str]
     registration_status: str = "PREREGISTERED"
     role: str = "PREREGISTERED_USER"
     username: Optional[str] = None
@@ -44,3 +44,9 @@ class UsersResponseSchema(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class UpdateUserRequestSchema(BaseModel):
+    passport_images: Optional[List[FileUploadResponseSchema]]
+    vaccine_center: Optional[str]
+    registration_status: str = "REGISTERED"
+    role: str = "REGISTERED_USER"
