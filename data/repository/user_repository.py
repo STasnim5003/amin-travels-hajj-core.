@@ -10,6 +10,7 @@ from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema
 
 
 async def insert_user(user: UserBaseSchema, db: AsyncSession) -> UserResponseSchema:
+    user.username = str(user.whats_app_no)
     user_data = user.model_dump(exclude_unset=True, exclude_none=True)
     query = insert(UserModel).values(**user_data).returning(UserModel)
     try:
@@ -104,3 +105,24 @@ async def update_user(id: int, payment_status:str, db: AsyncSession):
     result = await db.execute(select(UserModel).where(UserModel.id == id))
     result = result.scalar()
     return UserResponseSchema.model_validate(result)
+
+
+async def create_credentials(password, db):
+    # Build the update statement
+    stmt = (
+        update(UserModel)
+        .values(password=password)
+        .execution_options(synchronize_session="fetch")
+    )
+
+    # Execute the update
+    await db.execute(stmt)
+    await db.commit()
+    return {"status": "success"}
+
+
+async def get_user_by_username(username, db):
+    stmt = select(UserModel).where(UserModel.username == username)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    return user
