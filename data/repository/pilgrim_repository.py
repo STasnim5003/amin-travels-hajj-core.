@@ -1,0 +1,126 @@
+import json
+from typing import Optional
+
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def fetch_pilgrim_data_json(
+        db: AsyncSession,
+        name: Optional[str] = None,
+        tracking_id: Optional[str] = None,
+        serial_no: Optional[str] = None,
+        mobile_no: Optional[str] = None,
+        group_name: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 10,
+) :
+
+
+    try:
+        # Build WHERE conditions dynamically
+        where_conditions = []
+        params = {
+            'skip_val': skip,
+            'limit_val': limit
+        }
+
+        if name:
+            where_conditions.append("name_bn ILIKE :name_filter")
+            params['name_filter'] = f"%{name}%"
+
+        if tracking_id:
+            where_conditions.append("tracking_id = :tracking_id")
+            params['tracking_id'] = tracking_id
+
+        if serial_no:
+            where_conditions.append("serial_no = :serial_no")
+            params['serial_no'] = serial_no
+
+        if mobile_no:
+            where_conditions.append("mobile_no = :mobile_no")
+            params['mobile_no'] = mobile_no
+
+        if group_name:
+            where_conditions.append("group_name ILIKE :group_name_filter")
+            params['group_name_filter'] = f"%{group_name}%"
+
+        # Build WHERE clause
+        where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+
+        # PostgreSQL query using JSON aggregation and window function
+        query = f"""
+        WITH filtered_data AS (
+            SELECT 
+                id, name_bn, father_name, spouse_name, occupation, nid, voucher, type,
+                listed_in, mother_name, date_of_birth, gender, management, mobile_no,
+                passport_address, present_address, permanent_address, tracking_id,
+                serial_no, group_name, registration_status, created_at, created_by, updated_at, updated_by,
+                COUNT(*) OVER() as total_count
+            FROM core.pilgrim_data
+            {where_clause}
+            ORDER BY id
+            LIMIT :limit_val OFFSET :skip_val
+        ),
+        result_data AS (
+            SELECT 
+                JSON_BUILD_OBJECT(
+                    'id', id,
+                    'name_bn', name_bn,
+                    'father_name', father_name,
+                    'spouse_name', spouse_name,
+                    'occupation', occupation,
+                    'nid', nid,
+                    'voucher', voucher,
+                    'type', type,
+                    'listed_in', listed_in,
+                    'mother_name', mother_name,
+                    'date_of_birth', date_of_birth,
+                    'gender', gender,
+                    'management', management,
+                    'mobile_no', mobile_no,
+                    'passport_address', passport_address,
+                    'present_address', present_address,
+                    'permanent_address', permanent_address,
+                    'tracking_id', tracking_id,
+                    'serial_no', serial_no,
+                    'group_name', group_name,
+                    'registration_status', registration_status,
+                    'created_at', created_at,
+                    'created_by', created_by,
+                    'updated_at', updated_at,
+                    'updated_by', updated_by
+                ) as item,
+                total_count
+            FROM filtered_data
+        )
+        SELECT 
+            COALESCE(JSON_AGG(item), '[]'::json) as data,
+            COALESCE(MAX(total_count), 0) as total_count
+        FROM result_data;
+        """
+
+        # Execute the query
+        result = await db.execute(text(query), params)
+        row = result.fetchone()
+
+        if row is None:
+            return [], 0
+
+        # Handle the JSON data - it might be a string or already parsed
+        data_json = row[0]  # Access by index to be safe
+        total_count = row[1] if len(row) > 1 else 0
+
+        # Parse JSON if it's a string
+        if isinstance(data_json, str):
+            data = json.loads(data_json)
+        elif data_json is None:
+            data = []
+        else:
+            data = data_json
+
+        return data, total_count
+
+    except Exception as e:
+        print(f"Error fetching pilgrim data: {str(e)}")
+        # Re-raise the exception to let the calling code handle it
+        raise
