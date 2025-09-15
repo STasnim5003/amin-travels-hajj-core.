@@ -1,0 +1,32 @@
+from sqlalchemy import Column, String, BigInteger
+
+from data.model.base_mixin_model import Base, BaseMixinModel
+
+
+class PilgrimDataModel(Base, BaseMixinModel):
+    __tablename__ = 'pilgrim_data'
+    __table_args__ = {'schema': 'core'}
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    name_bn = Column(String, nullable=False)
+    father_name = Column(String, nullable=True)
+    spouse_name = Column(String, nullable=True)
+    occupation = Column(String, nullable=True)
+    nid = Column(String, nullable=False)
+    voucher = Column(String, nullable=True)
+    type = Column(String, nullable=True)
+    listed_in = Column(String, nullable=True)
+    mother_name = Column(String, nullable=True)
+    date_of_birth = Column(String, nullable=True)
+    gender = Column(String, nullable=True)
+    management = Column(String, nullable=True)
+    mobile_no = Column(String, nullable=True)
+    passport_address = Column(String, nullable=True)
+    present_address = Column(String, nullable=True)
+    permanent_address = Column(String, nullable=True)
+    tracking_id = Column(String, nullable=True)
+    serial_no = Column(String, nullable=True)
+    group_name = Column(String, nullable=True)
+    registration_status = Column(String, nullable=True)
+    password = Column(String, nullable=True)
+    preliminary_password = Column(String, nullable=True)

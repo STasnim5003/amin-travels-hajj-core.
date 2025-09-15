@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.controller import (file_controller, training_controller, program_controller)
+from app.api.v1.controller import (file_controller, training_controller, program_controller, pilgrim_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
 
 router = APIRouter()
@@ -18,3 +18,5 @@ router.include_router(training_controller.router)
 router.include_router(file_controller.private_router)
 router.include_router(program_controller.router)
 router.include_router(program_controller.private_router)
+router.include_router(pilgrim_controller.private_router)
+router.include_router(pilgrim_controller.public_router)
