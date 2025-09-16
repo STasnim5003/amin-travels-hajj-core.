@@ -20,14 +20,10 @@ async def create_admin(db: AsyncSession,
                        mobile_no: str,
                        location: Optional[str],
                        email : Optional[str],
-                       logo: Optional[UploadFile],
-                       passport_copy: Optional[UploadFile]) -> AdminResponseSchema:
+                       logo: UploadFile,
+                       passport_copy: UploadFile) -> AdminResponseSchema:
 
     hashed_password = hash_password(password)
-    if not logo:
-        raise HTTPException(status_code=400, detail="Logo is required")
-    if not passport_copy:
-        raise HTTPException(status_code=400, detail="Passport copy is required")
 
     logo_data = []
     try:

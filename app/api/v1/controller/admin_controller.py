@@ -26,14 +26,13 @@ async def create_admin_endpoint(
         mobile_no: str = Form(...),
         location: Optional[str] = Form(None),
         email: Optional[str] = Form(None),
-        profile_pic: Optional[str] = Form(None),
-        logo: Optional[UploadFile] = File(None),
-        passport_copy: Optional[UploadFile] = File(None),
+        logo: UploadFile = File(...),
+        passport_copy: UploadFile = File(...),
         current_user: dict = Depends(get_current_user)
 
 ):
     if current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     try:
         response = await admin_service.create_admin(
             db=db,
