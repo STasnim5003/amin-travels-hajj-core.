@@ -19,10 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("admin", sa.Column("agency_name", sa.String(), nullable=False), schema="core")
-    op.add_column("admin", sa.Column("license_number", sa.String(), nullable=False), schema="core")
+    op.add_column("admin", sa.Column("agency_name", sa.String(), nullable=True), schema="core")
+    op.add_column("admin", sa.Column("license_number", sa.String(), nullable=True), schema="core")
     op.add_column("admin", sa.Column("location", sa.String(), nullable=True), schema="core")
-    op.add_column("admin", sa.Column("mobile_no", sa.String(), nullable=False), schema="core")
+    op.add_column("admin", sa.Column("mobile_no", sa.String(), nullable=True), schema="core")
     op.add_column("admin", sa.Column("email", sa.String(), nullable=True), schema="core")
     op.add_column("admin", sa.Column("passport_copy", postgresql.JSONB(astext_type=sa.TEXT())), schema="core")
     op.add_column("admin", sa.Column("logo", postgresql.JSONB(astext_type=sa.TEXT())), schema="core")
