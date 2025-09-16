@@ -21,14 +21,14 @@ def verify_password(password: str, hashed_pass: str) -> bool:
     return pwd_context.verify(password, hashed_pass)
 
 # Token creation
-def create_access_token(subject: Union[str, Any],  role : str, expires_delta: timedelta = None) -> str:
+def create_access_token(subject: Union[str, Any],  role : str, agency_name:str, expires_delta: timedelta = None) -> str:
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode = {"exp": expire, "sub": str(subject), "role" : role}
+    to_encode = {"exp": expire, "sub": str(subject), "role" : role, "agency_name": agency_name}
     return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
-def create_refresh_token(subject: Union[str, Any], role : str, expires_delta: timedelta = None) -> str:
+def create_refresh_token(subject: Union[str, Any], role : str, agency_name: str, expires_delta: timedelta = None) -> str:
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES))
-    to_encode = {"exp": expire, "sub": str(subject), "role" : role}
+    to_encode = {"exp": expire, "sub": str(subject), "role" : role, "agency_name": agency_name}
     return jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, algorithm=ALGORITHM)
 
 

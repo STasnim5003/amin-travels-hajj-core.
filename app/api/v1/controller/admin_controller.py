@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
+from app.core.middleware.middleware import get_current_user
 from app.service import admin_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_schema import AdminResponseSchema, TokenSchema
@@ -28,10 +29,11 @@ async def create_admin_endpoint(
         profile_pic: Optional[str] = Form(None),
         logo: Optional[UploadFile] = File(None),
         passport_copy: Optional[UploadFile] = File(None),
+        current_user: dict = Depends(get_current_user)
 
 ):
-    # if current_user["role"] != "ADMIN":
-    #     raise HTTPException(status_code=403, detail="Not authorized")
+    if current_user["role"] != "SUPER_ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized")
     try:
         response = await admin_service.create_admin(
             db=db,

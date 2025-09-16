@@ -22,9 +22,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         role: str = payload.get("role")
+        agency_name: str = payload.get("agency_name")
         if username is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        return {"username": username, "role": role}
+        return {"username": username, "role": role, "agency_name": agency_name}
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

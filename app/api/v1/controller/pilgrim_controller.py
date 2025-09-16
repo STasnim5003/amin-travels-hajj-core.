@@ -4,6 +4,7 @@ import fastapi
 from fastapi import Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.middleware.middleware import get_current_user
 from app.service import pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema
@@ -19,10 +20,15 @@ async def get_pilgrim_data(
         tracking_id: Optional[str] = Query(None),
         serial_no: Optional[str] = Query(None),
         mobile_no: Optional[str] = Query(None),
-        group_name: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         limit: int = Query(10, ge=1, le=100),
-        db: AsyncSession = Depends(get_async_db)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
 ) -> PaginatedPilgrimDataListResponseSchema:
 
-    return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, group_name, page, limit)
+    if current_user["role"] == "SUPER_ADMIN":
+        return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, None, page, limit)
+    else:
+        group_name = current_user["agency_name"]
+        return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, group_name, page,
+                                                      limit)

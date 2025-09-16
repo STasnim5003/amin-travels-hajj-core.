@@ -79,8 +79,8 @@ async def admin_login(db : AsyncSession, request_credential: OAuth2PasswordReque
             detail="Incorrect username or password"
         )
 
-    access_token = create_access_token(subject=user.user_name, role=user.role)
-    refresh_token = create_refresh_token(subject=user.user_name, role=user.role)
+    access_token = create_access_token(subject=user.user_name, role=user.role, agency_name=user.agency_name)
+    refresh_token = create_refresh_token(subject=user.user_name, role=user.role, agency_name=user.agency_name)
 
     return {
         "access_token": access_token,
