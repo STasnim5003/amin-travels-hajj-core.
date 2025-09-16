@@ -41,4 +41,16 @@ class PaginatedPilgrimDataListResponseSchema(BaseModel):
     total: int
     size : int
     page : int
-    pilgrims : Optional[List[PilgrimDataResponseSchema]]
+    data : Optional[List[PilgrimDataResponseSchema]]
+
+class PilgrimUpdateSchema(BaseModel):
+    tracking_id : str
+    group_name : str
+    is_assigned : bool
+
+class BulkUpdatePilgrimRequestSchema(BaseModel):
+    data : List[PilgrimUpdateSchema]
+
+class UpdatePilgrimResponseSchema(BaseModel):
+    message: str
+    update_count: int

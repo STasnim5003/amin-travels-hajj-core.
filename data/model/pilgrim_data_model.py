@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger
+from sqlalchemy import Column, String, BigInteger, Boolean
 
 from data.model.base_mixin_model import Base, BaseMixinModel
 
@@ -30,3 +30,4 @@ class PilgrimDataModel(Base, BaseMixinModel):
     registration_status = Column(String, nullable=True)
     password = Column(String, nullable=True)
     preliminary_password = Column(String, nullable=True)
+    is_assigned = Column(Boolean)
