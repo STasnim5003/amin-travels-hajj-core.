@@ -1,8 +1,12 @@
 import json
 from typing import Optional
 
-from sqlalchemy import text
+from sqlalchemy import text, case, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from data.model.pilgrim_data_model import PilgrimDataModel
+from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema
+
 
 async def fetch_pilgrim_data_json(
         db: AsyncSession,
@@ -41,8 +45,10 @@ async def fetch_pilgrim_data_json(
             params['mobile_no'] = mobile_no
 
         if group_name:
-            where_conditions.append("group_name ILIKE :group_name_filter")
-            params['group_name_filter'] = f"%{group_name}%"
+            where_conditions.append("group_name ILIKE :group_name")
+            where_conditions.append("is_assigned = :is_assigned")
+            params['group_name'] = f"%{group_name}%"
+            params['is_assigned'] = True
 
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
@@ -124,3 +130,33 @@ async def fetch_pilgrim_data_json(
         print(f"Error fetching pilgrim data: {str(e)}")
         # Re-raise the exception to let the calling code handle it
         raise
+
+async def update_pilgrim_approval_status(data: BulkUpdatePilgrimRequestSchema, db:AsyncSession):
+    tracking_ids = [item.tracking_id for item in data.data]
+
+    group_name_cases = case(
+        *[
+            (PilgrimDataModel.tracking_id == item.tracking_id, item.group_name)
+            for item in data.data
+        ]
+    )
+
+    is_assigned_cases = case(
+        *[
+            (PilgrimDataModel.tracking_id == item.tracking_id, item.is_assigned)
+            for item in data.data
+        ]
+    )
+
+    stmt = (
+        update(PilgrimDataModel)
+        .where(PilgrimDataModel.tracking_id.in_(tracking_ids))
+        .values(
+            group_name=group_name_cases,
+            is_assigned=is_assigned_cases
+        )
+    )
+
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.rowcount
