@@ -24,4 +24,5 @@ async def get_pilgrim_data(
         limit: int = Query(10, ge=1, le=100),
         db: AsyncSession = Depends(get_async_db)
 ) -> PaginatedPilgrimDataListResponseSchema:
+
     return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, group_name, page, limit)

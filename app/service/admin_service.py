@@ -1,22 +1,69 @@
+from typing import Optional
+
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.datastructures import UploadFile
 
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
-from data.repository import admin_repository
+from data.repository import admin_repository, file_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema
 
 
-async def create_admin(admin_request_schema: AdminBaseSchema, db: AsyncSession) -> AdminResponseSchema:
-    hashed_password = hash_password(admin_request_schema.password)
-    admin_request_schema.password = hashed_password
-    result = await admin_repository.insert_admin(admin_request_schema, db=db)
-    return result
+async def create_admin(db: AsyncSession,
+                       user_name: str,
+                       password: str,
+                       role: str,
+                       agency_name: str,
+                       license_number : str,
+                       mobile_no: str,
+                       location: Optional[str],
+                       email : Optional[str],
+                       logo: Optional[UploadFile],
+                       passport_copy: Optional[UploadFile]) -> AdminResponseSchema:
 
-# async def get_users( db: AsyncSession, name:str=None, whats_app_no: str=None) -> List[UserResponseSchema]:
-#     result = await user_repository.get_users(name=name, whats_app_no=whats_app_no, db=db)
-#     return result
+    hashed_password = hash_password(password)
+    if not logo:
+        raise HTTPException(status_code=400, detail="Logo is required")
+    if not passport_copy:
+        raise HTTPException(status_code=400, detail="Passport copy is required")
+
+    logo_data = []
+    try:
+        logo_resp = await file_repository.upload_file(file=logo, name="logo")
+        logo_data.append(logo_resp.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    passport_data = []
+    try:
+        passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
+        passport_data.append(passport_resp.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    new_admin = AdminBaseSchema(
+        user_name= user_name,
+        password=hashed_password,
+        role=role,
+        agency_name=agency_name,
+        license_number=license_number,
+        mobile_no=mobile_no,
+        location=location,
+        email=email,
+        logo=logo_data,
+        passport_copy=passport_data,
+        is_active =True,
+
+    )
+    try:
+        return await admin_repository.insert_admin(new_admin, db=db)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+
 
 async def admin_login(db : AsyncSession, request_credential: OAuth2PasswordRequestForm ):
     user = await admin_repository.get_admin_by_username(db, username=request_credential.username)
