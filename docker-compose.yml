@@ -4,8 +4,7 @@ services:
   web:
     build: .
     container_name: amin-travels-hajj
-    ports:
-      - "0.0.0.0:8000:8000"
+    network_mode: host
     env_file:
       - .env
     volumes:
