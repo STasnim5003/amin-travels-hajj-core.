@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 class AdminBaseSchema(BaseModel):
     user_name: str
-    password: str
     role: str
     agency_name: str
     license_number : str
@@ -29,6 +28,11 @@ class AdminResponseSchema(AdminBaseSchema):
     created_by: Optional[str]
     updated_by: Optional[str]
 
+class AdminListResponseSchema(BaseModel):
+    data: List[AdminResponseSchema]
+    page: int
+    size: int
+    total: int
 
 class TokenSchema(BaseModel):
     access_token: str

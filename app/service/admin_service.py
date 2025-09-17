@@ -8,7 +8,7 @@ from starlette.datastructures import UploadFile
 
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
 from data.repository import admin_repository, file_repository
-from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema
+from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema
 
 
 async def create_admin(db: AsyncSession,
@@ -16,13 +16,12 @@ async def create_admin(db: AsyncSession,
                        password: str,
                        role: str,
                        agency_name: str,
-                       license_number : str,
+                       license_number: str,
                        mobile_no: str,
                        location: Optional[str],
-                       email : Optional[str],
+                       email: Optional[str],
                        logo: UploadFile,
                        passport_copy: UploadFile) -> AdminResponseSchema:
-
     hashed_password = hash_password(password)
 
     logo_data = []
@@ -40,7 +39,7 @@ async def create_admin(db: AsyncSession,
         raise HTTPException(status_code=400, detail=str(e))
 
     new_admin = AdminBaseSchema(
-        user_name= user_name,
+        user_name=user_name,
         password=hashed_password,
         role=role,
         agency_name=agency_name,
@@ -50,7 +49,7 @@ async def create_admin(db: AsyncSession,
         email=email,
         logo=logo_data,
         passport_copy=passport_data,
-        is_active =True,
+        is_active=True,
 
     )
     try:
@@ -61,7 +60,7 @@ async def create_admin(db: AsyncSession,
         raise HTTPException(status_code=e.status_code, detail=str(e))
 
 
-async def admin_login(db : AsyncSession, request_credential: OAuth2PasswordRequestForm ):
+async def admin_login(db: AsyncSession, request_credential: OAuth2PasswordRequestForm):
     user = await admin_repository.get_admin_by_username(db, username=request_credential.username)
     if not user:
         raise HTTPException(
@@ -82,3 +81,40 @@ async def admin_login(db : AsyncSession, request_credential: OAuth2PasswordReque
         "access_token": access_token,
         "refresh_token": refresh_token
     }
+
+
+async def get_all_admins(db: AsyncSession, page: int, limit: int) -> AdminListResponseSchema:
+    offset = (page - 1) * limit
+    try:
+        admins, total = await admin_repository.get_all_admin(db, offset=offset, limit=limit)
+        return AdminListResponseSchema(
+            data=admins,
+            total=total,
+            page=page,
+            size=limit
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception:
+        raise HTTPException(status_code=500, detail="Error occurred while retrieving admin data.")
+
+
+async def get_admin_by_id(db: AsyncSession, admin_id: int) -> AdminResponseSchema:
+    try:
+        admin = await admin_repository.get_admin_by_id(db, admin_id=admin_id)
+        return AdminResponseSchema.model_validate(admin)
+    except HTTPException as http_exc:
+        raise http_exc
+
+    except Exception:
+        raise HTTPException(status_code=500, detail="Unexpected error occurred while fetching the admin.")
+
+
+async def get_admin_by_username(db: AsyncSession, username: str) -> AdminResponseSchema:
+    try:
+        admin = await admin_repository.get_admin_by_username(db, username=username)
+        return AdminResponseSchema.model_validate(admin)
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception:
+        raise HTTPException(status_code=500, detail="Unexpected error occurred while fetching the admin.")

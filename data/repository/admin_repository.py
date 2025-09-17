@@ -1,6 +1,7 @@
 from http.client import HTTPException
 
-from sqlalchemy import insert, select, or_
+from sqlalchemy import insert, select, or_, func
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_model import AdminModel
@@ -39,8 +40,87 @@ async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminRespons
         raise HTTPException(status_code=400, detail="Error Occur!")
 
 
-async def get_admin_by_username(db: AsyncSession, username: str):
-    stmt = select(AdminModel).where(AdminModel.user_name == username)
-    result = await db.execute(stmt)
-    admin = result.scalar_one_or_none()
-    return admin
+# async def get_admin_by_username(db: AsyncSession, username: str):
+#     stmt = select(AdminModel).where(AdminModel.user_name == username)
+#     result = await db.execute(stmt)
+#     admin = result.scalar_one_or_none()
+#     return admin
+
+
+async def get_all_admin(db: AsyncSession, offset: int, limit: int):
+    try:
+        total_query = await db.execute(
+            select(func.count()).select_from(AdminModel).where(AdminModel.user_name != "super_admin")
+        )
+        total = total_query.scalar()
+
+        result = await db.execute(
+            select(AdminModel)
+            .where(AdminModel.user_name != "super_admin")
+            .offset(offset)
+            .limit(limit)
+            .order_by(AdminModel.created_at.desc())  # Optional: order by created date
+        )
+        admins = result.scalars().all()
+
+        return admins, total
+
+
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500,detail="Database error occurred while fetching admin records.")
+
+    except Exception:raise HTTPException(status_code=500,detail="Unexpected error occurred while accessing the admin repository.")
+
+async def get_admin_by_id(db: AsyncSession,admin_id : int):
+    try:
+        result = await db.execute(
+            select(AdminModel).where(AdminModel.id == admin_id)
+        )
+        admin = result.scalar_one_or_none()
+
+        if not admin:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Admin with id {id} not found."
+            )
+
+        return admin
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error occurred while retrieving admin by ID."
+        )
+
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unexpected error occurred while fetching admin by ID."
+        )
+
+async def get_admin_by_username(db: AsyncSession, username : str):
+    try:
+        result = await db.execute(
+            select(AdminModel).where(AdminModel.user_name == username)
+        )
+        admin = result.scalar_one_or_none()
+
+        if not admin:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Admin with id {id} not found."
+            )
+
+        return admin
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error occurred while retrieving admin by ID."
+        )
+
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unexpected error occurred while fetching admin by ID."
+        )
