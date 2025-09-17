@@ -37,3 +37,22 @@ class AdminListResponseSchema(BaseModel):
 class TokenSchema(BaseModel):
     access_token: str
     refresh_token: str
+
+class AdminProfileUpdateSchema(BaseModel):
+    user_name: str
+    password: Optional[str] = None
+    license_number: Optional[str] = None
+    mobile_no: Optional[str] = None
+    location: Optional[str]
+    email: Optional[str]
+    passport_copy: Optional[List[Dict[str, Any]]] = None
+    logo: Optional[List[Dict[str, Any]]] = None
+    is_active: Optional[bool] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+class AdminProfileUpdateResponseSchema(BaseModel):
+    message : str
+    status: int

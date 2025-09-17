@@ -1,5 +1,4 @@
-from http.client import HTTPException
-
+from fastapi import HTTPException
 from sqlalchemy import insert, select, or_, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,11 +66,13 @@ async def get_all_admin(db: AsyncSession, offset: int, limit: int):
 
 
     except SQLAlchemyError:
-        raise HTTPException(status_code=500,detail="Database error occurred while fetching admin records.")
+        raise HTTPException(status_code=500, detail="Database error occurred while fetching admin records.")
 
-    except Exception:raise HTTPException(status_code=500,detail="Unexpected error occurred while accessing the admin repository.")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Unexpected error occurred while accessing the admin repository.")
 
-async def get_admin_by_id(db: AsyncSession,admin_id : int):
+
+async def get_admin_by_id(db: AsyncSession, admin_id: int):
     try:
         result = await db.execute(
             select(AdminModel).where(AdminModel.id == admin_id)
@@ -81,10 +82,12 @@ async def get_admin_by_id(db: AsyncSession,admin_id : int):
         if not admin:
             raise HTTPException(
                 status_code=404,
-                detail=f"Admin with id {id} not found."
+                detail=f"Admin with id {admin_id} not found."
             )
 
         return admin
+    except HTTPException:
+        raise
 
     except SQLAlchemyError:
         raise HTTPException(
@@ -98,7 +101,8 @@ async def get_admin_by_id(db: AsyncSession,admin_id : int):
             detail="Unexpected error occurred while fetching admin by ID."
         )
 
-async def get_admin_by_username(db: AsyncSession, username : str):
+
+async def get_admin_by_username(db: AsyncSession, username: str):
     try:
         result = await db.execute(
             select(AdminModel).where(AdminModel.user_name == username)
@@ -108,10 +112,12 @@ async def get_admin_by_username(db: AsyncSession, username : str):
         if not admin:
             raise HTTPException(
                 status_code=404,
-                detail=f"Admin with id {id} not found."
+                detail=f"Admin with username {username} not found."
             )
 
         return admin
+    except HTTPException:
+        raise
 
     except SQLAlchemyError:
         raise HTTPException(
@@ -124,3 +130,33 @@ async def get_admin_by_username(db: AsyncSession, username : str):
             status_code=500,
             detail="Unexpected error occurred while fetching admin by ID."
         )
+
+
+async def delete_admin_by_id(db: AsyncSession, admin_id: int):
+    try:
+
+        result = await db.execute(
+            select(AdminModel).where(AdminModel.id == admin_id)
+        )
+        admin = result.scalar_one_or_none()
+
+        if not admin:
+            raise HTTPException(status_code=404, detail=f"Admin with id {admin_id} does not exist.")
+
+        if admin.user_name == "super_admin":
+            raise HTTPException(status_code=403, detail="Cannot delete the super_admin account.")
+
+        await db.delete(admin)
+        await db.commit()
+
+        return {"message": f"Admin with id {admin_id} deleted successfully."}
+
+    except HTTPException:
+        raise
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Database error occurred while deleting the admin.")
+
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Unexpected error occurred while deleting the admin.")

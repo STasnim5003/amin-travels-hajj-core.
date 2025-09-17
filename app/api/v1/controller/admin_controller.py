@@ -10,7 +10,8 @@ from starlette.responses import JSONResponse
 from app.core.middleware.middleware import get_current_user
 from app.service import admin_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.admin_schema import AdminResponseSchema, TokenSchema, AdminListResponseSchema
+from infrastructure.schema.admin_schema import AdminResponseSchema, TokenSchema, AdminListResponseSchema, \
+    AdminProfileUpdateResponseSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -83,12 +84,12 @@ async def get_all_admins(
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
 
+
 @private_router.get("/admin/profile", response_model=AdminResponseSchema, tags=["admin"])
 async def get_admin_profile(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> AdminResponseSchema:
-
     username = current_user["username"]
     try:
         return await admin_service.get_admin_by_username(db, username)
@@ -96,6 +97,7 @@ async def get_admin_profile(
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
+
 
 @private_router.get("/admin/{admin_id}", response_model=AdminResponseSchema, tags=["admin"])
 async def get_admin_by_id(
@@ -114,3 +116,19 @@ async def get_admin_by_id(
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
 
+
+@private_router.delete("/admin/{admin_id}", response_model=AdminProfileUpdateResponseSchema, tags=["admin"])
+async def delete_admin_by_id(
+        admin_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+) -> AdminProfileUpdateResponseSchema:
+    if current_user["role"] != "SUPER_ADMIN":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    try:
+        return await admin_service.delete_admin_by_id(db, admin_id)
+    except HTTPException as http_exc:
+        raise http_exc
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
