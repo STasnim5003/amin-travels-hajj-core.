@@ -8,7 +8,8 @@ from starlette.datastructures import UploadFile
 
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
 from data.repository import admin_repository, file_repository
-from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema
+from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema, \
+    AdminProfileUpdateResponseSchema
 
 
 async def create_admin(db: AsyncSession,
@@ -118,3 +119,16 @@ async def get_admin_by_username(db: AsyncSession, username: str) -> AdminRespons
         raise http_exc
     except Exception:
         raise HTTPException(status_code=500, detail="Unexpected error occurred while fetching the admin.")
+
+
+async def delete_admin_by_id(db: AsyncSession, admin_id: int) -> AdminProfileUpdateResponseSchema:
+    try:
+        message = await admin_repository.delete_admin_by_id(db, admin_id=admin_id)
+        return AdminProfileUpdateResponseSchema(
+            message=message["message"],
+            status=204
+        )
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Unexpected error occurred while deleting the admin.")
