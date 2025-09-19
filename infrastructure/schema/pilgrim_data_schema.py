@@ -54,3 +54,7 @@ class BulkUpdatePilgrimRequestSchema(BaseModel):
 class UpdatePilgrimResponseSchema(BaseModel):
     message: str
     update_count: int
+
+class PilgrimLoginResponseSchema(BaseModel):
+    access_token: str
+    refresh_token: str

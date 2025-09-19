@@ -1,7 +1,8 @@
 import json
 from typing import Optional
 
-from sqlalchemy import text, case, update
+from fastapi import HTTPException
+from sqlalchemy import text, case, update, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.pilgrim_data_model import PilgrimDataModel
@@ -160,3 +161,32 @@ async def update_pilgrim_approval_status(data: BulkUpdatePilgrimRequestSchema, d
     result = await db.execute(stmt)
     await db.commit()
     return result.rowcount
+
+async def get_pilgrim_by_mobile_no(db: AsyncSession, mobile_no: str):
+    query = text("""
+            SELECT name_bn, tracking_id, mobile_no, password
+            FROM core.pilgrim_data
+            WHERE mobile_no = :mobile_no
+        """)
+    result = await db.execute(query, {"mobile_no": mobile_no})
+    row = result.fetchone()
+    return row
+
+async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
+    query = text("""
+        SELECT name_bn, father_name, mother_name, spouse_name, occupation, nid, voucher, type, listed_in,
+               date_of_birth, gender, management, passport_address, present_address, permanent_address,
+               serial_no, group_name, registration_status, tracking_id, mobile_no, is_assigned, updated_at,
+               created_at, updated_by, created_by, id
+        FROM core.pilgrim_data
+        WHERE tracking_id = :tracking_id
+    """)
+
+    result = await db.execute(query, {"tracking_id": tracking_id})
+    row = result.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Pilgrim not found")
+
+    return row
+
