@@ -32,3 +32,16 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+def get_current_pilgrim(token: str = Depends(oauth2_scheme)) -> Dict:
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        name_bn : str = payload.get("sub")
+        mobile_no : str = payload.get("mobile_no")
+        tracking_id : str = payload.get("tracking_id")
+
+        if tracking_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return {"name_bn" : name_bn, "mobile_no" : mobile_no, "tracking_id" : tracking_id}
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
