@@ -36,7 +36,7 @@ async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminRespons
 
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail="Error Occur!")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # async def get_admin_by_username(db: AsyncSession, username: str):

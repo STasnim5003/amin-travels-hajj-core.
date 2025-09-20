@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AdminBaseSchema(BaseModel):
     user_name: str
+    password: str
     role: str
     agency_name: str
     license_number : str
@@ -27,6 +28,8 @@ class AdminResponseSchema(AdminBaseSchema):
     updated_at: Optional[datetime]
     created_by: Optional[str]
     updated_by: Optional[str]
+
+    password: Optional[str] = Field(default=None, exclude=True)
 
 class AdminListResponseSchema(BaseModel):
     data: List[AdminResponseSchema]
