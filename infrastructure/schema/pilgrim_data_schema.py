@@ -24,6 +24,7 @@ class PilgrimDataBaseSchema(BaseModel):
     serial_no: Optional[str] = None
     group_name: Optional[str] = None
     registration_status: Optional[str] = None
+    is_assigned: Optional[bool] = None
 
 
     class Config:

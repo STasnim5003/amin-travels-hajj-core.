@@ -61,7 +61,7 @@ async def fetch_pilgrim_data_json(
                 id, name_bn, father_name, spouse_name, occupation, nid, voucher, type,
                 listed_in, mother_name, date_of_birth, gender, management, mobile_no,
                 passport_address, present_address, permanent_address, tracking_id,
-                serial_no, group_name, registration_status, created_at, created_by, updated_at, updated_by,
+                serial_no, group_name, registration_status, created_at, created_by, updated_at, updated_by, is_assigned,
                 COUNT(*) OVER() as total_count
             FROM core.pilgrim_data
             {where_clause}
@@ -95,7 +95,8 @@ async def fetch_pilgrim_data_json(
                     'created_at', created_at,
                     'created_by', created_by,
                     'updated_at', updated_at,
-                    'updated_by', updated_by
+                    'updated_by', updated_by,
+                    'is_assigned', is_assigned
                 ) as item,
                 total_count
             FROM filtered_data
