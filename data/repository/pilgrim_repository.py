@@ -65,7 +65,7 @@ async def fetch_pilgrim_data_json(
                 COUNT(*) OVER() as total_count
             FROM core.pilgrim_data
             {where_clause}
-            ORDER BY id
+            ORDER BY updated_at desc, id desc
             LIMIT :limit_val OFFSET :skip_val
         ),
         result_data AS (
