@@ -59,7 +59,7 @@ async def get_users_endpoint(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN":
+    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
         raise HTTPException(status_code=403, detail="Not authorized")
 
     response = await user_service.get_users(name=name, whats_app_no=whats_app_no, search=search,page=page, limit=limit, db=db)
@@ -73,7 +73,7 @@ async def update_user_status(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN":
+    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
         raise HTTPException(status_code=403, detail="Not authorized")
 
     response = await user_service.update_user(id=id, payment_status=payment_status, db=db)

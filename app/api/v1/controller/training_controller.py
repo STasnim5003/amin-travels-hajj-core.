@@ -34,6 +34,6 @@ async def get_training_user_endpoint(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN":
+    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
         raise HTTPException(status_code=403, detail="Not authorized")
     return await training_user_service.fetch_training_users(db, name, whats_app_no,search, page, limit)
