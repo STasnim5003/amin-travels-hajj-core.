@@ -20,9 +20,10 @@ async def get_pilgrim_data(db: AsyncSession,
                            serial_no: Optional[str],
                            mobile_no: Optional[str],
                            group_name: Optional[str],
+                           allocation_status: Optional[str],
                            page: int, limit: int) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
-    pilgrims, total = await fetch_pilgrim_data_json(db, name, tracking_id, serial_no, mobile_no, group_name, skip, limit)
+    pilgrims, total = await fetch_pilgrim_data_json(db, name, tracking_id, serial_no, mobile_no, group_name, allocation_status, skip, limit)
 
     return PaginatedPilgrimDataListResponseSchema(
         data=pilgrims,
@@ -31,9 +32,9 @@ async def get_pilgrim_data(db: AsyncSession,
         size=limit
     )
 
-async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema):
+async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username:str):
     try:
-        response = await pilgrim_repository.update_pilgrim_approval_status(data=data, db=db)
+        response = await pilgrim_repository.update_pilgrim_approval_status(data=data, db=db, username=username)
 
         pilgrim_response = UpdatePilgrimResponseSchema(
             message = "Successfully Updated",
