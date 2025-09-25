@@ -2,7 +2,7 @@ import json
 from typing import Optional
 
 from fastapi import HTTPException
-from sqlalchemy import text, case, update, select
+from sqlalchemy import text, case, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.pilgrim_data_model import PilgrimDataModel
@@ -16,11 +16,10 @@ async def fetch_pilgrim_data_json(
         serial_no: Optional[str] = None,
         mobile_no: Optional[str] = None,
         group_name: Optional[str] = None,
+        allocation_status: Optional[str] = None,
         skip: int = 0,
         limit: int = 10,
-) :
-
-
+):
     try:
         # Build WHERE conditions dynamically
         where_conditions = []
@@ -44,7 +43,9 @@ async def fetch_pilgrim_data_json(
         if mobile_no:
             where_conditions.append("mobile_no = :mobile_no")
             params['mobile_no'] = mobile_no
-
+        if allocation_status:
+            where_conditions.append("allocation_status = :allocation_status")
+            params['allocation_status'] = allocation_status
         if group_name:
             where_conditions.append("group_name ILIKE :group_name")
             where_conditions.append("is_assigned = :is_assigned")
@@ -58,10 +59,11 @@ async def fetch_pilgrim_data_json(
         query = f"""
         WITH filtered_data AS (
             SELECT 
-                id, name_bn, father_name, spouse_name, occupation, nid, voucher, type,
+                id, name_bn, name_en, father_name, spouse_name, occupation, nid, voucher, type,
                 listed_in, mother_name, date_of_birth, gender, management, mobile_no,
                 passport_address, present_address, permanent_address, tracking_id,
-                serial_no, group_name, registration_status, created_at, created_by, updated_at, updated_by, is_assigned,
+                serial_no, group_name, registration_status, allocation_status,
+                created_at, created_by, updated_at, updated_by, is_assigned,
                 COUNT(*) OVER() as total_count
             FROM core.pilgrim_data
             {where_clause}
@@ -73,6 +75,7 @@ async def fetch_pilgrim_data_json(
                 JSON_BUILD_OBJECT(
                     'id', id,
                     'name_bn', name_bn,
+                    'name_en', name_en,
                     'father_name', father_name,
                     'spouse_name', spouse_name,
                     'occupation', occupation,
@@ -92,6 +95,7 @@ async def fetch_pilgrim_data_json(
                     'serial_no', serial_no,
                     'group_name', group_name,
                     'registration_status', registration_status,
+                    'allocation_status', allocation_status,
                     'created_at', created_at,
                     'created_by', created_by,
                     'updated_at', updated_at,
@@ -133,7 +137,12 @@ async def fetch_pilgrim_data_json(
         # Re-raise the exception to let the calling code handle it
         raise
 
-async def update_pilgrim_approval_status(data: BulkUpdatePilgrimRequestSchema, db:AsyncSession):
+
+async def update_pilgrim_approval_status(
+        data: BulkUpdatePilgrimRequestSchema,
+        db: AsyncSession,
+        username: str
+):
     tracking_ids = [item.tracking_id for item in data.data]
 
     group_name_cases = case(
@@ -150,18 +159,32 @@ async def update_pilgrim_approval_status(data: BulkUpdatePilgrimRequestSchema, d
         ]
     )
 
+    allocation_status_cases = case(
+        *[
+            (
+                PilgrimDataModel.tracking_id == item.tracking_id,
+                "ASSIGNED" if item.is_assigned else "UNASSIGNED"
+            )
+            for item in data.data
+        ]
+    )
+
     stmt = (
         update(PilgrimDataModel)
         .where(PilgrimDataModel.tracking_id.in_(tracking_ids))
         .values(
             group_name=group_name_cases,
-            is_assigned=is_assigned_cases
+            is_assigned=is_assigned_cases,
+            allocation_status=allocation_status_cases,
+            updated_by=username,
+            updated_at=func.now()
         )
     )
 
     result = await db.execute(stmt)
     await db.commit()
     return result.rowcount
+
 
 async def get_pilgrim_by_mobile_no(db: AsyncSession, mobile_no: str):
     query = text("""
@@ -172,6 +195,7 @@ async def get_pilgrim_by_mobile_no(db: AsyncSession, mobile_no: str):
     result = await db.execute(query, {"mobile_no": mobile_no})
     row = result.fetchone()
     return row
+
 
 async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
     query = text("""
@@ -190,4 +214,3 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
         raise HTTPException(status_code=404, detail="Pilgrim not found")
 
     return row
-

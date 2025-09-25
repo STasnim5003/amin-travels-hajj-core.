@@ -31,3 +31,4 @@ class PilgrimDataModel(Base, BaseMixinModel):
     password = Column(String, nullable=True)
     preliminary_password = Column(String, nullable=True)
     is_assigned = Column(Boolean)
+    allocation_status = Column(String)

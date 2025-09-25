@@ -25,6 +25,8 @@ class PilgrimDataBaseSchema(BaseModel):
     group_name: Optional[str] = None
     registration_status: Optional[str] = None
     is_assigned: Optional[bool] = None
+    name_en: Optional[str] = None
+    allocation_status: Optional[str] = None
 
 
     class Config:
