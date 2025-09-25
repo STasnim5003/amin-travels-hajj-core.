@@ -24,17 +24,17 @@ async def get_pilgrim_data(
         serial_no: Optional[str] = Query(None),
         mobile_no: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
-        limit: int = Query(10, ge=1, le=100),
+        size: int = Query(10, ge=1),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaginatedPilgrimDataListResponseSchema:
 
     if current_user["role"] == "SUPER_ADMIN":
-        return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, None, page, limit)
+        return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, None, page, size)
     else:
         group_name = current_user["agency_name"]
         return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, group_name, page,
-                                                      limit)
+                                                      size)
 
 @private_router.put("/pilgrim-data", response_model=UpdatePilgrimResponseSchema, tags=["Pilgrim"])
 async def update_pilgrim_data(
