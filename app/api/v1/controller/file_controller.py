@@ -34,7 +34,7 @@ async def get_download_url(
         key: str,
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN":
+    if current_user["role"] != "SUPER_ADMIN":
         raise HTTPException(status_code=403, detail="Not authorized")
     logging.info(f"role : {current_user}")
     response = await file_service.get_download_url(key=key)
