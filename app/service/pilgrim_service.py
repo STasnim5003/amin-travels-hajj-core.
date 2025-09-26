@@ -5,12 +5,14 @@ from typing import Optional
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.datastructures import UploadFile
 
 from app.core.utils.utils import verify_pilgrim_password, create_access_token_for_pilgrim, \
     create_refresh_token_for_pilgrim
-from data.repository import pilgrim_repository
+from data.repository import pilgrim_repository, file_repository
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
-    BulkUpdatePilgrimRequestSchema, UpdatePilgrimResponseSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema
+    BulkUpdatePilgrimRequestSchema, UpdatePilgrimResponseSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
+    PilgrimRegistrationRequestSchema
 from data.repository.pilgrim_repository import fetch_pilgrim_data_json
 
 
@@ -21,9 +23,11 @@ async def get_pilgrim_data(db: AsyncSession,
                            mobile_no: Optional[str],
                            group_name: Optional[str],
                            allocation_status: Optional[str],
+                           registration_status: Optional[str],
                            page: int, limit: int) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
-    pilgrims, total = await fetch_pilgrim_data_json(db, name, tracking_id, serial_no, mobile_no, group_name, allocation_status, skip, limit)
+
+    pilgrims, total = await fetch_pilgrim_data_json(db, name, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, skip, limit)
 
     return PaginatedPilgrimDataListResponseSchema(
         data=pilgrims,
@@ -68,3 +72,22 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
 
 async def get_pilgrim_by_tracking_id(db:AsyncSession, tracking_id: str):
     return await pilgrim_repository.get_pilgrim_by_tracking_id(db,tracking_id)
+
+async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str, passport_copy: UploadFile):
+    passport_data = []
+    try:
+        passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
+        passport_data.append(passport_resp.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    new_pilgrim_registration_request = PilgrimRegistrationRequestSchema(
+        vaccination_center = vaccination_center,
+        passport_copy = passport_data,
+        tracking_id = tracking_id
+    )
+
+    try:
+        return await pilgrim_repository.pilgrim_register(db, new_pilgrim_registration_request)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
