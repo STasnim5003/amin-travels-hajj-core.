@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -27,6 +27,8 @@ class PilgrimDataBaseSchema(BaseModel):
     is_assigned: Optional[bool] = None
     name_en: Optional[str] = None
     allocation_status: Optional[str] = None
+    vaccination_center: Optional[str] = None
+    passport_copy: Optional[List[Dict[str, Any]]] = None
 
 
     class Config:
@@ -61,3 +63,8 @@ class UpdatePilgrimResponseSchema(BaseModel):
 class PilgrimLoginResponseSchema(BaseModel):
     access_token: str
     refresh_token: str
+
+class PilgrimRegistrationRequestSchema(BaseModel):
+    vaccination_center: str
+    passport_copy: List[Dict[str, Any]]
+    tracking_id: str

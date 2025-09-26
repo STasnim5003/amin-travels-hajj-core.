@@ -1,12 +1,12 @@
 import json
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import HTTPException
 from sqlalchemy import text, case, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.pilgrim_data_model import PilgrimDataModel
-from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema
+from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema, PilgrimRegistrationRequestSchema
 
 
 async def fetch_pilgrim_data_json(
@@ -17,6 +17,7 @@ async def fetch_pilgrim_data_json(
         mobile_no: Optional[str] = None,
         group_name: Optional[str] = None,
         allocation_status: Optional[str] = None,
+        registration_status: Optional[str] = None,
         skip: int = 0,
         limit: int = 10,
 ):
@@ -43,14 +44,21 @@ async def fetch_pilgrim_data_json(
         if mobile_no:
             where_conditions.append("mobile_no = :mobile_no")
             params['mobile_no'] = mobile_no
+
         if allocation_status:
             where_conditions.append("allocation_status = :allocation_status")
             params['allocation_status'] = allocation_status
+
         if group_name:
             where_conditions.append("group_name ILIKE :group_name")
             where_conditions.append("is_assigned = :is_assigned")
             params['group_name'] = f"%{group_name}%"
             params['is_assigned'] = True
+
+        if registration_status:
+            # Use ANY array to filter multiple values
+            where_conditions.append("registration_status = :registration_status")
+            params['registration_status'] = registration_status
 
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
@@ -63,7 +71,7 @@ async def fetch_pilgrim_data_json(
                 listed_in, mother_name, date_of_birth, gender, management, mobile_no,
                 passport_address, present_address, permanent_address, tracking_id,
                 serial_no, group_name, registration_status, allocation_status,
-                created_at, created_by, updated_at, updated_by, is_assigned,
+                created_at, created_by, updated_at, updated_by, is_assigned, vaccination_center, passport_copy,
                 COUNT(*) OVER() as total_count
             FROM core.pilgrim_data
             {where_clause}
@@ -100,7 +108,9 @@ async def fetch_pilgrim_data_json(
                     'created_by', created_by,
                     'updated_at', updated_at,
                     'updated_by', updated_by,
-                    'is_assigned', is_assigned
+                    'is_assigned', is_assigned,
+                    'vaccination_center', vaccination_center,
+                    'passport_copy', passport_copy
                 ) as item,
                 total_count
             FROM filtered_data
@@ -118,11 +128,10 @@ async def fetch_pilgrim_data_json(
         if row is None:
             return [], 0
 
-        # Handle the JSON data - it might be a string or already parsed
-        data_json = row[0]  # Access by index to be safe
+        # Handle the JSON data
+        data_json = row[0]
         total_count = row[1] if len(row) > 1 else 0
 
-        # Parse JSON if it's a string
         if isinstance(data_json, str):
             data = json.loads(data_json)
         elif data_json is None:
@@ -134,8 +143,8 @@ async def fetch_pilgrim_data_json(
 
     except Exception as e:
         print(f"Error fetching pilgrim data: {str(e)}")
-        # Re-raise the exception to let the calling code handle it
         raise
+
 
 
 async def update_pilgrim_approval_status(
@@ -214,3 +223,29 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
         raise HTTPException(status_code=404, detail="Pilgrim not found")
 
     return row
+
+
+async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistrationRequestSchema):
+    tracking_id = request_schema.tracking_id
+    pilgrim = await get_pilgrim_by_tracking_id(db, tracking_id)
+    if pilgrim is None:
+        raise HTTPException(status_code=404, detail="Pilgrim not found")
+
+    query = text("""
+        UPDATE core.pilgrim_data
+        SET 
+            registration_status = 'APPLIED',
+            vaccination_center = :vaccination_center,
+            passport_copy = :passport_copy
+        WHERE tracking_id = :tracking_id
+    """)
+
+    await db.execute(query, {
+        "vaccination_center": request_schema.vaccination_center,
+        "passport_copy": json.dumps(request_schema.passport_copy),
+        "tracking_id": tracking_id
+    })
+    await db.commit()
+
+    return {"message": "Pilgrim registered successfully"}
+
