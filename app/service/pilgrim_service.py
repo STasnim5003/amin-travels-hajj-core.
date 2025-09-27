@@ -54,11 +54,11 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
         pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db,request_credentials.username)
 
         if not pilgrim:
-            raise HTTPException(status_code=404, detail="Incorrect Mobile number or Password.")
+            raise HTTPException(status_code=404, detail="Incorrect Tracking Id or Password.")
 
         is_password_matched =  verify_pilgrim_password(request_credentials.password, pilgrim.password)
         if not is_password_matched:
-            raise HTTPException(status_code=404, detail="Incorrect Mobile number or Password.")
+            raise HTTPException(status_code=404, detail="Incorrect Tracking Id or Password.")
 
         access_token = create_access_token_for_pilgrim(subject=pilgrim.name_en,mobile_no=pilgrim.mobile_no, tracking_id=pilgrim.tracking_id)
         refresh_token = create_refresh_token_for_pilgrim(subject=pilgrim.name_en, mobile_no=pilgrim.mobile_no, tracking_id=pilgrim.tracking_id)
@@ -73,7 +73,8 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
 async def get_pilgrim_by_tracking_id(db:AsyncSession, tracking_id: str):
     return await pilgrim_repository.get_pilgrim_by_tracking_id(db,tracking_id)
 
-async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str, passport_copy: UploadFile, package_id : int):
+async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str,
+                           passport_copy: UploadFile, package_id : int, comment_on_package: str):
     passport_data = []
     try:
         passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
@@ -85,7 +86,8 @@ async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center
         vaccination_center = vaccination_center,
         passport_copy = passport_data,
         tracking_id = tracking_id,
-        package_id = package_id
+        package_id = package_id,
+        comment_on_package = comment_on_package
     )
 
     try:

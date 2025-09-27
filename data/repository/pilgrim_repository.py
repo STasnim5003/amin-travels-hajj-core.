@@ -71,7 +71,7 @@ async def fetch_pilgrim_data_json(
                     p.listed_in, p.mother_name, p.date_of_birth, p.gender, p.management, p.mobile_no,
                     p.passport_address, p.present_address, p.permanent_address, p.tracking_id,
                     p.serial_no, p.group_name, p.registration_status, p.allocation_status,
-                    p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, 
+                    p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
                     p.vaccination_center, p.passport_copy, p.package_id,
                     pkg.name, pkg.duration,
                     COUNT(*) OVER() as total_count
@@ -116,7 +116,8 @@ async def fetch_pilgrim_data_json(
                         'passport_copy', passport_copy,
                         'package_id', package_id,
                         'package_name', name,
-                        'duration', duration
+                        'duration', duration,
+                        'comment_on_package', comment_on_package
                     ) as item,
                     total_count
                 FROM filtered_data
@@ -220,7 +221,7 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
             p.passport_address, p.present_address, p.permanent_address,p.serial_no, p.password,
             p.group_name, p.registration_status, p.tracking_id, p.mobile_no, p.is_assigned, 
             p.updated_at,p.created_at, p.updated_by, p.created_by, p.id, p.passport_copy, p.allocation_status,
-            p.vaccination_center,pkg.id AS package_id, pkg.name as package_name, pkg.duration
+            p.vaccination_center, p.comment_on_package,pkg.id AS package_id, pkg.name as package_name, pkg.duration
         FROM core.pilgrim_data p
         LEFT JOIN core.packages pkg 
             ON p.package_id = pkg.id
@@ -248,7 +249,8 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
             registration_status = 'APPLIED',
             vaccination_center = :vaccination_center,
             passport_copy = :passport_copy,
-            package_id = :package_id
+            package_id = :package_id,
+            comment_on_package = :comment_on_package
         WHERE tracking_id = :tracking_id
     """)
 
@@ -256,7 +258,8 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
         "vaccination_center": request_schema.vaccination_center,
         "passport_copy": json.dumps(request_schema.passport_copy),
         "tracking_id": tracking_id,
-        "package_id" : request_schema.package_id
+        "package_id" : request_schema.package_id,
+        "comment_on_package" : request_schema.comment_on_package
     })
     await db.commit()
 
