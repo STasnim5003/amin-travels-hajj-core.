@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
 
+from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.utils import verify_pilgrim_password, create_access_token_for_pilgrim, \
     create_refresh_token_for_pilgrim
 from data.repository import pilgrim_repository, file_repository
@@ -70,7 +71,12 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
         raise HTTPException(status_code=404, detail=str(e))
 
 async def get_pilgrim_by_tracking_id(db:AsyncSession, tracking_id: str):
-    return await pilgrim_repository.get_pilgrim_by_tracking_id(db,tracking_id)
+    pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db,tracking_id)
+    passport_copy = pilgrim.passport_copy
+    passport_copy_with_download = await generate_downloadable_urls(passport_copy)
+    response = dict(pilgrim._mapping)
+    response["passport_copy"] = passport_copy_with_download
+    return response
 
 async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str,
                            passport_copy: UploadFile, package_id : int, comment_on_package: str):
