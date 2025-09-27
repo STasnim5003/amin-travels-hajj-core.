@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger, Boolean
+from sqlalchemy import Column, String, BigInteger, Boolean, JSON
 
 from data.model.base_mixin_model import Base, BaseMixinModel
 
@@ -32,3 +32,5 @@ class PilgrimDataModel(Base, BaseMixinModel):
     preliminary_password = Column(String, nullable=True)
     is_assigned = Column(Boolean)
     allocation_status = Column(String)
+    package_id = Column(String, nullable=True)
+    passport_copy = Column(JSON, nullable=True)

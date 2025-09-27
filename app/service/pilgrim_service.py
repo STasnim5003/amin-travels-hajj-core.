@@ -107,3 +107,20 @@ async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center
         return await pilgrim_repository.pilgrim_register(db, new_pilgrim_registration_request)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+async def get_pilgrim_by_id(db:AsyncSession, pilgrim_id:int) -> PilgrimDataResponseSchema:
+    try:
+        pilgrim = await pilgrim_repository.get_pilgrim_by_id(db, pilgrim_id)
+
+        if not pilgrim:
+            raise HTTPException(status_code=404, detail="Pilgrim not found.")
+        pilgrim_dict = pilgrim.__dict__.copy()  # convert model to dict
+        if pilgrim_dict.get("passport_copy"):
+            pilgrim_dict["passport_copy"] = await generate_downloadable_urls(pilgrim_dict["passport_copy"])
+
+        return PilgrimDataResponseSchema.model_validate(pilgrim_dict)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+

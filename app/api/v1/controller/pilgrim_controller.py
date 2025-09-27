@@ -1,4 +1,3 @@
-
 from typing import Optional
 
 import fastapi
@@ -34,7 +33,8 @@ async def get_pilgrim_data(
     username = current_user.get("username")
     if current_user["role"] == "SUPER_ADMIN":
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, None,
-                                                      allocation_status, registration_status, page, size, table_name, username)
+                                                      allocation_status, registration_status, page, size, table_name,
+                                                      username)
     else:
         if allocation_status == "UNASSIGNED":
             raise HTTPException(status_code=403, detail="Unauthorized")
@@ -107,3 +107,13 @@ async def register_pilgrim(
                                                       comment_on_package)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@private_router.get("/pilgrim/{pilgrim_id}", response_model=PilgrimDataResponseSchema, tags=["Pilgrim"])
+async def get_pilgrim_by_id(
+        pilgrim_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+) -> PilgrimDataResponseSchema:
+
+    return await pilgrim_service.get_pilgrim_by_id(db, pilgrim_id)

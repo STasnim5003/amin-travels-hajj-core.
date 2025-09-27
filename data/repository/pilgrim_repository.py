@@ -2,9 +2,10 @@ import json
 from typing import Optional, List
 
 from fastapi import HTTPException
-from sqlalchemy import text, case, update, func
+from sqlalchemy import text, case, update, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from data.model.package_model import PackageModel
 from data.model.pilgrim_data_model import PilgrimDataModel
 from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema, PilgrimRegistrationRequestSchema
 
@@ -267,3 +268,35 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
 
     return {"message": "Pilgrim applied for registration successfully"}
 
+async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
+    try:
+        # Join PilgrimDataModel with PackageModel
+        query = (
+            select(PilgrimDataModel, PackageModel.name, PackageModel.duration)
+            .join(PackageModel, PilgrimDataModel.package_id == PackageModel.id, isouter=True)
+            .where(PilgrimDataModel.id == pilgrim_id)
+        )
+
+        result = await db.execute(query)
+        row = result.first()
+
+        if not row:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Pilgrim with id {pilgrim_id} not found."
+            )
+
+        pilgrim, package_name, package_duration = row
+
+        pilgrim.package_name = package_name
+        pilgrim.duration = package_duration
+
+        return pilgrim
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="Unexpected error occurred while fetching pilgrim by ID."
+        )
