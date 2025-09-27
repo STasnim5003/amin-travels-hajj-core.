@@ -25,6 +25,7 @@ def upgrade() -> None:
     sa.Column('view_name', sa.String(), nullable=True),
     sa.Column('username', sa.String(), nullable=True),
     sa.Column('field_name', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('table_name', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
     sa.Column('created_by', sa.String(), nullable=True),
