@@ -90,3 +90,9 @@ async def get_package_master_data_for_filtering(
         master_data.append(PackageMasterDataForFilterSchema.model_validate(row).model_dump())
     return master_data
 
+async def get_package_by_id(db:AsyncSession, package_id : int):
+    query = select(PackageModel).where(PackageModel.id == package_id)
+    result = await db.execute(query)
+    package = result.scalars().one_or_none()
+    return PackageResponseSchema.model_validate(package).model_dump()
+

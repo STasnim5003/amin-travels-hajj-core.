@@ -37,6 +37,9 @@ class PilgrimDataBaseSchema(BaseModel):
 
 class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     id: int
+    package_id : Optional[int] = None
+    package_name: Optional[str] = None
+    duration: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
@@ -68,3 +71,4 @@ class PilgrimRegistrationRequestSchema(BaseModel):
     vaccination_center: str
     passport_copy: List[Dict[str, Any]]
     tracking_id: str
+    package_id : int

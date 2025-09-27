@@ -17,7 +17,7 @@ from data.repository.pilgrim_repository import fetch_pilgrim_data_json
 
 
 async def get_pilgrim_data(db: AsyncSession,
-                           name: Optional[str],
+                           name_en: Optional[str],
                            tracking_id: Optional[str],
                            serial_no: Optional[str],
                            mobile_no: Optional[str],
@@ -27,7 +27,7 @@ async def get_pilgrim_data(db: AsyncSession,
                            page: int, limit: int) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
 
-    pilgrims, total = await fetch_pilgrim_data_json(db, name, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, skip, limit)
+    pilgrims, total = await fetch_pilgrim_data_json(db, name_en, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, skip, limit)
 
     return PaginatedPilgrimDataListResponseSchema(
         data=pilgrims,
@@ -51,7 +51,7 @@ async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdate
 
 async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRequestForm):
     try:
-        pilgrim = await pilgrim_repository.get_pilgrim_by_mobile_no(db,request_credentials.username)
+        pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db,request_credentials.username)
 
         if not pilgrim:
             raise HTTPException(status_code=404, detail="Incorrect Mobile number or Password.")
@@ -60,8 +60,8 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
         if not is_password_matched:
             raise HTTPException(status_code=404, detail="Incorrect Mobile number or Password.")
 
-        access_token = create_access_token_for_pilgrim(subject=pilgrim.name_bn,mobile_no=request_credentials.username, tracking_id=pilgrim.tracking_id)
-        refresh_token = create_refresh_token_for_pilgrim(subject=pilgrim.name_bn, mobile_no=request_credentials.username, tracking_id=pilgrim.tracking_id)
+        access_token = create_access_token_for_pilgrim(subject=pilgrim.name_en,mobile_no=pilgrim.mobile_no, tracking_id=pilgrim.tracking_id)
+        refresh_token = create_refresh_token_for_pilgrim(subject=pilgrim.name_en, mobile_no=pilgrim.mobile_no, tracking_id=pilgrim.tracking_id)
 
         return PilgrimLoginResponseSchema(
             access_token=access_token,
@@ -73,7 +73,7 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
 async def get_pilgrim_by_tracking_id(db:AsyncSession, tracking_id: str):
     return await pilgrim_repository.get_pilgrim_by_tracking_id(db,tracking_id)
 
-async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str, passport_copy: UploadFile):
+async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str, passport_copy: UploadFile, package_id : int):
     passport_data = []
     try:
         passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
@@ -84,7 +84,8 @@ async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center
     new_pilgrim_registration_request = PilgrimRegistrationRequestSchema(
         vaccination_center = vaccination_center,
         passport_copy = passport_data,
-        tracking_id = tracking_id
+        tracking_id = tracking_id,
+        package_id = package_id
     )
 
     try:

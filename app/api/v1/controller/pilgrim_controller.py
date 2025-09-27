@@ -19,7 +19,7 @@ public_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public"
 
 @private_router.get("/pilgrim-data", response_model=PaginatedPilgrimDataListResponseSchema, tags=["Pilgrim"])
 async def get_pilgrim_data(
-        name: Optional[str] = Query(None),
+        name_en: Optional[str] = Query(None),
         tracking_id: Optional[str] = Query(None),
         serial_no: Optional[str] = Query(None),
         mobile_no: Optional[str] = Query(None),
@@ -32,12 +32,12 @@ async def get_pilgrim_data(
 ) -> PaginatedPilgrimDataListResponseSchema:
 
     if current_user["role"] == "SUPER_ADMIN":
-        return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, None,allocation_status, registration_status,page, size)
+        return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, None,allocation_status, registration_status,page, size)
     else:
         if allocation_status == "UNASSIGNED":
             raise HTTPException(status_code=403, detail="Unauthorized")
         group_name = current_user["agency_name"]
-        return await pilgrim_service.get_pilgrim_data(db, name, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, page,
+        return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, page,
                                                       size)
 
 @private_router.put("/pilgrim-data", response_model=UpdatePilgrimResponseSchema, tags=["Pilgrim"])
@@ -83,17 +83,18 @@ async def get_pilgrim_profile(
 
     return PilgrimDataResponseSchema.model_validate(result)
 
-@private_router.put("/pilgrim", tags=["Pilgrim"])
+@private_router.put("/pilgrim/register", tags=["Pilgrim"])
 async def register_pilgrim(
         vaccination_center: str,
+        package_id: int,
         passport_copy: UploadFile = File(...),
         db: AsyncSession = Depends(get_async_db),
-        current_user: dict = Depends(get_current_pilgrim)
 ):
-    tracking_id = current_user.get("tracking_id")
+    # tracking_id = current_user.get("tracking_id")
+    tracking_id = "N359B05E03E"
     if not tracking_id:
         raise HTTPException(status_code=400, detail="Tracking ID is missing in user context")
     try:
-        return await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy)
+        return await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
