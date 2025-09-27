@@ -10,6 +10,7 @@ from starlette.datastructures import UploadFile
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.utils import verify_pilgrim_password, create_access_token_for_pilgrim, \
     create_refresh_token_for_pilgrim
+from app.service import view_field_service
 from data.repository import pilgrim_repository, file_repository
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, UpdatePilgrimResponseSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
@@ -25,16 +26,22 @@ async def get_pilgrim_data(db: AsyncSession,
                            group_name: Optional[str],
                            allocation_status: Optional[str],
                            registration_status: Optional[str],
-                           page: int, limit: int) -> PaginatedPilgrimDataListResponseSchema:
+                           page: int, limit: int,
+                           table_name: Optional[str],
+                           username: Optional[str]) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
 
     pilgrims, total = await fetch_pilgrim_data_json(db, name_en, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, skip, limit)
+    views = []
+    if username and table_name:
+        views = await view_field_service.get_views(db, username, table_name)
 
     return PaginatedPilgrimDataListResponseSchema(
         data=pilgrims,
         total=total,
         page=page,
-        size=limit
+        size=limit,
+        views=views
     )
 
 async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username:str):

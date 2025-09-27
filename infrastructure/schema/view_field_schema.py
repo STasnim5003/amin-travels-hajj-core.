@@ -5,8 +5,9 @@ from pydantic import BaseModel
 
 
 class ViewFieldSchema(BaseModel):
-    view_name: Optional[str] = None
-    field_name: Optional[List[str]] = None
+    view_name: str
+    field_name: List[str]
+    table_name : str
 
     class Config:
         from_attributes = True
@@ -19,6 +20,10 @@ class ViewFieldResponseSchema(ViewFieldSchema):
     updated_at: Optional[datetime]
     created_by: Optional[str]
     updated_by: Optional[str]
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
 
 class ViewFieldListResponseSchema(BaseModel):
     data : List[ViewFieldResponseSchema]

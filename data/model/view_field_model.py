@@ -12,3 +12,4 @@ class ViewFieldModel(Base,BaseMixinModel):
     view_name: str = Column(String, nullable=False)
     username: str = Column(String, nullable=False)
     field_name: dict = Column(JSONB, nullable=False)
+    table_name: str = Column(String, nullable=False)

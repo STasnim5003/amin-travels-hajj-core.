@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
+from infrastructure.schema.view_field_schema import ViewFieldListResponseSchema, ViewFieldResponseSchema
+
 
 class PilgrimDataBaseSchema(BaseModel):
     name_en: Optional[str] = None
@@ -51,6 +53,7 @@ class PaginatedPilgrimDataListResponseSchema(BaseModel):
     size : int
     page : int
     data : Optional[List[PilgrimDataResponseSchema]]
+    views : Optional[List[ViewFieldResponseSchema]]
 
 class PilgrimUpdateSchema(BaseModel):
     tracking_id : str

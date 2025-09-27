@@ -29,7 +29,9 @@ async def create_admin(db: AsyncSession,
     logo_data = []
     try:
         logo_resp = await file_repository.upload_file(file=logo, name="logo")
-        logo_resp.file_url = await generate_downloadable_urls(logo_resp.file_url)
+        logo_resp = logo_resp.copy(update={
+            "file_url": await generate_downloadable_urls(logo_resp.file_url)
+        })
         logo_data.append(logo_resp.model_dump())
 
     except Exception as e:

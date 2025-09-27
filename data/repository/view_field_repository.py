@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.view_field_model import ViewFieldModel
@@ -30,16 +30,24 @@ async def create_view(db: AsyncSession, request_body: ViewFieldSchema, username:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-async def get_views(db: AsyncSession, username: str) -> list[ViewFieldResponseSchema]:
+async def get_views(db: AsyncSession, username: str, table_name: str) -> list[ViewFieldResponseSchema]:
     try:
-        query = select(ViewFieldModel).where(ViewFieldModel.username == username)
+        query = (
+            select(ViewFieldModel)
+            .where(
+                and_(
+                    ViewFieldModel.username == username,
+                    ViewFieldModel.table_name == table_name
+                )
+            )
+        )
         result = await db.execute(query)
-        views = result.scalars().all()  # get all matching rows
+        views = result.scalars().all()
 
         if not views:
-            return []  # optionally raise HTTPException if you want
+            return []
 
-        return [ViewFieldResponseSchema.model_validate(view.__dict__) for view in views]
+        return [ViewFieldResponseSchema.model_validate(view, from_attributes=True) for view in views]
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

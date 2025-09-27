@@ -28,6 +28,7 @@ async def create_view(
     request_body = ViewFieldSchema(
         view_name=request_body.view_name,
         field_name = request_body.field_name,
+        table_name = request_body.table_name,
     )
 
     return await view_field_service.create_view(db, request_body, username)

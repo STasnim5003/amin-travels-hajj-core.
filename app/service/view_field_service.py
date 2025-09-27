@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import view_field_repository
@@ -12,10 +14,10 @@ async def create_view(db:AsyncSession, request_body : ViewFieldSchema, username:
     except Exception as e:
         raise e
 
-async def get_views(db: AsyncSession, username : str) -> ViewFieldListResponseSchema:
+async def get_views(db: AsyncSession, username : str, table_name:str) -> List[ViewFieldResponseSchema]:
     try:
-        result = await view_field_repository.get_views(db, username)
-        return ViewFieldListResponseSchema(data = result)
+        views = await view_field_repository.get_views(db, username,table_name)
+        return views
     except Exception as e:
         raise e
 
