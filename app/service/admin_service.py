@@ -29,9 +29,6 @@ async def create_admin(db: AsyncSession,
     logo_data = []
     try:
         logo_resp = await file_repository.upload_file(file=logo, name="logo")
-        logo_resp = logo_resp.copy(update={
-            "file_url": await generate_downloadable_urls(logo_resp.file_url)
-        })
         logo_data.append(logo_resp.model_dump())
 
     except Exception as e:
@@ -40,7 +37,6 @@ async def create_admin(db: AsyncSession,
     passport_data = []
     try:
         passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
-        passport_resp.file_url = await generate_downloadable_urls(passport_resp.file_url)
         passport_data.append(passport_resp.model_dump())
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -60,7 +56,13 @@ async def create_admin(db: AsyncSession,
 
     )
     try:
-        return await admin_repository.insert_admin(new_admin, db=db)
+        response = await admin_repository.insert_admin(new_admin, db=db)
+        if response.passport_copy:
+            response.passport_copy = await generate_downloadable_urls(response.passport_copy)
+        if response.logo:
+            response.logo = await generate_downloadable_urls(response.logo)
+        return response
+
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:
