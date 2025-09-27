@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from starlette.datastructures import UploadFile
 
+from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
 from data.repository import admin_repository, file_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema, \
@@ -103,6 +104,8 @@ async def get_all_admins(db: AsyncSession, page: int, limit: int) -> AdminListRe
 async def get_admin_by_id(db: AsyncSession, admin_id: int) -> AdminResponseSchema:
     try:
         admin = await admin_repository.get_admin_by_id(db, admin_id=admin_id)
+        admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
+        admin.logo = await generate_downloadable_urls(admin.logo)
         return AdminResponseSchema.model_validate(admin)
     except HTTPException as http_exc:
         raise http_exc
@@ -114,6 +117,10 @@ async def get_admin_by_id(db: AsyncSession, admin_id: int) -> AdminResponseSchem
 async def get_admin_by_username(db: AsyncSession, username: str) -> AdminResponseSchema:
     try:
         admin = await admin_repository.get_admin_by_username(db, username=username)
+
+        admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
+        admin.logo = await generate_downloadable_urls(admin.logo)
+
         return AdminResponseSchema.model_validate(admin)
     except HTTPException as http_exc:
         raise http_exc
