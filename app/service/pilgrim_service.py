@@ -73,9 +73,10 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
 async def get_pilgrim_by_tracking_id(db:AsyncSession, tracking_id: str):
     pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db,tracking_id)
     passport_copy = pilgrim.passport_copy
-    passport_copy_with_download = await generate_downloadable_urls(passport_copy)
     response = dict(pilgrim._mapping)
-    response["passport_copy"] = passport_copy_with_download
+    if passport_copy:
+        passport_copy_with_download = await generate_downloadable_urls(passport_copy)
+        response["passport_copy"] = passport_copy_with_download
     return response
 
 async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str,

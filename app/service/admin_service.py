@@ -104,8 +104,10 @@ async def get_all_admins(db: AsyncSession, page: int, limit: int) -> AdminListRe
 async def get_admin_by_id(db: AsyncSession, admin_id: int) -> AdminResponseSchema:
     try:
         admin = await admin_repository.get_admin_by_id(db, admin_id=admin_id)
-        admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
-        admin.logo = await generate_downloadable_urls(admin.logo)
+        if admin.passport_copy:
+            admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
+        if admin.logo:
+            admin.logo = await generate_downloadable_urls(admin.logo)
         return AdminResponseSchema.model_validate(admin)
     except HTTPException as http_exc:
         raise http_exc
@@ -117,9 +119,10 @@ async def get_admin_by_id(db: AsyncSession, admin_id: int) -> AdminResponseSchem
 async def get_admin_by_username(db: AsyncSession, username: str) -> AdminResponseSchema:
     try:
         admin = await admin_repository.get_admin_by_username(db, username=username)
-
-        admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
-        admin.logo = await generate_downloadable_urls(admin.logo)
+        if admin.passport_copy:
+            admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
+        if admin.logo:
+            admin.logo = await generate_downloadable_urls(admin.logo)
 
         return AdminResponseSchema.model_validate(admin)
     except HTTPException as http_exc:
