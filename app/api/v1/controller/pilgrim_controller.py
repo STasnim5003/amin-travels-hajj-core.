@@ -40,12 +40,12 @@ async def get_pilgrim_data(
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, page,
                                                       size)
 
-@private_router.put("/pilgrim-data", response_model=UpdatePilgrimResponseSchema, tags=["Pilgrim"])
+@private_router.put("/pilgrim-data", response_model=PaginatedPilgrimDataListResponseSchema, tags=["Pilgrim"])
 async def update_pilgrim_data(
         pilgrim_request_schema : BulkUpdatePilgrimRequestSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user:dict = Depends(get_current_user)
-) -> UpdatePilgrimResponseSchema:
+) -> PaginatedPilgrimDataListResponseSchema:
     if current_user["role"] != "SUPER_ADMIN":
         raise HTTPException(status_code=403, detail="Unauthorized")
 

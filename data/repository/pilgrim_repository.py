@@ -194,12 +194,14 @@ async def update_pilgrim_approval_status(
             allocation_status=allocation_status_cases,
             updated_by=username,
             updated_at=func.now()
-        )
+        ).returning(PilgrimDataModel)
     )
 
     result = await db.execute(stmt)
     await db.commit()
-    return result.rowcount
+
+    updated_pilgrims = result.scalars().all()  # returns list of PilgrimDataModel objects
+    return updated_pilgrims
 
 
 async def get_pilgrim_by_mobile_no(db: AsyncSession, mobile_no: str):

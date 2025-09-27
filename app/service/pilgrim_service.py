@@ -39,13 +39,12 @@ async def get_pilgrim_data(db: AsyncSession,
 async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username:str):
     try:
         response = await pilgrim_repository.update_pilgrim_approval_status(data=data, db=db, username=username)
-
-        pilgrim_response = UpdatePilgrimResponseSchema(
-            message = "Successfully Updated",
-            update_count = response
+        return PaginatedPilgrimDataListResponseSchema(
+            data = response,
+            total = len(response),
+            page = 1,
+            size = len(response)
         )
-
-        return pilgrim_response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
