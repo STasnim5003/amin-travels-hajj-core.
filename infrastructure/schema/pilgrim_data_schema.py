@@ -4,28 +4,28 @@ from datetime import datetime
 
 
 class PilgrimDataBaseSchema(BaseModel):
+    name_en: Optional[str] = None
     name_bn: str
+    tracking_id: Optional[str] = None
+    serial_no: Optional[str] = None
+    mobile_no: Optional[str] = None
+    nid: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
     father_name: Optional[str] = None
+    mother_name: Optional[str] = None
     spouse_name: Optional[str] = None
     occupation: Optional[str] = None
-    nid: Optional[str] = None
     voucher: Optional[str] = None
     type: Optional[str] = None
     listed_in: Optional[str] = None
-    mother_name: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    gender: Optional[str] = None
     management: Optional[str] = None
-    mobile_no: Optional[str] = None
     passport_address: Optional[str] = None
     present_address: Optional[str] = None
     permanent_address: Optional[str] = None
-    tracking_id: Optional[str] = None
-    serial_no: Optional[str] = None
     group_name: Optional[str] = None
     registration_status: Optional[str] = None
     is_assigned: Optional[bool] = None
-    name_en: Optional[str] = None
     allocation_status: Optional[str] = None
     vaccination_center: Optional[str] = None
     passport_copy: Optional[List[Dict[str, Any]]] = None
