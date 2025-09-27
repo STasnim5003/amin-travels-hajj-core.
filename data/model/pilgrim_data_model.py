@@ -9,6 +9,7 @@ class PilgrimDataModel(Base, BaseMixinModel):
 
     id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
     name_bn = Column(String, nullable=False)
+    name_en = Column(String, nullable=False)
     father_name = Column(String, nullable=True)
     spouse_name = Column(String, nullable=True)
     occupation = Column(String, nullable=True)
