@@ -52,8 +52,8 @@ class PaginatedPilgrimDataListResponseSchema(BaseModel):
     total: int
     size : int
     page : int
-    data : Optional[List[PilgrimDataResponseSchema]]
-    views : Optional[List[ViewFieldResponseSchema]]
+    data : Optional[List[PilgrimDataResponseSchema]] = None
+    views : Optional[List[ViewFieldResponseSchema]] = None
 
 class PilgrimUpdateSchema(BaseModel):
     tracking_id : str

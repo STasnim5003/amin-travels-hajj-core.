@@ -47,6 +47,8 @@ async def get_pilgrim_data(db: AsyncSession,
 async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username:str):
     try:
         response = await pilgrim_repository.update_pilgrim_approval_status(data=data, db=db, username=username)
+
+
         return PaginatedPilgrimDataListResponseSchema(
             data = response,
             total = len(response),
