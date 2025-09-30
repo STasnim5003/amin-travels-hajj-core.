@@ -17,6 +17,6 @@ class AdminModel(Base, BaseMixinModel):
     location = Column(String, nullable=True)
     mobile_no = Column(String, nullable=False)
     email = Column(String, nullable=True)
-    passport_copy = Column(JSONB, nullable=False)
-    logo = Column(JSONB, nullable=False)
+    passport_copy = Column(JSONB, nullable=True)
+    logo = Column(JSONB, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)

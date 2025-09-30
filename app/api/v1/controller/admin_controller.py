@@ -26,15 +26,12 @@ async def create_admin_endpoint(
         agency_name: str = Form(...),
         license_number: str = Form(...),
         mobile_no: str = Form(...),
-        location: Optional[str] = Form(None),
-        email: Optional[str] = Form(None),
-        logo: UploadFile = File(...),
-        passport_copy: UploadFile = File(...),
-        current_user: dict = Depends(get_current_user)
+        email: Optional[str] = Form(...),
+        # current_user: dict = Depends(get_current_user)
 
 ):
-    if current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    # if current_user["role"] != "SUPER_ADMIN":
+    #     raise HTTPException(status_code=403, detail="Unauthorized")
     try:
         response = await admin_service.create_admin(
             db=db,
@@ -44,10 +41,7 @@ async def create_admin_endpoint(
             agency_name=agency_name,
             license_number=license_number,
             mobile_no=mobile_no,
-            location=location,
-            email=email,
-            logo=logo,
-            passport_copy=passport_copy
+            email=email
         )
         return JSONResponse(content=jsonable_encoder(response))
 
