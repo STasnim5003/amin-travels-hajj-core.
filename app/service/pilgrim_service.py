@@ -36,14 +36,15 @@ async def get_pilgrim_data(db: AsyncSession,
     if username and table_name:
         views = await view_field_service.get_views(db, username, table_name)
 
+    counts = registration_status_count or allocation_status_count or {}
+
     return PaginatedPilgrimDataListResponseSchema(
         data=pilgrims,
         total=total,
         page=page,
         size=limit,
         views=views,
-        registration_status_count=registration_status_count or None,
-        allocation_status_count=allocation_status_count or None
+        counts=counts,
     )
 
 async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username:str):
