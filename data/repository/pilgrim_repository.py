@@ -52,9 +52,9 @@ async def fetch_pilgrim_data_json(
 
         if group_name:
             where_conditions.append("group_name ILIKE :group_name")
-            where_conditions.append("is_assigned = :is_assigned")
+            where_conditions.append("allocation_status != :assigned_status")
             params['group_name'] = f"%{group_name}%"
-            params['is_assigned'] = True
+            params['assigned_status'] = "UNASSIGNED"
 
         if registration_status:
             # Use ANY array to filter multiple values
@@ -64,90 +64,111 @@ async def fetch_pilgrim_data_json(
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
 
-        # PostgreSQL query using JSON aggregation and window function
-        query = f"""
-            WITH filtered_data AS (
-                SELECT 
-                    p.id, p.name_bn, p.name_en, p.father_name, p.spouse_name, p.occupation, p.nid, p.voucher, p.type,
-                    p.listed_in, p.mother_name, p.date_of_birth, p.gender, p.management, p.mobile_no,
-                    p.passport_address, p.present_address, p.permanent_address, p.tracking_id,
-                    p.serial_no, p.group_name, p.registration_status, p.allocation_status,
-                    p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
-                    p.vaccination_center, p.passport_copy, p.package_id,
-                    pkg.name, pkg.duration,
-                    COUNT(*) OVER() as total_count
-                FROM core.pilgrim_data p
-                LEFT JOIN core.packages pkg ON p.package_id = pkg.id
-                {where_clause}
-                ORDER BY p.created_at DESC, p.id DESC
-                LIMIT :limit_val OFFSET :skip_val
-            ),
-            result_data AS (
-                SELECT 
-                    JSON_BUILD_OBJECT(
-                        'id', id,
-                        'name_bn', name_bn,
-                        'name_en', name_en,
-                        'father_name', father_name,
-                        'spouse_name', spouse_name,
-                        'occupation', occupation,
-                        'nid', nid,
-                        'voucher', voucher,
-                        'type', type,
-                        'listed_in', listed_in,
-                        'mother_name', mother_name,
-                        'date_of_birth', date_of_birth,
-                        'gender', gender,
-                        'management', management,
-                        'mobile_no', mobile_no,
-                        'passport_address', passport_address,
-                        'present_address', present_address,
-                        'permanent_address', permanent_address,
-                        'tracking_id', tracking_id,
-                        'serial_no', serial_no,
-                        'group_name', group_name,
-                        'registration_status', registration_status,
-                        'allocation_status', allocation_status,
-                        'created_at', created_at,
-                        'created_by', created_by,
-                        'updated_at', updated_at,
-                        'updated_by', updated_by,
-                        'is_assigned', is_assigned,
-                        'vaccination_center', vaccination_center,
-                        'passport_copy', passport_copy,
-                        'package_id', package_id,
-                        'package_name', name,
-                        'duration', duration,
-                        'comment_on_package', comment_on_package
-                    ) as item,
-                    total_count
-                FROM filtered_data
-            )
-            SELECT 
-                COALESCE(JSON_AGG(item), '[]'::json) as data,
-                COALESCE(MAX(total_count), 0) as total_count
-            FROM result_data;
-        """
+        if group_name:
+            status_count_cte = f"""
+                    status_counts AS (
+                        SELECT JSON_OBJECT_AGG(registration_status, count) AS registration_status_count
+                        FROM (
+                            SELECT registration_status, COUNT(*) AS count
+                            FROM core.pilgrim_data
+                            WHERE group_name ILIKE :group_name
+                            GROUP BY registration_status
+                        ) AS registration_counts
+                    )
+                    """
+            status_count_select = "(SELECT registration_status_count FROM status_counts) AS registration_status_count, NULL AS allocation_status_count"
+        else:
+            status_count_cte = f"""
+                    status_counts AS (
+                        SELECT JSON_OBJECT_AGG(allocation_status, count) AS allocation_status_count
+                        FROM (
+                            SELECT allocation_status, COUNT(*) AS count
+                            FROM core.pilgrim_data
+                            GROUP BY allocation_status
+                        ) AS allocation_counts
+                    )
+                    """
+            status_count_select = "NULL AS registration_status_count, (SELECT allocation_status_count FROM status_counts) AS allocation_status_count"
 
-        # Execute the query
+            # Main query
+        query = f"""
+                WITH filtered_data AS (
+                    SELECT 
+                        p.id, p.name_bn, p.name_en, p.father_name, p.spouse_name, p.occupation, p.nid, p.voucher, p.type,
+                        p.listed_in, p.mother_name, p.date_of_birth, p.gender, p.management, p.mobile_no,
+                        p.passport_address, p.present_address, p.permanent_address, p.tracking_id,
+                        p.serial_no, p.group_name, p.registration_status, p.allocation_status,
+                        p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
+                        p.vaccination_center, p.passport_copy, p.package_id,
+                        pkg.name AS package_name, pkg.duration,
+                        COUNT(*) OVER() AS total_count
+                    FROM core.pilgrim_data p
+                    LEFT JOIN core.packages pkg ON p.package_id = pkg.id
+                    {where_clause}
+                    ORDER BY p.created_at DESC, p.id DESC
+                    LIMIT :limit_val OFFSET :skip_val
+                ),
+                result_data AS (
+                    SELECT 
+                        JSON_BUILD_OBJECT(
+                            'id', id,
+                            'name_bn', name_bn,
+                            'name_en', name_en,
+                            'father_name', father_name,
+                            'spouse_name', spouse_name,
+                            'occupation', occupation,
+                            'nid', nid,
+                            'voucher', voucher,
+                            'type', type,
+                            'listed_in', listed_in,
+                            'mother_name', mother_name,
+                            'date_of_birth', date_of_birth,
+                            'gender', gender,
+                            'management', management,
+                            'mobile_no', mobile_no,
+                            'passport_address', passport_address,
+                            'present_address', present_address,
+                            'permanent_address', permanent_address,
+                            'tracking_id', tracking_id,
+                            'serial_no', serial_no,
+                            'group_name', group_name,
+                            'registration_status', registration_status,
+                            'allocation_status', allocation_status,
+                            'created_at', created_at,
+                            'created_by', created_by,
+                            'updated_at', updated_at,
+                            'updated_by', updated_by,
+                            'is_assigned', is_assigned,
+                            'vaccination_center', vaccination_center,
+                            'passport_copy', passport_copy,
+                            'package_id', package_id,
+                            'package_name', package_name,
+                            'duration', duration,
+                            'comment_on_package', comment_on_package
+                        ) AS item,
+                        total_count
+                    FROM filtered_data
+                ),
+                {status_count_cte}
+                SELECT 
+                    (SELECT COALESCE(JSON_AGG(item), '[]'::json) FROM result_data) AS data,
+                    (SELECT COALESCE(MAX(total_count), 0) FROM result_data) AS total_count,
+                    {status_count_select};
+                """
+
+        # Execute
         result = await db.execute(text(query), params)
         row = result.fetchone()
 
-        if row is None:
-            return [], 0
+        if not row:
+            return [], 0, {}, {}
 
-        # Handle the JSON data
-        data_json = row[0]
-        total_count = row[1] if len(row) > 1 else 0
+        data = json.loads(row[0]) if isinstance(row[0], str) else row[0] or []
+        total_count = row[1] or 0
+        registration_status_count = row[2] or {}
+        allocation_status_count = row[3] or {}
 
-        if isinstance(data_json, str):
-            data = json.loads(data_json)
-        elif data_json is None:
-            data = []
-        else:
-            data = data_json
-
-        return data, total_count
+        return data, total_count, registration_status_count, allocation_status_count
 
     except Exception as e:
         print(f"Error fetching pilgrim data: {str(e)}")
