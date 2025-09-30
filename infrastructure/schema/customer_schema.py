@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
 
@@ -13,3 +13,7 @@ class CustomerCreateSchema(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class CustomerAppliedForRegistrationSchema(BaseModel):
+    tracking_ids : List[str]
+

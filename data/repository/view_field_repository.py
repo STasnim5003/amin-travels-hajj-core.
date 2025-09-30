@@ -30,14 +30,13 @@ async def create_view(db: AsyncSession, request_body: ViewFieldSchema, username:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-async def get_views(db: AsyncSession, username: str, table_name: str) -> list[ViewFieldResponseSchema]:
+async def get_views(db: AsyncSession, username: str) -> list[ViewFieldResponseSchema]:
     try:
         query = (
             select(ViewFieldModel)
             .where(
                 and_(
-                    ViewFieldModel.username == username,
-                    ViewFieldModel.table_name == table_name
+                    ViewFieldModel.username == username
                 )
             )
         )

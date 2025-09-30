@@ -14,9 +14,9 @@ async def create_view(db:AsyncSession, request_body : ViewFieldSchema, username:
     except Exception as e:
         raise e
 
-async def get_views(db: AsyncSession, username : str, table_name:str) -> List[ViewFieldResponseSchema]:
+async def get_views(db: AsyncSession, username : str) -> List[ViewFieldResponseSchema]:
     try:
-        views = await view_field_repository.get_views(db, username,table_name)
+        views = await view_field_repository.get_views(db, username)
         return views
     except Exception as e:
         raise e

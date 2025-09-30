@@ -287,7 +287,7 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
     })
     await db.commit()
 
-    return {"message": "Pilgrim applied for registration successfully"}
+    return {"message": "Pilgrim Data Updated successfully"}
 
 async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
     try:
