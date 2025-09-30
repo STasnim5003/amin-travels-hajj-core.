@@ -1,20 +1,43 @@
 from datetime import date
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 from pydantic import BaseModel
 
 
 class PackageBaseSchema(BaseModel):
     name: str
-    discount: Optional[str]
-    price: Optional[int]
-    locations: Optional[Dict[str, List[str]]]
+    discount: Optional[str] = None
+    price: Optional[int] = None
     hajj_year: int
-    duration: Optional[int]
-    description_type: Optional[str]
+    duration: Optional[int] = None
+    description_type: Optional[str] = None
     package_type: str
-    hajj_month: Optional[str]
-    discount_deadline: Optional[date]
+    hajj_month: Optional[str] = None
+    discount_deadline: Optional[date] = None
+
+    # New fields from migration
+    duration_range: Optional[Dict[str, Any]] = None
+    makkah: Optional[Dict[str, Any]] = None
+    madinah: Optional[Dict[str, Any]] = None
+    azizia: Optional[Dict[str, Any]] = None
+    flight_date: Optional[Dict[str, Any]] = None
+    bed_type: Optional[Dict[str, Any]] = None
+    return_ticket: Optional[str] = None
+    fixed_or_shifting: Optional[str] = None
+    food_menu_id: Optional[int] = None
+    ziara_id: Optional[Dict[str, Any]] = None
+    special_services: Optional[Dict[str, Any]] = None
+    other_services: Optional[Dict[str, Any]] = None
+
+    @property
+    def locations(self) -> dict:
+        return {
+            "makkah": self.makkah or [],
+            "madinah": self.madinah or [],
+            "azizia": self.azizia or [],
+            "others_feature": self.others_feature or [],
+        }
+
 
 
 class PackageResponseSchema(PackageBaseSchema):

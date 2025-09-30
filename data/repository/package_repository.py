@@ -1,10 +1,11 @@
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.filter.query_filter import filter_query
 from data.model.package_model import PackageModel
 from infrastructure.schema.package_schema import PackageResponseSchema, PackageMasterDataForFilterSchema, \
-    PackageMasterDataForFilterListSchema
+    PackageMasterDataForFilterListSchema, PackageBaseSchema
 
 
 async def get_packages(db: AsyncSession,
@@ -95,4 +96,18 @@ async def get_package_by_id(db:AsyncSession, package_id : int):
     result = await db.execute(query)
     package = result.scalars().one_or_none()
     return PackageResponseSchema.model_validate(package).model_dump()
+
+async def create_package(db: AsyncSession, payload: PackageBaseSchema) -> PackageModel:
+    package = PackageModel(**payload.model_dump())
+    try:
+        db.add(package)
+        await db.commit()
+        await db.refresh(package)
+        return package
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error: {str(e)}"
+        )
 

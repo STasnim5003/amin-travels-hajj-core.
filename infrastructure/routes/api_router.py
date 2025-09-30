@@ -10,6 +10,7 @@ router = APIRouter()
 router.include_router(user_controller.router)
 router.include_router(user_controller.private_router)
 router.include_router(package_controller.router)
+router.include_router(package_controller.private_router)
 router.include_router(file_controller.router)
 
 router.include_router(admin_controller.router)

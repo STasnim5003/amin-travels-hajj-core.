@@ -6,9 +6,11 @@ from starlette.responses import JSONResponse
 
 from app.service import package_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.package_schema import PackagesResponseSchema, PackageMasterDataForFilterListSchema
+from infrastructure.schema.package_schema import PackagesResponseSchema, PackageMasterDataForFilterListSchema, \
+    PackageResponseSchema, PackageBaseSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
+private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
 
 @router.get("/packages", response_model=PackagesResponseSchema, tags=["packages"])
@@ -40,3 +42,10 @@ async def get_master_data_for_package_filtering(
 ):
     response = await package_service.get_package_master_data_for_filter(db, package_type, description_type)
     return JSONResponse(content=jsonable_encoder(response))
+
+@private_router.post("/package", response_model=PackageResponseSchema, tags=["packages"])
+async def create_package(
+        request_body : PackageBaseSchema,
+        db: AsyncSession = Depends(get_async_db)
+) -> PackageResponseSchema:
+    return await package_service.create_package(db, request_body)
