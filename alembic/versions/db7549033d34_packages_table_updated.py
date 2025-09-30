@@ -28,6 +28,82 @@ def upgrade() -> None:
     op.add_column("packages", sa.Column("ziara_id", postgresql.JSONB(astext_type=sa.TEXT())), schema="core")
     op.add_column("packages", sa.Column("special_services", postgresql.JSONB(astext_type=sa.TEXT())), schema="core")
     op.add_column("packages", sa.Column("other_services", postgresql.JSONB(astext_type=sa.TEXT())), schema="core")
+    op.add_column("packages", sa.Column("route_id", sa.Integer(), nullable=True), schema="core")
+    op.add_column("packages", sa.Column("airlines", sa.String(), nullable=True), schema="core")
+
+
+    op.create_table(
+        "food_menu",
+        sa.Column("id", sa.Integer(), primary_key=True, index=True),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("agency_name", sa.String(), nullable=True),
+        sa.Column("items", postgresql.JSONB(astext_type=sa.TEXT()), nullable=True),
+        sa.Column('is_publish', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True,
+                  onupdate=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'")),
+        sa.Column('created_by', sa.String(), nullable=True),
+        sa.Column('updated_by', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+        schema="core"
+    )
+
+    # Create route table
+    op.create_table(
+        "route",
+        sa.Column("id", sa.Integer(), primary_key=True, index=True),
+        sa.Column("description", sa.String(), nullable=False),
+        sa.Column('is_publish', sa.Boolean(), server_default=sa.text('false'), nullable=False),
+        sa.Column("agency_name", sa.String(), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True, onupdate=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'")),
+        sa.Column('created_by', sa.String(), nullable=True),
+        sa.Column('updated_by', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+        schema="core"
+    )
+
+    # Create ziara table
+    op.create_table(
+        "ziara",
+        sa.Column("id", sa.Integer(), primary_key=True, index=True),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("pic", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("description", sa.String(), nullable=False),
+        sa.Column("location", sa.String(), nullable=False),
+        sa.Column("google_map_location", sa.String(), nullable=False),
+        sa.Column("agency_name", sa.String(), nullable=True),
+        sa.Column("area", sa.String(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True,
+                  onupdate=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'")),
+        sa.Column('created_by', sa.String(), nullable=True),
+        sa.Column('updated_by', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+        schema="core"
+    )
+    # add ons table
+    op.create_table(
+        "add_ons_service",
+        sa.Column("id", sa.Integer(), primary_key=True, index=True),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("category", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("price", sa.String(), nullable=False),
+        sa.Column("agency_name", sa.String(), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True,
+                  onupdate=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'")),
+        sa.Column('created_by', sa.String(), nullable=True),
+        sa.Column('updated_by', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+        schema="core"
+    )
 
 
 def downgrade() -> None:
@@ -40,3 +116,10 @@ def downgrade() -> None:
     op.drop_column("packages", "ziara_id", schema="core")
     op.drop_column("packages", "special_services", schema="core")
     op.drop_column("packages", "other_services", schema="core")
+    op.drop_column("packages", "route_id", schema="core")
+    op.drop_column("packages", "airlines", schema="core")
+
+    op.drop_table("ziara", schema="core")
+    op.drop_table("food_menu", schema="core")
+    op.drop_table("route", schema="core")
+    op.drop_table("add_ons_service", schema="core")
