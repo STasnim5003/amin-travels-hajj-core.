@@ -105,6 +105,9 @@ def upgrade() -> None:
         schema="core"
     )
 
+    op.alter_column("admin","passport_copy",schema="core",existing_type=sa.dialects.postgresql.JSONB(astext_type=sa.Text()),nullable=True)
+    op.alter_column("admin","logo",schema="core",existing_type=sa.dialects.postgresql.JSONB(astext_type=sa.Text()),nullable=True)
+
 
 def downgrade() -> None:
     op.drop_column("packages", "duration_range", schema="core")
