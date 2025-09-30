@@ -31,7 +31,7 @@ async def get_pilgrim_data(db: AsyncSession,
                            username: Optional[str]) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
 
-    pilgrims, total = await fetch_pilgrim_data_json(db, name_en, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, skip, limit)
+    pilgrims, total, registration_status_count, allocation_status_count = await fetch_pilgrim_data_json(db, name_en, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, skip, limit)
     views = []
     if username and table_name:
         views = await view_field_service.get_views(db, username, table_name)
@@ -41,7 +41,9 @@ async def get_pilgrim_data(db: AsyncSession,
         total=total,
         page=page,
         size=limit,
-        views=views
+        views=views,
+        registration_status_count=registration_status_count or None,
+        allocation_status_count=allocation_status_count or None
     )
 
 async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username:str):

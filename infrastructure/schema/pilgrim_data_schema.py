@@ -54,6 +54,8 @@ class PaginatedPilgrimDataListResponseSchema(BaseModel):
     page : int
     data : Optional[List[PilgrimDataResponseSchema]] = None
     views : Optional[List[ViewFieldResponseSchema]] = None
+    registration_status_count: Optional[Dict[str, int]] = None
+    allocation_status_count: Optional[Dict[str, int]] = None
 
 class PilgrimUpdateSchema(BaseModel):
     tracking_id : str
