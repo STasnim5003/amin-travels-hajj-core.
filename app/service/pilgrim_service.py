@@ -1,3 +1,5 @@
+from os import access
+from pyexpat.errors import messages
 from typing import Optional
 
 from fastapi import HTTPException
@@ -49,7 +51,7 @@ async def get_pilgrim_data(db: AsyncSession,
         page=page,
         size=limit,
         views=views,
-        counts=counts,
+        counts=counts
     )
 
 
