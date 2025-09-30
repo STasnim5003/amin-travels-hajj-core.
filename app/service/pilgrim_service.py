@@ -1,5 +1,3 @@
-from os import access
-from pyexpat.errors import messages
 from typing import Optional
 
 from fastapi import HTTPException
@@ -12,10 +10,10 @@ from app.core.utils.utils import verify_pilgrim_password, create_access_token_fo
     create_refresh_token_for_pilgrim
 from app.service import view_field_service
 from data.repository import pilgrim_repository, file_repository
-from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
-    BulkUpdatePilgrimRequestSchema, UpdatePilgrimResponseSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
-    PilgrimRegistrationRequestSchema
 from data.repository.pilgrim_repository import fetch_pilgrim_data_json
+from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
+    BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
+    PilgrimRegistrationRequestSchema
 
 
 async def get_pilgrim_data(db: AsyncSession,
@@ -31,10 +29,17 @@ async def get_pilgrim_data(db: AsyncSession,
                            username: Optional[str]) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
 
-    pilgrims, total, registration_status_count, allocation_status_count = await fetch_pilgrim_data_json(db, name_en, tracking_id, serial_no, mobile_no, group_name, allocation_status, registration_status, skip, limit)
+    pilgrims, total, registration_status_count, allocation_status_count = await fetch_pilgrim_data_json(db, name_en,
+                                                                                                        tracking_id,
+                                                                                                        serial_no,
+                                                                                                        mobile_no,
+                                                                                                        group_name,
+                                                                                                        allocation_status,
+                                                                                                        registration_status,
+                                                                                                        skip, limit)
     views = []
-    if username and table_name:
-        views = await view_field_service.get_views(db, username, table_name)
+    if username:
+        views = await view_field_service.get_views(db, username)
 
     counts = registration_status_count or allocation_status_count or {}
 
@@ -47,33 +52,36 @@ async def get_pilgrim_data(db: AsyncSession,
         counts=counts,
     )
 
-async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username:str):
+
+async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username: str):
     try:
         response = await pilgrim_repository.update_pilgrim_approval_status(data=data, db=db, username=username)
 
-
         return PaginatedPilgrimDataListResponseSchema(
-            data = response,
-            total = len(response),
-            page = 1,
-            size = len(response)
+            data=response,
+            total=len(response),
+            page=1,
+            size=len(response)
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRequestForm):
+
+async def pilgrim_login(db: AsyncSession, request_credentials: OAuth2PasswordRequestForm):
     try:
-        pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db,request_credentials.username)
+        pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, request_credentials.username)
 
         if not pilgrim:
             raise HTTPException(status_code=404, detail="Incorrect Tracking Id or Password.")
 
-        is_password_matched =  verify_pilgrim_password(request_credentials.password, pilgrim.password)
+        is_password_matched = verify_pilgrim_password(request_credentials.password, pilgrim.password)
         if not is_password_matched:
             raise HTTPException(status_code=404, detail="Incorrect Tracking Id or Password.")
 
-        access_token = create_access_token_for_pilgrim(subject=pilgrim.name_en,mobile_no=pilgrim.mobile_no, tracking_id=pilgrim.tracking_id)
-        refresh_token = create_refresh_token_for_pilgrim(subject=pilgrim.name_en, mobile_no=pilgrim.mobile_no, tracking_id=pilgrim.tracking_id)
+        access_token = create_access_token_for_pilgrim(subject=pilgrim.name_en, mobile_no=pilgrim.mobile_no,
+                                                       tracking_id=pilgrim.tracking_id)
+        refresh_token = create_refresh_token_for_pilgrim(subject=pilgrim.name_en, mobile_no=pilgrim.mobile_no,
+                                                         tracking_id=pilgrim.tracking_id)
 
         return PilgrimLoginResponseSchema(
             access_token=access_token,
@@ -82,8 +90,9 @@ async def pilgrim_login(db: AsyncSession, request_credentials : OAuth2PasswordRe
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-async def get_pilgrim_by_tracking_id(db:AsyncSession, tracking_id: str):
-    pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db,tracking_id)
+
+async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
+    pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, tracking_id)
     passport_copy = pilgrim.passport_copy
     response = dict(pilgrim._mapping)
     if passport_copy:
@@ -91,8 +100,9 @@ async def get_pilgrim_by_tracking_id(db:AsyncSession, tracking_id: str):
         response["passport_copy"] = passport_copy_with_download
     return response
 
-async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center: str,
-                           passport_copy: UploadFile, package_id : int, comment_on_package: str):
+
+async def pilgrim_register(db: AsyncSession, tracking_id: str, vaccination_center: str,
+                           passport_copy: UploadFile, package_id: int, comment_on_package: str):
     passport_data = []
     try:
         passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
@@ -101,11 +111,11 @@ async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center
         raise HTTPException(status_code=400, detail=str(e))
 
     new_pilgrim_registration_request = PilgrimRegistrationRequestSchema(
-        vaccination_center = vaccination_center,
-        passport_copy = passport_data,
-        tracking_id = tracking_id,
-        package_id = package_id,
-        comment_on_package = comment_on_package
+        vaccination_center=vaccination_center,
+        passport_copy=passport_data,
+        tracking_id=tracking_id,
+        package_id=package_id,
+        comment_on_package=comment_on_package
     )
 
     try:
@@ -114,7 +124,7 @@ async def pilgrim_register(db:AsyncSession, tracking_id: str, vaccination_center
         raise HTTPException(status_code=404, detail=str(e))
 
 
-async def get_pilgrim_by_id(db:AsyncSession, pilgrim_id:int) -> PilgrimDataResponseSchema:
+async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int) -> PilgrimDataResponseSchema:
     try:
         pilgrim = await pilgrim_repository.get_pilgrim_by_id(db, pilgrim_id)
 
@@ -127,5 +137,3 @@ async def get_pilgrim_by_id(db:AsyncSession, pilgrim_id:int) -> PilgrimDataRespo
         return PilgrimDataResponseSchema.model_validate(pilgrim_dict)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-

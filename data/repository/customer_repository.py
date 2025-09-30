@@ -1,12 +1,14 @@
+from datetime import datetime
+
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.pilgrim_data_model import PilgrimDataModel
-from infrastructure.schema.customer_schema import CustomerCreateSchema
+from infrastructure.schema.customer_schema import CustomerCreateSchema, CustomerAppliedForRegistrationSchema
 
 
-async def create_customer(db:AsyncSession, customer : CustomerCreateSchema, group_name : str):
+async def create_customer(db: AsyncSession, customer: CustomerCreateSchema, group_name: str):
     try:
         if customer.mobile_no:
             stmt = select(PilgrimDataModel).where(
@@ -53,3 +55,45 @@ async def create_customer(db:AsyncSession, customer : CustomerCreateSchema, grou
             status_code=400,
             detail=f"Error: {str(e)}"
         )
+
+
+async def customer_applied_for_registration(db: AsyncSession, tracking_ids: CustomerAppliedForRegistrationSchema,
+                                            group_name: str):
+    try:
+        ids = tracking_ids.tracking_ids
+
+        check_stmt = select(PilgrimDataModel).where(
+            PilgrimDataModel.tracking_id.in_(ids),
+            or_(
+                PilgrimDataModel.registration_status != "PREREGISTERED",
+                PilgrimDataModel.allocation_status != "ASSIGNED",
+                PilgrimDataModel.group_name != group_name,
+            )
+        )
+        result = await db.execute(check_stmt)
+        invalid_rows = result.scalars().all()
+
+        if invalid_rows:
+            invalid_ids = [row.tracking_id for row in invalid_rows]
+            raise HTTPException(status_code=400, detail=f"Error in this tracking ids: {invalid_ids}")
+
+        stmt = (
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.tracking_id.in_(ids))
+            .values(
+                registration_status="APPLIED",
+                updated_by=group_name,
+                updated_at=datetime.now(),
+            )
+            .returning(PilgrimDataModel)
+        )
+        result = await db.execute(stmt)
+        updated_pilgrims = result.scalars().all()
+
+        await db.commit()
+
+        return updated_pilgrims
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error updating pilgrims: {str(e)}")
