@@ -107,7 +107,30 @@ def upgrade() -> None:
 
     op.alter_column("admin","passport_copy",schema="core",existing_type=sa.dialects.postgresql.JSONB(astext_type=sa.Text()),nullable=True)
     op.alter_column("admin","logo",schema="core",existing_type=sa.dialects.postgresql.JSONB(astext_type=sa.Text()),nullable=True)
+    op.add_column("admin", sa.Column("google_map_location", sa.String(), nullable=True), schema="core")
+    op.add_column("admin", sa.Column("saudi_representatives", postgresql.JSONB(astext_type=sa.TEXT())), schema="core")
 
+    # add ons table
+    op.create_table(
+        "admin_user",
+        sa.Column("id", sa.Integer(), primary_key=True, index=True),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("email",  sa.String(), nullable=True),
+        sa.Column("mobile_no", sa.String(), nullable=False),
+        sa.Column("password", sa.String(), nullable=False),
+        sa.Column("username", sa.String(), nullable=False),
+        sa.Column("role", sa.String(), nullable=False),
+        sa.Column("agency_name", sa.String(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=True,
+                  onupdate=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'")),
+        sa.Column('created_by', sa.String(), nullable=True),
+        sa.Column('updated_by', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+        schema="core"
+    )
 
 def downgrade() -> None:
     op.drop_column("packages", "duration_range", schema="core")
@@ -122,7 +145,11 @@ def downgrade() -> None:
     op.drop_column("packages", "route_id", schema="core")
     op.drop_column("packages", "airlines", schema="core")
 
+    op.drop_column("admin", "saudi_representatives", schema="core")
+    op.drop_column("admin", "google_map_location", schema="core")
+
     op.drop_table("ziara", schema="core")
     op.drop_table("food_menu", schema="core")
     op.drop_table("route", schema="core")
     op.drop_table("add_ons_service", schema="core")
+    op.drop_table("admin_user", schema="core")
