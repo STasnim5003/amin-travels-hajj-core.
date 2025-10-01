@@ -16,6 +16,8 @@ class AdminBaseSchema(BaseModel):
     passport_copy: Optional[List[Dict[str, Any]]] = None
     logo: Optional[List[Dict[str, Any]]] = None
     is_active: bool
+    google_map_location : Optional[str] = None
+    saudi_representatives : Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True

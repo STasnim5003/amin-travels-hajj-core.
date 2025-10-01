@@ -1,10 +1,12 @@
+from typing import List, Dict, Any
+
 from fastapi import HTTPException
-from sqlalchemy import insert, select, or_, func
+from sqlalchemy import insert, select, or_, func, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_model import AdminModel
-from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema
+from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminProfileUpdateResponseSchema
 
 
 async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminResponseSchema:
@@ -160,3 +162,40 @@ async def delete_admin_by_id(db: AsyncSession, admin_id: int):
     except Exception:
         await db.rollback()
         raise HTTPException(status_code=500, detail="Unexpected error occurred while deleting the admin.")
+
+
+async def update_admin_profile(
+        db:AsyncSession,
+        location: str,
+        google_map_location : str,
+        logo: List[Dict[str, Any]],
+        passport_copy : List[Dict[str, Any]],
+        agency_name : str
+):
+    stmt = select(AdminModel).where(AdminModel.agency_name == agency_name)
+    result = await db.execute(stmt)
+    admin = result.scalar_one_or_none()
+
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin not found")
+
+    stmt = (
+        update(AdminModel)
+        .where(AdminModel.agency_name == agency_name)
+        .values(
+            location=location,
+            google_map_location=google_map_location,
+            logo=logo,
+            passport_copy=passport_copy,
+        )
+        .returning(AdminModel)
+    )
+
+    result = await db.execute(stmt)
+    await db.commit()
+    updated_admin = result.scalar_one_or_none()
+
+    if not updated_admin:
+        raise HTTPException(status_code=400, detail="Update failed")
+
+    return AdminResponseSchema.model_validate(updated_admin)

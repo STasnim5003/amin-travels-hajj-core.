@@ -20,3 +20,5 @@ class AdminModel(Base, BaseMixinModel):
     passport_copy = Column(JSONB, nullable=True)
     logo = Column(JSONB, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
+    google_map_location = Column(String, nullable=True)
+    saudi_representatives = Column(JSONB, nullable=True)
