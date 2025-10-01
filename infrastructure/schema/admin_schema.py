@@ -11,11 +11,13 @@ class AdminBaseSchema(BaseModel):
     agency_name: str
     license_number : str
     mobile_no : str
-    location: Optional[str]
-    email: Optional[str]
+    location: Optional[str] = None
+    email: Optional[str] = None
     passport_copy: Optional[List[Dict[str, Any]]] = None
     logo: Optional[List[Dict[str, Any]]] = None
     is_active: bool
+    google_map_location : Optional[str] = None
+    saudi_representatives : Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True

@@ -26,10 +26,7 @@ async def create_admin_endpoint(
         agency_name: str = Form(...),
         license_number: str = Form(...),
         mobile_no: str = Form(...),
-        location: Optional[str] = Form(None),
-        email: Optional[str] = Form(None),
-        logo: UploadFile = File(...),
-        passport_copy: UploadFile = File(...),
+        email: Optional[str] = Form(...),
         current_user: dict = Depends(get_current_user)
 
 ):
@@ -44,10 +41,7 @@ async def create_admin_endpoint(
             agency_name=agency_name,
             license_number=license_number,
             mobile_no=mobile_no,
-            location=location,
-            email=email,
-            logo=logo,
-            passport_copy=passport_copy
+            email=email
         )
         return JSONResponse(content=jsonable_encoder(response))
 
@@ -132,3 +126,23 @@ async def delete_admin_by_id(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
+
+@private_router.put("/admin/profile", response_model=AdminResponseSchema, tags=["admin"])
+async def update_admin_profile(
+        location : str = Form(...),
+        google_map_location: str = Form(...),
+        logo: UploadFile = File(...),
+        passport_copy: UploadFile = File(...),
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+) -> AdminResponseSchema:
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    # agency_name = "stringz"
+    try:
+        return await admin_service.update_admin_profile(db, location, google_map_location, logo, passport_copy, agency_name)
+    except Exception as e:
+        raise
+
+

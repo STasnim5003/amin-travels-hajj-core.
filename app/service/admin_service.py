@@ -1,10 +1,9 @@
 from typing import Optional
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
-from starlette.datastructures import UploadFile
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
@@ -20,26 +19,9 @@ async def create_admin(db: AsyncSession,
                        agency_name: str,
                        license_number: str,
                        mobile_no: str,
-                       location: Optional[str],
                        email: Optional[str],
-                       logo: UploadFile,
-                       passport_copy: UploadFile) -> AdminResponseSchema:
+                       ) -> AdminResponseSchema:
     hashed_password = hash_password(password)
-
-    logo_data = []
-    try:
-        logo_resp = await file_repository.upload_file(file=logo, name="logo")
-        logo_data.append(logo_resp.model_dump())
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-    passport_data = []
-    try:
-        passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
-        passport_data.append(passport_resp.model_dump())
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
     new_admin = AdminBaseSchema(
         user_name=user_name,
@@ -48,25 +30,18 @@ async def create_admin(db: AsyncSession,
         agency_name=agency_name,
         license_number=license_number,
         mobile_no=mobile_no,
-        location=location,
         email=email,
-        logo=logo_data,
-        passport_copy=passport_data,
         is_active=True,
 
     )
     try:
         response = await admin_repository.insert_admin(new_admin, db=db)
-        if response.passport_copy:
-            response.passport_copy = await generate_downloadable_urls(response.passport_copy)
-        if response.logo:
-            response.logo = await generate_downloadable_urls(response.logo)
         return response
 
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 async def admin_login(db: AsyncSession, request_credential: OAuth2PasswordRequestForm):
@@ -149,3 +124,41 @@ async def delete_admin_by_id(db: AsyncSession, admin_id: int) -> AdminProfileUpd
         raise http_exc
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unexpected error occurred while deleting the admin.")
+
+async def update_admin_profile(
+        db:AsyncSession,
+        location: str,
+        google_map_location: str,
+        logo: UploadFile,
+        passport_copy: UploadFile,
+        agency_name: str
+):
+    logo_data = []
+    try:
+        logo_resp = await file_repository.upload_file(file=logo, name="logo")
+        logo_data.append(logo_resp.model_dump())
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    passport_data = []
+    try:
+        passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
+        passport_data.append(passport_resp.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+    try:
+        response = await admin_repository.update_admin_profile(db, location, google_map_location, logo_data, passport_data, agency_name )
+        if response.passport_copy:
+            response.passport_copy = await generate_downloadable_urls(response.passport_copy)
+        if response.logo:
+            response.logo = await generate_downloadable_urls(response.logo)
+        return response
+
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
