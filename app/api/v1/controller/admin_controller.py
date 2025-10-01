@@ -126,3 +126,10 @@ async def delete_admin_by_id(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
+
+@private_router.put("/admin/profile", response_model=AdminProfileUpdateResponseSchema, tags=["admin"])
+async def update_admin_profile(
+        location : str = Form(...),
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+) -> AdminProfileUpdateResponseSchema:
