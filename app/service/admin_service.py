@@ -36,10 +36,6 @@ async def create_admin(db: AsyncSession,
     )
     try:
         response = await admin_repository.insert_admin(new_admin, db=db)
-        # if response.passport_copy:
-        #     response.passport_copy = await generate_downloadable_urls(response.passport_copy)
-        # if response.logo:
-        #     response.logo = await generate_downloadable_urls(response.logo)
         return response
 
     except HTTPException as e:
