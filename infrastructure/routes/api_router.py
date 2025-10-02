@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
 from app.api.v1.controller import (file_controller, training_controller, program_controller, pilgrim_controller,
-                                   view_field_controller, customer_controller, food_menu_controller)
+                                   view_field_controller, customer_controller, food_menu_controller, route_controller,
+                                   ziara_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
-from app.api.v1.controller.pilgrim_controller import private_router
 
 router = APIRouter()
 
@@ -30,3 +30,5 @@ router.include_router(view_field_controller.private_router)
 router.include_router(customer_controller.private_router)
 
 router.include_router(food_menu_controller.private_router)
+router.include_router(route_controller.private_router)
+router.include_router(ziara_controller.ziara_router)
