@@ -1,0 +1,39 @@
+import fastapi
+from fastapi import Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.middleware.middleware import get_current_user
+from app.service import ziara_service
+from data.db.db_config import get_async_db
+from infrastructure.schema.ziara_schema import ZiaraResponseSchema, ZiaraCreateSchema
+
+ziara_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
+
+# TODO : pic insertion
+@ziara_router.post("/ziara", response_model=ZiaraResponseSchema, tags=["Ziara"])
+async def create_ziara(
+        ziara: ZiaraCreateSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user),
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=400, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await ziara_service.create_ziara_service(db, ziara, agency_name)
+
+
+@ziara_router.get("/ziara/{ziara_id}", response_model=ZiaraResponseSchema, tags=["Ziara"])
+async def get_ziara(ziara_id: int, db: AsyncSession = Depends(get_async_db)):
+    db_ziara = await ziara_service.get_ziara_by_id_service(db, ziara_id)
+    if not db_ziara:
+        raise HTTPException(status_code=404, detail="Ziara not found")
+    return db_ziara
+
+
+@ziara_router.get("/ziaras", response_model=list[ZiaraResponseSchema], tags=["Ziara"])
+async def get_all_ziaras(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user),
+):
+    agency_name = current_user["agency_name"]
+    return await ziara_service.get_all_ziaras_service(db, agency_name)

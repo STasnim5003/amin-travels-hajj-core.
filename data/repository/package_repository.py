@@ -1,10 +1,12 @@
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from data.filter.query_filter import filter_query
 from data.model.package_model import PackageModel
 from infrastructure.schema.package_schema import PackageResponseSchema, PackageMasterDataForFilterSchema, \
-    PackageMasterDataForFilterListSchema
+    PackageMasterDataForFilterListSchema, PackageBaseSchema
 
 
 async def get_packages(db: AsyncSession,
@@ -16,24 +18,33 @@ async def get_packages(db: AsyncSession,
                        description_type: str = None,
                        hajj_month: str = None):
     try:
-        packages, count = await filter_query(
-            db=db,
-            model=PackageModel,
-            name=name,
-            search=search,
-            hajj_year=hajj_year,
-            package_type=package_type,
-            duration=duration,
-            description_type=description_type,
-            hajj_month=hajj_month,
-            search_fields=["name", "hajj_year", "package_type", "duration", "description_type", "hajj_month"],
-            sort_by=[("id", "asc")],
-            is_active=True,
-        )
+        # Start query
+        query = select(PackageModel).options(joinedload(PackageModel.route))
+
+        # Apply filters
+        if name:
+            query = query.where(PackageModel.name == name)
+        if hajj_year:
+            query = query.where(PackageModel.hajj_year == hajj_year)
+        if package_type:
+            query = query.where(PackageModel.package_type == package_type)
+        if duration:
+            query = query.where(PackageModel.duration == duration)
+        if description_type:
+            query = query.where(PackageModel.description_type == description_type)
+        if hajj_month:
+            query = query.where(PackageModel.hajj_month == hajj_month)
+
+        query = query.order_by(PackageModel.id.asc())
+
+        # Execute query
+        result = await db.execute(query)
+        packages = result.scalars().all()
+
+        # Convert to Pydantic with locations
         packages_response = []
         for package in packages:
             package_data = PackageResponseSchema.model_validate(package).model_dump()
-
             package_data["locations"] = {
                 "makkah": package.makkah or [],
                 "madinah": package.madinah or [],
@@ -43,19 +54,14 @@ async def get_packages(db: AsyncSession,
                 "hotel_info": package.hotel_info or [],
                 "excludes": package.excludes or []
             }
-
-            package_data.pop("makkah", None)
-            package_data.pop("madinah", None)
-            package_data.pop("azizia", None)
-            package_data.pop("others_feature", None)
-            package_data.pop("includes", None)
-            package_data.pop("hotel_info", None)
-            package_data.pop("excludes", None)
-
+            for field in ["makkah", "madinah", "azizia", "others_feature", "includes", "hotel_info", "excludes"]:
+                package_data.pop(field, None)
             packages_response.append(package_data)
+
         return packages_response
+
     except Exception as e:
-        raise
+        raise e
 
 
 async def get_package_master_data_for_filtering(
@@ -91,8 +97,29 @@ async def get_package_master_data_for_filtering(
     return master_data
 
 async def get_package_by_id(db:AsyncSession, package_id : int):
-    query = select(PackageModel).where(PackageModel.id == package_id)
+    query = (
+        select(PackageModel)
+        .options(joinedload(PackageModel.route))  # eager load route
+        .where(PackageModel.id == package_id)
+    )
     result = await db.execute(query)
     package = result.scalars().one_or_none()
     return PackageResponseSchema.model_validate(package).model_dump()
 
+
+
+async def create_package(db: AsyncSession, payload: PackageBaseSchema) -> PackageModel:
+    package = PackageModel(**payload.model_dump())
+    try:
+        db.add(package)
+        await db.commit()
+        await db.refresh(package, attribute_names=["route"])
+        return package
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error: {str(e)}"
+        )
+
+# async def get_update_packages(db: AsyncSession)
