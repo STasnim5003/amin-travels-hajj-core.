@@ -49,3 +49,11 @@ async def create_package(
         db: AsyncSession = Depends(get_async_db)
 ) -> PackageResponseSchema:
     return await package_service.create_package(db, request_body)
+
+
+@router.get("/package/{package_id}", response_model=PackageResponseSchema, tags=["packages"])
+async def get_package(
+        package_id: int,
+        db: AsyncSession = Depends(get_async_db)
+):
+    return await package_service.get_package_by_id(db, package_id)

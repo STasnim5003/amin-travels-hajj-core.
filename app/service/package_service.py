@@ -35,3 +35,6 @@ async def create_package(db: AsyncSession, package: PackageBaseSchema) -> Packag
             status_code=400,
             detail=f"{str(e)}"
         )
+
+async def get_package_by_id(db:AsyncSession, package_id : int):
+    return await package_repository.get_package_by_id(db, package_id)

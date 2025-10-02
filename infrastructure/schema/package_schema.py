@@ -3,6 +3,8 @@ from typing import List, Dict, Optional, Any
 
 from pydantic import BaseModel
 
+from infrastructure.schema.route_schema import RouteResponseSchema
+
 
 class PackageBaseSchema(BaseModel):
     name: str
@@ -28,6 +30,8 @@ class PackageBaseSchema(BaseModel):
     ziara_id: Optional[Dict[str, Any]] = None
     special_services: Optional[Dict[str, Any]] = None
     other_services: Optional[Dict[str, Any]] = None
+    route_id: Optional[int] = None
+    airlines: Optional[str] = None
 
     @property
     def locations(self) -> dict:
@@ -42,6 +46,7 @@ class PackageBaseSchema(BaseModel):
 
 class PackageResponseSchema(PackageBaseSchema):
     id: int
+    route: Optional[RouteResponseSchema] = None
 
     class Config:
         from_attributes = True

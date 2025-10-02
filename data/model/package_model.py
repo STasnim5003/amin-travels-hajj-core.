@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Text, Date
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
 
 from data.model.base_mixin_model import Base, BaseMixinModel
 
@@ -40,6 +41,10 @@ class PackageModel(Base, BaseMixinModel):
     ziara_id = Column(JSONB(astext_type=String), nullable=True)
     special_services = Column(JSONB(astext_type=String), nullable=True)
     other_services = Column(JSONB(astext_type=String), nullable=True)
+    route_id = Column(Integer, ForeignKey("core.route.id"))
+    airlines = Column(String, nullable=True)
+
+    route = relationship("RouteModel", backref="packages")
 
     @property
     def locations(self) -> dict:
