@@ -267,27 +267,27 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
     if pilgrim is None:
         raise HTTPException(status_code=404, detail="Pilgrim not found")
 
-    query = text("""
-        UPDATE core.pilgrim_data
-        SET 
-            registration_status = 'APPLIED',
-            vaccination_center = :vaccination_center,
-            passport_copy = :passport_copy,
-            package_id = :package_id,
-            comment_on_package = :comment_on_package
-        WHERE tracking_id = :tracking_id
-    """)
+    stmt = (
+        update(PilgrimDataModel)  # your ORM model
+        .where(PilgrimDataModel.tracking_id == tracking_id)
+        .values(
+            registration_status='APPLIED',
+            vaccination_center=request_schema.vaccination_center,
+            passport_copy=json.dumps(request_schema.passport_copy),
+            package_id=request_schema.package_id,
+            comment_on_package=request_schema.comment_on_package
+        )
+        .returning(PilgrimDataModel)  # important: RETURNING to get updated object
+    )
 
-    await db.execute(query, {
-        "vaccination_center": request_schema.vaccination_center,
-        "passport_copy": json.dumps(request_schema.passport_copy),
-        "tracking_id": tracking_id,
-        "package_id" : request_schema.package_id,
-        "comment_on_package" : request_schema.comment_on_package
-    })
+    result = await db.execute(stmt)
+    updated_pilgrim = result.scalar_one_or_none()  # returns the updated ORM object or None
     await db.commit()
 
-    return {"message": "Pilgrim Data Updated successfully"}
+    if not updated_pilgrim:
+        raise HTTPException(status_code=400, detail="Failed to update pilgrim data")
+
+    return updated_pilgrim
 
 async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
     try:

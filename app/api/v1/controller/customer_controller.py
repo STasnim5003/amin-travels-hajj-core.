@@ -58,7 +58,7 @@ async def customer_registration(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=400, detail="Unauthorized")
     try:
-        return await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id,
+        return  await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id,
                                                       comment_on_package)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
