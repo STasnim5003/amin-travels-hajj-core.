@@ -121,7 +121,13 @@ async def pilgrim_register(db: AsyncSession, tracking_id: str, vaccination_cente
     )
 
     try:
-        return await pilgrim_repository.pilgrim_register(db, new_pilgrim_registration_request)
+        pilgrim =  await pilgrim_repository.pilgrim_register(db, new_pilgrim_registration_request)
+        pilgrim_dict = pilgrim.__dict__.copy()
+        if pilgrim_dict.get("passport_copy"):
+            passport_data_urls = await generate_downloadable_urls(passport_data)
+            pilgrim_dict["passport_copy"] = passport_data_urls
+
+        return PilgrimDataResponseSchema.model_validate(pilgrim_dict)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
