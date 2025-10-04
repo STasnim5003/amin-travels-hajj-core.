@@ -103,7 +103,7 @@ async def register_pilgrim(
     if not tracking_id:
         raise HTTPException(status_code=400, detail="Tracking ID is missing in user context")
     try:
-        return await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id,
+        return  await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id,
                                                       comment_on_package)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
