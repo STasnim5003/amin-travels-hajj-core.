@@ -71,7 +71,7 @@ async def fetch_pilgrim_data_json(
                         FROM (
                             SELECT registration_status, COUNT(*) AS count
                             FROM core.pilgrim_data
-                            WHERE group_name ILIKE :group_name
+                            WHERE group_name = '{group_name}' AND allocation_status = 'ASSIGNED'
                             GROUP BY registration_status
                         ) AS registration_counts
                     )

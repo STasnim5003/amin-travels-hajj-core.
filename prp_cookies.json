@@ -1,0 +1,22 @@
+[
+  {
+    "domain": "prp.pilgrimdb.org",
+    "expiry": 1759568014,
+    "httpOnly": true,
+    "name": "training_laravel_session",
+    "path": "/",
+    "sameSite": "Lax",
+    "secure": false,
+    "value": "eyJpdiI6ImlmakhlWUJwWFBBTVFvNUU4RWpsZWc9PSIsInZhbHVlIjoiOHdTY1JZZlJJSzk3N3VobWJWVVYrVTIzNXpIOVZraThyWU81TGlsTnBqa2tzbTRzTlNJNkhqUzcrZjVTU1YxcHpLVG9kNnRcL2RDellXTTdReVRJSzJRPT0iLCJtYWMiOiJjZTEzMjBlMWIxZDNiNjRiNWEyOGY2ZGQ3MjJhMDFlZmJkMzZjOWIyNDg5ZWI5MjFlNTIyNThlY2ZhN2ZlM2ZiIn0%3D"
+  },
+  {
+    "domain": "prp.pilgrimdb.org",
+    "expiry": 1759568014,
+    "httpOnly": false,
+    "name": "XSRF-TOKEN",
+    "path": "/",
+    "sameSite": "Lax",
+    "secure": false,
+    "value": "eyJpdiI6Ik1XUFwvSUthTnBtblhNTU5BREVEdnJRPT0iLCJ2YWx1ZSI6IjZsOVN1RFF1T0p2cFNXTmRSd0hFc3dYUVJQck1nazZSRXQrbEZlZEZLNVJzelhLa2g5SGhPWlpxUm9MYlZiK3lWT2JwMlwvOUlmVHVLMDROWUxcLzlLUFE9PSIsIm1hYyI6IjlmMTY1ODM5YjA0ZDk3YmVjMTM5NTRhYzk4MGI4YzRhYzkyNTg1YWFhNDNkMTcxYTA3ZTA0ZWRlNmEzN2ZjOTUifQ%3D%3D"
+  }
+]
