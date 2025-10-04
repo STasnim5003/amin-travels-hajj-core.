@@ -413,3 +413,10 @@ async def prp_data_fetch(email: str, password: str):
 
     except Exception as e:
         print(e)
+
+    finally:
+        print("🧹 Closing Chrome driver...")
+        try:
+            driver.quit()
+        except Exception as e:
+            print(f"Warning: Failed to close driver: {e}")
