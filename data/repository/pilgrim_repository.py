@@ -71,7 +71,7 @@ async def fetch_pilgrim_data_json(
                         FROM (
                             SELECT registration_status, COUNT(*) AS count
                             FROM core.pilgrim_data
-                            WHERE group_name = '{group_name}' AND allocation_status = 'ASSIGNED'
+                            WHERE group_name = '{group_name}' AND allocation_status IN ('ASSIGNED', 'WALK_IN')
                             GROUP BY registration_status
                         ) AS registration_counts
                     )
