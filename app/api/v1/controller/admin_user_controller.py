@@ -19,14 +19,16 @@ async def list_admin_user(
 ):
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=400, detail="Unauthorized")
-    return await admin_user_service.list_users(db)
+    agency_name = current_user["agency_name"]
+    return await admin_user_service.list_users(db,agency_name)
 
 
 @private_router.get("/admin-user/{admin_id}", response_model=AdminUserResponse, tags=["Admin User"])
 async def get_admin_user(admin_id: int, db: AsyncSession = Depends(get_async_db), current_user: dict = Depends(get_current_user)):
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=400, detail="Unauthorized")
-    return await admin_user_service.get_user(db, admin_id)
+    agency_name = current_user["agency_name"]
+    return await admin_user_service.get_user(db, admin_id, agency_name)
 
 
 @private_router.post("/admin-user", response_model=AdminUserResponse, tags=["Admin User"])

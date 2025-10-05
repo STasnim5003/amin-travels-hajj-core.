@@ -1,25 +1,28 @@
 from fastapi import HTTPException
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
 from infrastructure.schema.admin_user_schema import AdminUserCreate
 
-async def get_all(db: AsyncSession):
+async def get_all(db: AsyncSession, agency_name: str):
     try:
-        stmt = select(AdminUserModel)  # select all rows
+        stmt = select(AdminUserModel).where(AdminUserModel.agency_name == agency_name)
         result = await db.execute(stmt)
-        return result.scalars().all()  # returns list of AdminUserModel instances
+        return result.scalars().all()
     except Exception as e:
-        await db.rollback()  # rollback just in case
+        await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
 
-
-async def get_by_id(db: AsyncSession, user_id: int):
-    result = await db.execute(
-        select(AdminUserModel).where(AdminUserModel.id == user_id)
+async def get_by_id(db: AsyncSession, user_id: int, agency_name: str):
+    stmt = select(AdminUserModel).where(
+        and_(
+            AdminUserModel.id == user_id,
+            AdminUserModel.agency_name == agency_name
+        )
     )
+    result = await db.execute(stmt)
     return result.scalars().first()
 
 
