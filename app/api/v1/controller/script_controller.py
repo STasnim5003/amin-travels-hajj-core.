@@ -12,9 +12,8 @@ private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/privat
 @private_router.post("/fetch-prp-data",response_model=None, tags=["prp"])
 async def prp_data_fetch_update(
         request_schema : RunScriptRequestSchema,
-        db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "SUPER_ADMIN":
         raise HTTPException(status_code=403, detail="Unauthorized")
-    return await script_service.prp_data_fetch_update(db,request_schema)
+    return await script_service.prp_data_fetch_update(request_schema)
