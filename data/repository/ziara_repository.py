@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -13,9 +14,15 @@ async def create_ziara(db: AsyncSession, ziara: ZiaraCreateSchema) -> ZiaraModel
     return new_ziara
 
 
-async def get_ziara_by_id(db: AsyncSession, ziara_id: int) -> ZiaraModel:
+async def get_ziara_by_id(db: AsyncSession, ziara_id: int, agency_name : str) -> ZiaraModel:
     result = await db.execute(select(ZiaraModel).where(ZiaraModel.id == ziara_id))
-    return result.scalar_one_or_none()
+    existing_ziara = result.scalar_one_or_none()
+    if not existing_ziara:
+        raise HTTPException(status_code=400, detail="Ziara not found")
+    if existing_ziara.agency_name != agency_name:
+        raise HTTPException(status_code=400, detail="Agency name does not match")
+
+    return existing_ziara
 
 
 

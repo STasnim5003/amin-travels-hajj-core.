@@ -11,3 +11,4 @@ class RouteModel(Base, BaseMixinModel):
     description = Column(String, nullable=False)
     is_publish = Column(Boolean, nullable=False, server_default="false")
     agency_name = Column(String, nullable=True)
+    route_name = Column(String, nullable=True)

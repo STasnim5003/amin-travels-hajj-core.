@@ -3,7 +3,9 @@ from typing import List, Dict, Optional, Any
 
 from pydantic import BaseModel
 
+from infrastructure.schema.food_menu_schema import FoodMenuResponseSchema
 from infrastructure.schema.route_schema import RouteResponseSchema
+from infrastructure.schema.ziara_schema import ZiaraResponseSchema
 
 
 class PackageBaseSchema(BaseModel):
@@ -14,8 +16,6 @@ class PackageBaseSchema(BaseModel):
     duration: Optional[int] = None
     description_type: Optional[str] = None
     package_type: str
-    hajj_month: Optional[str] = None
-    discount_deadline: Optional[date] = None
 
     # New fields from migration
     duration_range: Optional[Dict[str, Any]] = None
@@ -27,11 +27,12 @@ class PackageBaseSchema(BaseModel):
     return_ticket: Optional[str] = None
     fixed_or_shifting: Optional[str] = None
     food_menu_id: Optional[int] = None
-    ziara_id: Optional[Dict[str, Any]] = None
+    ziara_id: Optional[int] = None
     special_services: Optional[Dict[str, Any]] = None
     other_services: Optional[Dict[str, Any]] = None
     route_id: Optional[int] = None
     airlines: Optional[str] = None
+
 
     @property
     def locations(self) -> dict:
@@ -42,11 +43,15 @@ class PackageBaseSchema(BaseModel):
             "others_feature": self.others_feature or [],
         }
 
-
+class PackageCreateSchema(PackageBaseSchema):
+    agency_name: Optional[str] = None
 
 class PackageResponseSchema(PackageBaseSchema):
     id: int
     route: Optional[RouteResponseSchema] = None
+    agency_name: Optional[str] = None
+    ziara: Optional[ZiaraResponseSchema] = None
+    food_menu: Optional[FoodMenuResponseSchema] = None
 
     class Config:
         from_attributes = True

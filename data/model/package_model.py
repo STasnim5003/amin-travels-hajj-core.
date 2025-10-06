@@ -1,10 +1,8 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Text, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Date
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
 from data.model.base_mixin_model import Base, BaseMixinModel
-
 
 
 class PackageModel(Base, BaseMixinModel):
@@ -19,8 +17,7 @@ class PackageModel(Base, BaseMixinModel):
     duration = Column(Integer, nullable=True)
     description_type = Column(String, nullable=True)
     package_type = Column(String, nullable=False)
-    hajj_month = Column(String, nullable=True)
-    discount_deadline = Column(Date, nullable=True)
+
 
     # Existing JSON fields
     others_feature = Column(JSONB(astext_type=String), nullable=True)
@@ -37,14 +34,17 @@ class PackageModel(Base, BaseMixinModel):
     bed_type = Column(JSONB(astext_type=String), nullable=True)
     return_ticket = Column(String, nullable=True)
     fixed_or_shifting = Column(String, nullable=True)
-    food_menu_id = Column(Integer, nullable=True)
-    ziara_id = Column(JSONB(astext_type=String), nullable=True)
+    food_menu_id = Column(Integer, ForeignKey("core.food_menu.id"),nullable=True)
+    ziara_id = Column(Integer, ForeignKey("core.ziara.id"),nullable=True)
     special_services = Column(JSONB(astext_type=String), nullable=True)
     other_services = Column(JSONB(astext_type=String), nullable=True)
     route_id = Column(Integer, ForeignKey("core.route.id"))
     airlines = Column(String, nullable=True)
+    agency_name = Column(String, nullable=True)
 
     route = relationship("RouteModel", backref="packages")
+    ziara = relationship("ZiaraModel", backref="packages")
+    food_menu = relationship("FoodMenuModel", backref="packages")
 
     @property
     def locations(self) -> dict:

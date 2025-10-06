@@ -12,5 +12,6 @@ class FoodMenuModel(Base, BaseMixinModel):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     agency_name = Column(String, nullable=True)
+    area = Column(String, nullable=True)
     items = Column(JSONB, nullable=True)
-    is_publish = Column(Boolean, server_default=text("false"), nullable=False)
+    is_publish = Column(Boolean, server_default=text("true"), nullable=False)
