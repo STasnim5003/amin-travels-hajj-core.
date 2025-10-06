@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import insert, select, and_
+from sqlalchemy import insert, select, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.view_field_model import ViewFieldModel
@@ -14,17 +14,32 @@ async def create_view(db: AsyncSession, request_body: ViewFieldSchema, username:
     })
 
     try:
-        query = insert(ViewFieldModel).values(**request_data).returning(ViewFieldModel)
+        stmt = select(ViewFieldModel).where(
+            ViewFieldModel.view_name == request_data.get("view_name")
+        )
+        result = await db.execute(stmt)
+        existing_view = result.scalar_one_or_none()
 
-        result = await db.execute(query)
-        new_view: ViewFieldModel = result.scalar_one_or_none()  # fetch the inserted row
+        if existing_view:
+            update_stmt = (
+                update(ViewFieldModel)
+                .where(ViewFieldModel.id == existing_view.id)
+                .values(**request_data)
+                .returning(ViewFieldModel)
+            )
+            result = await db.execute(update_stmt)
+            updated_view = result.scalar_one()
+            await db.commit()
+            return ViewFieldResponseSchema.model_validate(updated_view.__dict__)
 
-        if new_view is None:
-            raise HTTPException(status_code=400, detail="Error occurred while creating view")
-
-        await db.commit()
-        # Convert SQLAlchemy model to response schema
-        return ViewFieldResponseSchema.model_validate(new_view.__dict__)
+        else:
+            insert_stmt = insert(ViewFieldModel).values(**request_data).returning(ViewFieldModel)
+            result = await db.execute(insert_stmt)
+            new_view = result.scalar_one_or_none()
+            if new_view is None:
+                raise HTTPException(status_code=400, detail="Error creating view")
+            await db.commit()
+            return ViewFieldResponseSchema.model_validate(new_view.__dict__)
 
     except Exception as e:
         await db.rollback()
