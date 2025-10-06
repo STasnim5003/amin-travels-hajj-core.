@@ -96,10 +96,10 @@ async def register_pilgrim(
         comment_on_package: Optional[str] = Form(None),
         passport_copy: UploadFile = File(...),
         db: AsyncSession = Depends(get_async_db),
-        # current_user: dict = Depends(get_current_pilgrim)
+        current_user: dict = Depends(get_current_pilgrim)
 ):
-    # tracking_id = current_user.get("tracking_id")
-    tracking_id = "M30DD883076"
+    tracking_id = current_user.get("tracking_id")
+    # tracking_id = "M30DD883076"
     if not tracking_id:
         raise HTTPException(status_code=400, detail="Tracking ID is missing in user context")
     try:
