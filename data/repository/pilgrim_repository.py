@@ -273,7 +273,7 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
         .values(
             registration_status='APPLIED',
             vaccination_center=request_schema.vaccination_center,
-            passport_copy=json.dumps(request_schema.passport_copy),
+            passport_copy=request_schema.passport_copy,
             package_id=request_schema.package_id,
             comment_on_package=request_schema.comment_on_package
         )
