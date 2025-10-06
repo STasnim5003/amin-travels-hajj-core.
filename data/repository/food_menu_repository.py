@@ -19,3 +19,12 @@ async def create(db: AsyncSession, food_menu: FoodMenuCreateSchema) -> FoodMenuM
 async def get_all_food_menu(db: AsyncSession, agency_name):
     result = await db.execute(select(FoodMenuModel).where(FoodMenuModel.agency_name == agency_name))
     return result.scalars().all()
+
+async def get_food_menu_by_id(db: AsyncSession, food_menu_id:int, agency_name : str):
+    result = await db.execute(select(FoodMenuModel).where(FoodMenuModel.id == food_menu_id))
+    existing_menu = result.scalar_one_or_none()
+    if not existing_menu:
+        raise HTTPException(status_code=400, detail=f"Food menu not found")
+    if existing_menu.agency_name != agency_name:
+        raise HTTPException(status_code=400, detail=f"Agency name {agency_name} does not match")
+    return existing_menu

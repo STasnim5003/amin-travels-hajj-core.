@@ -5,7 +5,8 @@ from pydantic import BaseModel
 class FoodMenuBaseSchema(BaseModel):
     name: str
     items: Optional[Dict[str, Any]] = None
-    is_publish: Optional[bool] = False
+    is_publish: Optional[bool] = True
+    area: str
 
 
 

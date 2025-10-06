@@ -9,10 +9,5 @@ class ZiaraModel(Base, BaseMixinModel):
     __table_args__ = {"schema": "core"}
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    pic = Column(JSONB, nullable=True)
     description = Column(String, nullable=False)
-    location = Column(String, nullable=False)
-    google_map_location = Column(String, nullable=False)
     agency_name = Column(String, nullable=True)
-    area = Column(String, nullable=False)

@@ -7,6 +7,7 @@ class RouteBaseSchema(BaseModel):
     description: str
     is_publish: Optional[bool] = False
     is_active: Optional[bool] = True
+    route_name: str
 
 
 class RouteCreateSchema(RouteBaseSchema):

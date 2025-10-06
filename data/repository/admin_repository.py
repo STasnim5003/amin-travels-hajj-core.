@@ -118,20 +118,14 @@ async def get_admin_by_username(db: AsyncSession, username: str):
             )
 
         return admin
-    except HTTPException:
-        raise
+    except HTTPException as e:
+         raise e
 
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=500,
-            detail="Database error occurred while retrieving admin by ID."
-        )
+    except SQLAlchemyError as e:
+        raise e
 
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="Unexpected error occurred while fetching admin by ID."
-        )
+    except Exception as e:
+        raise e
 
 
 async def delete_admin_by_id(db: AsyncSession, admin_id: int):

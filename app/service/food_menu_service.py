@@ -13,3 +13,9 @@ async def create_food_menu(db: AsyncSession, food_menu: FoodMenuCreateSchema):
 
 async def get_food_menus(db: AsyncSession, agency_name : str):
     return await food_menu_repository.get_all_food_menu(db, agency_name)
+
+async def get_food_menu_by_id(db: AsyncSession, food_menu_id : int, agency_name : str):
+    try:
+        return await food_menu_repository.get_food_menu_by_id(db, food_menu_id, agency_name)
+    except Exception as e:
+        raise

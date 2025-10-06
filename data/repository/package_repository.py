@@ -1,3 +1,4 @@
+from attr import attributes
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from data.filter.query_filter import filter_query
 from data.model.package_model import PackageModel
 from infrastructure.schema.package_schema import PackageResponseSchema, PackageMasterDataForFilterSchema, \
-    PackageMasterDataForFilterListSchema, PackageBaseSchema
+    PackageMasterDataForFilterListSchema, PackageBaseSchema, PackageCreateSchema
 
 
 async def get_packages(db: AsyncSession,
@@ -16,10 +17,15 @@ async def get_packages(db: AsyncSession,
                        package_type: str = None,
                        duration: int = None,
                        description_type: str = None,
-                       hajj_month: str = None):
+                       hajj_month: str = None,
+                       agency_name:str= None):
     try:
         # Start query
-        query = select(PackageModel).options(joinedload(PackageModel.route))
+        query = (select(PackageModel)
+                 .options(joinedload(PackageModel.route))
+                 .options(joinedload(PackageModel.food_menu))
+                 .options(joinedload(PackageModel.ziara))
+                 )
 
         # Apply filters
         if name:
@@ -34,6 +40,8 @@ async def get_packages(db: AsyncSession,
             query = query.where(PackageModel.description_type == description_type)
         if hajj_month:
             query = query.where(PackageModel.hajj_month == hajj_month)
+        if agency_name:
+            query = query.where(PackageModel.agency_name == agency_name)
 
         query = query.order_by(PackageModel.id.asc())
 
@@ -99,7 +107,9 @@ async def get_package_master_data_for_filtering(
 async def get_package_by_id(db:AsyncSession, package_id : int):
     query = (
         select(PackageModel)
-        .options(joinedload(PackageModel.route))  # eager load route
+        .options(joinedload(PackageModel.route))
+        .options(joinedload(PackageModel.food_menu))
+        .options(joinedload(PackageModel.ziara))
         .where(PackageModel.id == package_id)
     )
     result = await db.execute(query)
@@ -108,12 +118,12 @@ async def get_package_by_id(db:AsyncSession, package_id : int):
 
 
 
-async def create_package(db: AsyncSession, payload: PackageBaseSchema) -> PackageModel:
+async def create_package(db: AsyncSession, payload: PackageCreateSchema) -> PackageModel:
     package = PackageModel(**payload.model_dump())
     try:
         db.add(package)
         await db.commit()
-        await db.refresh(package, attribute_names=["route"])
+        await db.refresh(package, attribute_names=["route", "ziara", "food_menu"],)
         return package
     except Exception as e:
         await db.rollback()
@@ -122,4 +132,17 @@ async def create_package(db: AsyncSession, payload: PackageBaseSchema) -> Packag
             detail=f"Error: {str(e)}"
         )
 
-# async def get_update_packages(db: AsyncSession)
+async def get_package_by_id_for_agency(db: AsyncSession, package_id:int, agency_name : str):
+    try:
+        query = (
+            select(PackageModel)
+            .options(joinedload(PackageModel.route))
+            .options(joinedload(PackageModel.food_menu))
+            .options(joinedload(PackageModel.ziara))
+            .where(PackageModel.id == package_id)
+        )
+        result = await db.execute(query)
+        package = result.scalars().one_or_none()
+        return PackageResponseSchema.model_validate(package).model_dump()
+    except Exception as e:
+        raise e
