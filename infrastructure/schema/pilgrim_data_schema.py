@@ -43,6 +43,9 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     package_name: Optional[str] = None
     duration: Optional[int] = None
     comment_on_package : Optional[str] = None
+    passport_no: Optional[str] = None
+    passport_expiry_date : Optional[str] = None
+    payment_status : Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
