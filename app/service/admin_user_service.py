@@ -65,3 +65,9 @@ async def admin_user_login(db: AsyncSession, request_credential: OAuth2PasswordR
         "access_token": access_token,
         "refresh_token": refresh_token
     }
+
+async def get_admin_user_profile(db:AsyncSession, code:str):
+    try:
+        return await admin_user_repository.get_admin_user_by_code(db, code)
+    except Exception as e:
+        raise e

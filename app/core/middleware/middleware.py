@@ -45,3 +45,17 @@ def get_current_pilgrim(token: str = Depends(oauth2_scheme)) -> Dict:
         return {"name_bn" : name_bn, "mobile_no" : mobile_no, "tracking_id" : tracking_id}
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+def get_current_admin_user(token: str = Depends(oauth2_scheme)) -> Dict:
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+        code : str = payload.get("code")
+        role : str = payload.get("role")
+        agency_name : str = payload.get("agency_name")
+        mobile_no : str = payload.get("mobile_no")
+
+        if code is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return {"code": code, "role": role, "agency_name": agency_name, "mobile_no": mobile_no}
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")

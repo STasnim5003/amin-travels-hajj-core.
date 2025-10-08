@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.middleware.middleware import get_current_user
+from app.core.middleware.middleware import get_current_user, get_current_admin_user
 from app.service import admin_user_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate
@@ -24,6 +24,13 @@ async def list_admin_user(
     agency_name = current_user["agency_name"]
     return await admin_user_service.list_users(db,agency_name)
 
+@private_router.get("/admin-user/profile", response_model=AdminUserResponse, tags=["Admin User"])
+async def get_admin_user_profile(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_admin_user)
+) -> AdminUserResponse:
+    code = current_user["code"]
+    return await admin_user_service.get_admin_user_profile(db, code)
 
 @private_router.get("/admin-user/{admin_id}", response_model=AdminUserResponse, tags=["Admin User"])
 async def get_admin_user(admin_id: int, db: AsyncSession = Depends(get_async_db), current_user: dict = Depends(get_current_user)):
@@ -51,3 +58,4 @@ async def admin_user_login(
         db: AsyncSession = Depends(get_async_db)
 ):
     return await admin_user_service.admin_user_login(db, form_data)
+
