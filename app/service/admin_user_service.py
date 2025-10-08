@@ -71,3 +71,10 @@ async def get_admin_user_profile(db:AsyncSession, code:str):
         return await admin_user_repository.get_admin_user_by_code(db, code)
     except Exception as e:
         raise e
+
+async def get_pilgrim_data_by_admin_user(db:AsyncSession, group_leader_code:str):
+    try:
+        result = await admin_user_repository.get_pilgrim_by_admin_user(db, group_leader_code)
+        return result
+    except Exception as e:
+        raise e

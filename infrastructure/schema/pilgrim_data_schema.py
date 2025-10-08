@@ -1,8 +1,9 @@
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Optional, List, Dict, Any
 
-from infrastructure.schema.view_field_schema import ViewFieldListResponseSchema, ViewFieldResponseSchema
+from pydantic import BaseModel
+
+from infrastructure.schema.view_field_schema import ViewFieldResponseSchema
 
 
 class PilgrimDataBaseSchema(BaseModel):
@@ -32,56 +33,86 @@ class PilgrimDataBaseSchema(BaseModel):
     vaccination_center: Optional[str] = None
     passport_copy: Optional[List[Dict[str, Any]]] = None
 
-
     class Config:
         from_attributes = True
         populate_by_name = True
 
+
 class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     id: int
-    package_id : Optional[int] = None
+    package_id: Optional[int] = None
     package_name: Optional[str] = None
     duration: Optional[int] = None
-    comment_on_package : Optional[str] = None
+    comment_on_package: Optional[str] = None
     passport_no: Optional[str] = None
-    passport_expiry_date : Optional[str] = None
-    payment_status : Optional[str] = None
-    reference : Optional[str] = None
-    group_leader : Optional[str] = None
-    total_payable : Optional[int] = None
-    total_payment : Optional[int] = None
+    passport_expiry_date: Optional[str] = None
+    payment_status: Optional[str] = None
+    reference: Optional[str] = None
+    group_leader: Optional[str] = None
+    total_payable: Optional[int] = None
+    total_payment: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
 
+
 class PaginatedPilgrimDataListResponseSchema(BaseModel):
     total: int
-    size : int
-    page : int
-    data : Optional[List[PilgrimDataResponseSchema]] = None
-    views : Optional[List[ViewFieldResponseSchema]] = None
+    size: int
+    page: int
+    data: Optional[List[PilgrimDataResponseSchema]] = None
+    views: Optional[List[ViewFieldResponseSchema]] = None
     counts: Optional[Dict[str, int]] = None
 
+
 class PilgrimUpdateSchema(BaseModel):
-    tracking_id : str
-    group_name : str
-    is_assigned : bool
+    tracking_id: str
+    group_name: str
+    is_assigned: bool
+
 
 class BulkUpdatePilgrimRequestSchema(BaseModel):
-    data : List[PilgrimUpdateSchema]
+    data: List[PilgrimUpdateSchema]
+
 
 class UpdatePilgrimResponseSchema(BaseModel):
     message: str
     update_count: int
 
+
 class PilgrimLoginResponseSchema(BaseModel):
     access_token: str
     refresh_token: str
+
 
 class PilgrimRegistrationRequestSchema(BaseModel):
     vaccination_center: str
     passport_copy: List[Dict[str, Any]]
     tracking_id: str
-    package_id : int
+    package_id: int
     comment_on_package: Optional[str] = None
+
+
+class PilgrimMinimalResponseSchema(BaseModel):
+    id: int
+    name_en: Optional[str] = None
+    name_bn: Optional[str] = None
+    passport_no: Optional[str] = None
+    mobile_no: Optional[str] = None
+    registration_status: Optional[str] = None
+    group_name: Optional[str] = None
+    total_payable: Optional[int] = None
+    total_payment: Optional[int] = None
+    group_leader: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class PilgrimResponseForAdminUser(BaseModel):
+    pilgrims: Optional[List[PilgrimMinimalResponseSchema]] = None
+    total: Optional[int] = None
+    total_payable_sum : Optional[int] = None
+    total_due : Optional[int] = None
+    total_payment : Optional[int] = None

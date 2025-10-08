@@ -20,3 +20,6 @@ class AdminUserModel(Base, BaseMixinModel):
     username = Column(String, nullable=True)
     password = Column(String, nullable=True)
     code = Column(String, nullable=True)
+    total_payable = Column(Integer, nullable=True)
+    total_due = Column(Integer, nullable=True)
+    total_payment = Column(Integer, nullable=True)

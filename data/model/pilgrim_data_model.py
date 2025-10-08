@@ -39,3 +39,7 @@ class PilgrimDataModel(Base, BaseMixinModel):
     comment_on_package = Column(String, nullable=True)
     reference = Column(String, nullable=True)
     group_leader = Column(String, nullable=True)
+    passport_no =Column(String, nullable=True)
+    total_payable = Column(Integer, nullable=True)
+    total_payment = Column(Integer, nullable=True)
+
