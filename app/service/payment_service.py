@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import payment_repository
-from infrastructure.schema.payment_schema import PaymentSchema, GroupLeaderPaymentSchema
+from infrastructure.schema.payment_schema import PaymentSchema, GroupLeaderPaymentSchema, PaymentResponseSchema, \
+    PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency
 
 
 async def create_payable_for_group_leader(db:AsyncSession, payment_request:PaymentSchema, agency_name:str):
@@ -15,3 +16,53 @@ async def create_group_leader_payment(db: AsyncSession, request : GroupLeaderPay
         return await payment_repository.create_payment_of_group_leader(db, request, group_leader)
     except Exception as e:
         raise e
+
+async def get_group_leader_payments(
+    db,
+    group_leader: str,
+    category: str | None,
+    page: int,
+    size: int
+):
+    (
+        payments,
+        total,
+        total_payable,
+        total_payment,
+        total_due
+    ) = await payment_repository.get_payments_by_group_leader(db, group_leader, category, page, size)
+
+    payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
+
+    return PaginatedPaymentResponseForGroupLeader(
+        payments=payment_list,
+        page=page,
+        size=size,
+        total=total,
+        total_payable=total_payable,
+        total_payment=total_payment,
+        total_due=total_due
+    )
+
+async def get_agency_payments(
+    db,
+    agency_name: str,
+    group_leader : str | None,
+    category: str | None,
+    page: int,
+    size: int
+):
+    (
+        payments,
+        total
+    ) = await payment_repository.get_payments_by_group_leader(db, agency_name, group_leader,category, page, size)
+
+    payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
+
+    return PaginatedPaymentResponseForAgency(
+        payments=payment_list,
+        page=page,
+        size=size,
+        total=total
+    )
+

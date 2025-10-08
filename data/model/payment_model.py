@@ -16,3 +16,4 @@ class PaymentModel(Base, BaseMixinModel):
     group_leader = Column(String, nullable=True)
     category = Column(String, nullable=False)
     transaction_id = Column(String, nullable=True)
+    no_of_hajji = Column(Integer, nullable=True)

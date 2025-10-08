@@ -2,7 +2,7 @@ import random
 import string
 
 from fastapi import HTTPException
-from sqlalchemy import insert, select, update
+from sqlalchemy import insert, select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -21,6 +21,7 @@ async def create_payable_for_group_leader(db:AsyncSession, payment_request : Pay
             "transaction_id": transaction_id,
             "created_by": agency_name,
             "updated_by": agency_name,
+            "no_of_hajji" : len(payment_request.pilgrims_id)
         })
 
         # Insert into payment_info
@@ -52,9 +53,7 @@ async def create_payable_for_group_leader(db:AsyncSession, payment_request : Pay
                 )
 
         await db.commit()
-        payment_dict = created_payment.__dict__.copy()
-        payment_dict["no_of_hajji"] = len(payment_request.pilgrims_id)
-        return payment_dict
+        return created_payment
 
     except Exception as e:
         await db.rollback()
@@ -69,6 +68,7 @@ async def create_payment_of_group_leader(db:AsyncSession, request : GroupLeaderP
             "group_leader": group_leader,
             "created_by": group_leader,
             "updated_by": group_leader,
+            "no_of_hajji" : len(request.pilgrims_id)
         })
 
         # Step 3: Insert into payment table
@@ -97,12 +97,42 @@ async def create_payment_of_group_leader(db:AsyncSession, request : GroupLeaderP
 
         await db.commit()
 
-        payment_dict = created_payment.__dict__.copy()
-        payment_dict["no_of_hajji"] = len(request.pilgrims_id)
-        return payment_dict
+        return created_payment
 
     except HTTPException:
         raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error creating group leader payment: {str(e)}")
+
+
+async def get_payments_by_group_leader(
+    db: AsyncSession,
+    agency_name: str,
+    group_leader : str,
+    category: str | None,
+    page: int,
+    size: int
+):
+    try:
+        query = select(PaymentModel).where(PaymentModel.created_by == agency_name)
+
+        if category:
+            query = query.where(PaymentModel.category == category)
+        if group_leader:
+            query = query.where(PaymentModel.group_leader == group_leader)
+
+        # Count total rows before pagination
+        total_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(total_query)
+        total = total_result.scalar() or 0
+
+        # Apply pagination
+        query = query.offset((page - 1) * size).limit(size)
+        result = await db.execute(query)
+        payments = result.scalars().all()
+
+        return payments, total
+
+    except Exception as e:
+        raise Exception(f"Error fetching group leader payments: {str(e)}")

@@ -122,13 +122,13 @@ async def get_pilgrim_by_admin_user(db: AsyncSession, code: str):
         admin_user = admin_user_result.scalars().one_or_none()
 
         pilgrim_list = [PilgrimMinimalResponseSchema.model_validate(p) for p in pilgrims]
-        total_payable_sum = sum(p.total_payable or 0 for p in pilgrim_list)
+
 
         # Wrap in the response schema
         response = PilgrimResponseForAdminUser(
             pilgrims=pilgrim_list,
             total=len(pilgrim_list),
-            total_payable_sum = total_payable_sum,
+            total_payable = admin_user.total_payable,
             total_due = admin_user.total_due,
             total_payment = admin_user.total_payment
         )

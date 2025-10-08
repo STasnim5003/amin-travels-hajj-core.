@@ -113,6 +113,6 @@ class PilgrimMinimalResponseSchema(BaseModel):
 class PilgrimResponseForAdminUser(BaseModel):
     pilgrims: Optional[List[PilgrimMinimalResponseSchema]] = None
     total: Optional[int] = None
-    total_payable_sum : Optional[int] = None
+    total_payable : Optional[int] = None
     total_due : Optional[int] = None
     total_payment : Optional[int] = None
