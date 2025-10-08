@@ -104,10 +104,9 @@ async def fetch_pilgrim_data_json(
                         p.serial_no, p.group_name, p.registration_status, p.allocation_status,
                         p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
                         p.vaccination_center, p.passport_copy, p.package_id, p.group_leader,
-                        pkg.name AS package_name, pkg.duration,
+                        p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment,
                         COUNT(*) OVER() AS total_count
                     FROM core.pilgrim_data p
-                    LEFT JOIN core.packages pkg ON p.package_id = pkg.id
                     {where_clause}
                     ORDER BY p.created_at DESC, p.id DESC
                     LIMIT :limit_val OFFSET :skip_val
@@ -147,9 +146,12 @@ async def fetch_pilgrim_data_json(
                             'passport_copy', passport_copy,
                             'package_id', package_id,
                             'package_name', package_name,
-                            'duration', duration,
                             'comment_on_package', comment_on_package,
-                            'group_leader', group_leader
+                            'group_leader', group_leader,
+                            'package_duration', package_duration,
+                            'package_bed_types', package_bed_types,
+                            'total_payable', total_payable,
+                            'total_payment', total_payment
                         ) AS item,
                         total_count
                     FROM filtered_data
@@ -250,10 +252,9 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
             p.passport_address, p.present_address, p.permanent_address,p.serial_no, p.password,
             p.group_name, p.registration_status, p.tracking_id, p.mobile_no, p.is_assigned, 
             p.updated_at,p.created_at, p.updated_by, p.created_by, p.id, p.passport_copy, p.allocation_status,
-            p.vaccination_center, p.comment_on_package,pkg.id AS package_id, pkg.name as package_name, pkg.duration
+            p.vaccination_center, p.comment_on_package, p.package_name, p.package_duration, p.package_bed_types,
+            p.total_payable, p.total_payment
         FROM core.pilgrim_data p
-        LEFT JOIN core.packages pkg 
-            ON p.package_id = pkg.id
         WHERE p.tracking_id = :tracking_id
     """)
 
@@ -296,28 +297,21 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
 
 async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
     try:
-        # Join PilgrimDataModel with PackageModel
         query = (
-            select(PilgrimDataModel, PackageModel.name, PackageModel.duration)
-            .join(PackageModel, PilgrimDataModel.package_id == PackageModel.id, isouter=True)
+            select(PilgrimDataModel)
             .where(PilgrimDataModel.id == pilgrim_id)
         )
 
         result = await db.execute(query)
-        row = result.first()
+        row = result.scalars().one_or_none()
 
         if not row:
             raise HTTPException(
-                status_code=404,
+                status_code=400,
                 detail=f"Pilgrim with id {pilgrim_id} not found."
             )
 
-        pilgrim, package_name, package_duration = row
-
-        pilgrim.package_name = package_name
-        pilgrim.duration = package_duration
-
-        return pilgrim
+        return row
 
     except HTTPException:
         raise

@@ -42,4 +42,8 @@ class PilgrimDataModel(Base, BaseMixinModel):
     passport_no =Column(String, nullable=True)
     total_payable = Column(Integer, nullable=True)
     total_payment = Column(Integer, nullable=True)
+    package_name = Column(String, nullable=True)
+    package_duration = Column(Integer, nullable=True)
+    package_bed_types = Column(String, nullable=True)
+    add_ons_services = Column(JSON, nullable=True)
 
