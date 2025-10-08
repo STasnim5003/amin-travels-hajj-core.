@@ -140,7 +140,7 @@ async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int) -> PilgrimDataRes
         pilgrim = await pilgrim_repository.get_pilgrim_by_id(db, pilgrim_id)
 
         if not pilgrim:
-            raise HTTPException(status_code=404, detail="Pilgrim not found.")
+            raise HTTPException(status_code=400, detail="Pilgrim not found.")
         pilgrim_dict = pilgrim.__dict__.copy()  # convert model to dict
         if pilgrim_dict.get("passport_copy"):
             pilgrim_dict["passport_copy"] = await generate_downloadable_urls(pilgrim_dict["passport_copy"])

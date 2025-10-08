@@ -42,7 +42,6 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     id: int
     package_id: Optional[int] = None
     package_name: Optional[str] = None
-    duration: Optional[int] = None
     comment_on_package: Optional[str] = None
     passport_no: Optional[str] = None
     passport_expiry_date: Optional[str] = None
@@ -51,10 +50,14 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     group_leader: Optional[str] = None
     total_payable: Optional[int] = None
     total_payment: Optional[int] = None
+    package_bed_types: Optional[str] = None
+    package_duration: Optional[int] = None
+    add_ons_services: Optional[Dict[str, Any]] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+
 
 
 class PaginatedPilgrimDataListResponseSchema(BaseModel):
