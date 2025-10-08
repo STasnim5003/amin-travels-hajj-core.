@@ -69,7 +69,7 @@ async def get_admin_user_by_code(db: AsyncSession, code: str):
         admin_user = result.scalar_one_or_none()
 
         if not admin_user:
-            raise HTTPException(status_code=404, detail=f"Admin User with code {code} not found.")
+            raise HTTPException(status_code=400, detail=f"Admin User with code {code} not found.")
 
         return admin_user
     except HTTPException as e:

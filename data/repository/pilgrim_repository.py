@@ -19,6 +19,7 @@ async def fetch_pilgrim_data_json(
         group_name: Optional[str] = None,
         allocation_status: Optional[str] = None,
         registration_status: Optional[str] = None,
+        group_leader : Optional[str] = None,
         skip: int = 0,
         limit: int = 10,
 ):
@@ -60,6 +61,9 @@ async def fetch_pilgrim_data_json(
             # Use ANY array to filter multiple values
             where_conditions.append("registration_status = :registration_status")
             params['registration_status'] = registration_status
+        if group_leader:
+            where_conditions.append("group_leader = :group_leader")
+            params['group_leader'] = group_leader
 
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
@@ -99,7 +103,7 @@ async def fetch_pilgrim_data_json(
                         p.passport_address, p.present_address, p.permanent_address, p.tracking_id,
                         p.serial_no, p.group_name, p.registration_status, p.allocation_status,
                         p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
-                        p.vaccination_center, p.passport_copy, p.package_id,
+                        p.vaccination_center, p.passport_copy, p.package_id, p.group_leader,
                         pkg.name AS package_name, pkg.duration,
                         COUNT(*) OVER() AS total_count
                     FROM core.pilgrim_data p
@@ -144,7 +148,8 @@ async def fetch_pilgrim_data_json(
                             'package_id', package_id,
                             'package_name', package_name,
                             'duration', duration,
-                            'comment_on_package', comment_on_package
+                            'comment_on_package', comment_on_package,
+                            'group_leader', group_leader
                         ) AS item,
                         total_count
                     FROM filtered_data

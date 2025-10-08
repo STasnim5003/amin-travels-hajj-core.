@@ -24,6 +24,7 @@ async def get_pilgrim_data(
         mobile_no: Optional[str] = Query(None),
         allocation_status: Optional[str] = Query(None),
         registration_status: Optional[str] = Query(None),
+        group_leader : Optional[str] = Query(None),
         table_name: Optional[str] = Query(None),
         page: int = Query(1, ge=1),
         size: int = Query(10, ge=1),
@@ -34,14 +35,14 @@ async def get_pilgrim_data(
     if current_user["role"] == "SUPER_ADMIN":
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, None,
                                                       allocation_status, registration_status, page, size, table_name,
-                                                      username)
+                                                      username, group_leader)
     else:
         if allocation_status == "UNASSIGNED":
             raise HTTPException(status_code=403, detail="Unauthorized")
         group_name = current_user["agency_name"]
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, group_name,
                                                       allocation_status, registration_status, page,
-                                                      size, table_name, username)
+                                                      size, table_name, username, group_leader)
 
 
 @private_router.put("/pilgrim-data", response_model=PaginatedPilgrimDataListResponseSchema, tags=["Pilgrim"])
