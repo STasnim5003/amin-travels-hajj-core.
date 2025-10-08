@@ -2,6 +2,7 @@ from typing import List
 
 import fastapi
 from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
@@ -10,6 +11,7 @@ from data.db.db_config import get_async_db
 from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
+public_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 
 
 @private_router.get("/admin-user", response_model=List[AdminUserResponse], tags=["Admin User"])
@@ -42,3 +44,10 @@ async def create_admin_user(
     agency_name = current_user["agency_name"]
     # agency_name = "AMIN 26"
     return await admin_user_service.create_user(db, user_data, agency_name)
+
+@public_router.post("/admin-user/login", tags=["Admin User"])
+async def admin_user_login(
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        db: AsyncSession = Depends(get_async_db)
+):
+    return await admin_user_service.admin_user_login(db, form_data)

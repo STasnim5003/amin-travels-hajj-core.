@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import select, or_, and_
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -54,3 +55,23 @@ async def create_admin_user(db: AsyncSession, admin_user: AdminUserCreate, agenc
         return new_user
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+async def get_admin_user_by_code(db: AsyncSession, code: str):
+    try:
+        result = await db.execute(
+            select(AdminUserModel).where(AdminUserModel.code == code)
+        )
+        admin_user = result.scalar_one_or_none()
+
+        if not admin_user:
+            raise HTTPException(status_code=404,detail=f"Admin User with code {code} not found.")
+
+        return admin_user
+    except HTTPException as e:
+         raise e
+
+    except SQLAlchemyError as e:
+        raise e
+
+    except Exception as e:
+        raise e

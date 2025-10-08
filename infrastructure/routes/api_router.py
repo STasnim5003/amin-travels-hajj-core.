@@ -4,6 +4,7 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    view_field_controller, customer_controller, food_menu_controller, route_controller,
                                    ziara_controller, script_controller, admin_user_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
+from app.api.v1.controller.admin_user_controller import public_router
 
 router = APIRouter()
 
@@ -35,3 +36,5 @@ router.include_router(ziara_controller.ziara_router)
 router.include_router(script_controller.private_router)
 
 router.include_router(admin_user_controller.private_router)
+
+router.include_router(admin_user_controller.public_router)

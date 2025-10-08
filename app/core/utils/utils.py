@@ -45,3 +45,13 @@ def create_refresh_token_for_pilgrim(subject: Union[str, Any], mobile_no : str, 
     expire = datetime.utcnow() + (expires_delta or timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES))
     to_encode = {"exp": expire, "sub": str(subject), "mobile_no" : mobile_no, "tracking_id": tracking_id}
     return jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+
+def create_access_token_for_admin_user(subject: Union[str, Any], role: str, mobile_no : str, code:str, email:str, agency_name: str, expires_delta: timedelta = None) -> str:
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode = {"exp": expire, "sub": str(subject), "role" : role, "agency_name": agency_name, "mobile_no" : mobile_no, "code": code, "email": email}
+    return jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token_for_admin_user(subject: Union[str, Any], role:str, mobile_no : str, code:str, email:str, agency_name : str, expires_delta: timedelta = None) -> str:
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES))
+    to_encode = {"exp": expire, "sub": str(subject), "role" : role, "agency_name":agency_name, "mobile_no" : mobile_no, "code": code, "email": email}
+    return jwt.encode(to_encode, JWT_REFRESH_SECRET_KEY, algorithm=ALGORITHM)
