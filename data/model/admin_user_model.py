@@ -17,3 +17,6 @@ class AdminUserModel(Base, BaseMixinModel):
     passport_expiry_date = Column(String, nullable=True)
     passport_address = Column(String, nullable=True)
     passport_dob = Column(String, nullable=True)
+    username = Column(String, nullable=True)
+    password = Column(String, nullable=True)
+    code = Column(String, nullable=True)

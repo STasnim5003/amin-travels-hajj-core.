@@ -46,6 +46,10 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     passport_no: Optional[str] = None
     passport_expiry_date : Optional[str] = None
     payment_status : Optional[str] = None
+    reference : Optional[str] = None
+    group_leader : Optional[str] = None
+    total_payable : Optional[int] = None
+    total_payment : Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None

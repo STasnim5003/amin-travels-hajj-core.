@@ -42,10 +42,11 @@ async def get_by_mobile_passport(db: AsyncSession, userdata: AdminUserCreate):
 
 
 
-async def create_admin_user(db: AsyncSession, admin_user: AdminUserCreate, agency_name : str):
+async def create_admin_user(db: AsyncSession, admin_user: AdminUserCreate, agency_name : str, code : str):
     try:
         user_data = admin_user.model_dump()
         user_data['agency_name'] = agency_name
+        user_data["code"] = code
         new_user = AdminUserModel(**user_data)
         db.add(new_user)
         await db.commit()

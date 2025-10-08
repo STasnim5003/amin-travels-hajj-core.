@@ -37,3 +37,5 @@ class PilgrimDataModel(Base, BaseMixinModel):
     passport_copy = Column(JSON, nullable=True)
     vaccination_center = Column(String, nullable=True)
     comment_on_package = Column(String, nullable=True)
+    reference = Column(String, nullable=True)
+    group_leader = Column(String, nullable=True)
