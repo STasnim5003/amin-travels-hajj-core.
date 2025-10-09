@@ -55,7 +55,7 @@ async def get_agency_payments(
     (
         payments,
         total
-    ) = await payment_repository.get_payments_by_group_leader(db, agency_name, group_leader,category, page, size)
+    ) = await payment_repository.get_payments_by_agency(db, agency_name, group_leader,category, page, size)
 
     payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
 

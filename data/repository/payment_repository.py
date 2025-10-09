@@ -150,3 +150,29 @@ async def get_payments_by_group_leader(
 
     except Exception as e:
         raise Exception(f"Error fetching group leader payments: {str(e)}")
+
+async def get_payments_by_agency(db: AsyncSession, agency_name : str, group_leader : str, category: str, page:int, size:int):
+    try:
+        query = select(PaymentModel).where(PaymentModel.created_by == agency_name)
+
+        if category:
+            query = query.where(PaymentModel.category == category)
+        if group_leader:
+            query = query.where(PaymentModel.group_leader == group_leader)
+
+
+        # Count total rows before pagination
+        total_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(total_query)
+        total = total_result.scalar() or 0
+
+        # Apply pagination
+        query = query.offset((page - 1) * size).limit(size)
+        result = await db.execute(query)
+        payments = result.scalars().all()
+
+
+        return payments, total
+
+    except Exception as e:
+        raise Exception(f"Error fetching group leader payments: {str(e)}")
