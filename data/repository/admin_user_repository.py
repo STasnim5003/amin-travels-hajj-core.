@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select, or_, and_, update
+from sqlalchemy import select, or_, and_, update, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
@@ -191,3 +191,29 @@ async def assign_group_leader_to_pilgrims(db: AsyncSession, request: GroupLeader
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error assigning group leader: {str(e)}")
+
+async def get_group_leader_with_pilgrim_count(db: AsyncSession, agency_name: str):
+    try:
+        query = (
+            select(
+                AdminUserModel.code.label("group_leader_code"),
+                func.coalesce(func.count(PilgrimDataModel.id), 0).label("no_of_pilgrims")
+            )
+            .outerjoin(
+                PilgrimDataModel,
+                (PilgrimDataModel.group_leader == AdminUserModel.code)
+                & (PilgrimDataModel.group_name == agency_name)
+            )
+            .where(
+                AdminUserModel.agency_name == agency_name,
+                AdminUserModel.code.isnot(None)
+            )
+            .group_by(AdminUserModel.code)
+            .order_by(func.coalesce(func.count(PilgrimDataModel.id), 0).desc())
+        )
+
+        result = await db.execute(query)
+        return result.mappings().all()
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error fetching group leader data: {str(e)}")

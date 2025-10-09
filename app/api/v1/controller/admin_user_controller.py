@@ -83,3 +83,13 @@ async def assign_group_leader(
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await admin_user_service.assign_group_leader_to_pilgrims(db, request_body, agency_name)
+
+@private_router.get("/group-leader-with-pilgrim-count", tags=["Admin User"])
+async def get_group_leader_with_pilgrim_count(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=400, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await admin_user_service.get_group_leader_with_pilgrim_count(db, agency_name)

@@ -84,3 +84,9 @@ async def assign_group_leader_to_pilgrims(db:AsyncSession, request: GroupLeaderA
         return await admin_user_repository.assign_group_leader_to_pilgrims(db, request, agency_name)
     except Exception as e:
         raise e
+
+async def get_group_leader_with_pilgrim_count(db:AsyncSession, agency_name : str):
+    try:
+        return await admin_user_repository.get_group_leader_with_pilgrim_count(db, agency_name)
+    except Exception as e:
+        raise e
