@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
@@ -29,3 +29,7 @@ class AdminUserResponse(AdminUserBase):
 
     class Config:
         from_attributes = True
+
+class GroupLeaderAssignSchema(BaseModel):
+    pilgrims_id : List[int]
+    group_leader_code : str

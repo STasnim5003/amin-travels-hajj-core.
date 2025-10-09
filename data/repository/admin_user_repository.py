@@ -1,12 +1,12 @@
 from fastapi import HTTPException
-from sqlalchemy import select, or_, and_
+from sqlalchemy import select, or_, and_, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
 from data.model.admin_user_model import AdminUserModel
 from data.model.pilgrim_data_model import PilgrimDataModel
-from infrastructure.schema.admin_user_schema import AdminUserCreate
+from infrastructure.schema.admin_user_schema import AdminUserCreate, GroupLeaderAssignSchema
 from infrastructure.schema.pilgrim_data_schema import PilgrimMinimalResponseSchema, \
     PilgrimResponseForAdminUser
 
@@ -123,17 +123,71 @@ async def get_pilgrim_by_admin_user(db: AsyncSession, code: str):
 
         pilgrim_list = [PilgrimMinimalResponseSchema.model_validate(p) for p in pilgrims]
 
-
         # Wrap in the response schema
         response = PilgrimResponseForAdminUser(
             pilgrims=pilgrim_list,
             total=len(pilgrim_list),
-            total_payable = admin_user.total_payable,
-            total_due = admin_user.total_due,
-            total_payment = admin_user.total_payment
+            total_payable=admin_user.total_payable,
+            total_due=admin_user.total_due,
+            total_payment=admin_user.total_payment
         )
 
         return response
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+async def assign_group_leader_to_pilgrims(db: AsyncSession, request: GroupLeaderAssignSchema, agency_name: str):
+    try:
+        # Get the group leader’s details
+        leader_query = select(AdminUserModel).where(AdminUserModel.code == request.group_leader_code)
+        leader_result = await db.execute(leader_query)
+        group_leader = leader_result.scalar_one_or_none()
+
+        if not group_leader:
+            raise HTTPException(status_code=400,
+                                detail=f"Group leader with code '{request.group_leader_code}' not found.")
+
+        if group_leader.agency_name != agency_name:
+            raise HTTPException(status_code=400, detail="Group leader does not belong to this agency.")
+
+        # Fetch all pilgrims by ID and check agency
+        pilgrims_query = select(PilgrimDataModel).where(PilgrimDataModel.id.in_(request.pilgrims_id))
+        pilgrims_result = await db.execute(pilgrims_query)
+        pilgrims = pilgrims_result.scalars().all()
+
+        if not pilgrims:
+            raise HTTPException(status_code=400, detail="No pilgrims found for the provided IDs.")
+
+        # Verify all pilgrims belong to the same agency
+        for p in pilgrims:
+            if p.group_name != agency_name:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Pilgrim '{p.name_en or p.name_bn}' does not belong to agency '{agency_name}'."
+                )
+
+        # Update the pilgrims to assign the group leader + group name
+        update_stmt = (
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.id.in_(request.pilgrims_id))
+            .values(
+                group_leader=request.group_leader_code,
+                updated_by=agency_name
+            )
+        )
+        await db.execute(update_stmt)
+        await db.commit()
+
+        return {
+            "message": f"{len(pilgrims)} pilgrims assigned to group leader '{request.group_leader_code}' successfully.",
+            "group_leader": request.group_leader_code,
+            "assigned_count": len(pilgrims)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error assigning group leader: {str(e)}")

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.middleware.middleware import get_current_user, get_current_admin_user
 from app.service import admin_user_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate
+from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate, GroupLeaderAssignSchema
 from infrastructure.schema.pilgrim_data_schema import PilgrimResponseForAdminUser
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -72,3 +72,14 @@ async def admin_user_login(
         db: AsyncSession = Depends(get_async_db)
 ):
     return await admin_user_service.admin_user_login(db, form_data)
+
+@private_router.put("/assign-group-leader", tags=["Admin User"])
+async def assign_group_leader(
+        request_body : GroupLeaderAssignSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=400, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await admin_user_service.assign_group_leader_to_pilgrims(db, request_body, agency_name)

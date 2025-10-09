@@ -6,7 +6,7 @@ from app.core.utils.utils import hash_password, verify_password, create_access_t
     create_refresh_token_for_admin_user
 from data.repository import admin_user_repository
 from infrastructure.schema.admin_schema import AdminResponseSchema
-from infrastructure.schema.admin_user_schema import AdminUserCreate, AdminUserResponse
+from infrastructure.schema.admin_user_schema import AdminUserCreate, AdminUserResponse, GroupLeaderAssignSchema
 
 
 async def list_users(db: AsyncSession, agency_name : str):
@@ -76,5 +76,11 @@ async def get_pilgrim_data_by_admin_user(db:AsyncSession, group_leader_code:str)
     try:
         result = await admin_user_repository.get_pilgrim_by_admin_user(db, group_leader_code)
         return result
+    except Exception as e:
+        raise e
+
+async def assign_group_leader_to_pilgrims(db:AsyncSession, request: GroupLeaderAssignSchema, agency_name : str):
+    try:
+        return await admin_user_repository.assign_group_leader_to_pilgrims(db, request, agency_name)
     except Exception as e:
         raise e
