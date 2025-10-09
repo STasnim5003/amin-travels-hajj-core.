@@ -108,19 +108,16 @@ async def create_payment_of_group_leader(db:AsyncSession, request : GroupLeaderP
 
 async def get_payments_by_group_leader(
     db: AsyncSession,
-    agency_name: str,
     group_leader : str,
     category: str | None,
     page: int,
     size: int
 ):
     try:
-        query = select(PaymentModel).where(PaymentModel.created_by == agency_name)
+        query = select(PaymentModel).where(PaymentModel.group_leader == group_leader)
 
         if category:
             query = query.where(PaymentModel.category == category)
-        if group_leader:
-            query = query.where(PaymentModel.group_leader == group_leader)
 
         # Count total rows before pagination
         total_query = select(func.count()).select_from(query.subquery())
@@ -132,7 +129,24 @@ async def get_payments_by_group_leader(
         result = await db.execute(query)
         payments = result.scalars().all()
 
-        return payments, total
+        query = (
+            select(
+                AdminUserModel.total_payable,
+                AdminUserModel.total_payment,
+                AdminUserModel.total_due
+            )
+            .where(AdminUserModel.code == group_leader)
+        )
+
+        result = await db.execute(query)
+        row = result.first()
+
+        if not row:
+            raise HTTPException(status_code=400, detail="Group leader not found")
+
+        total_payable, total_payment, total_due = row
+
+        return payments, total, total_payable, total_payment, total_due
 
     except Exception as e:
         raise Exception(f"Error fetching group leader payments: {str(e)}")
