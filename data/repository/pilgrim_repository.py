@@ -105,7 +105,7 @@ async def fetch_pilgrim_data_json(
                         p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
                         p.vaccination_center, p.passport_copy, p.package_id, p.group_leader,
                         p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment,
-                        COUNT(*) OVER() AS total_count
+                        p.is_package_assigned, COUNT(*) OVER() AS total_count
                     FROM core.pilgrim_data p
                     {where_clause}
                     ORDER BY p.created_at DESC, p.id DESC
@@ -151,7 +151,8 @@ async def fetch_pilgrim_data_json(
                             'package_duration', package_duration,
                             'package_bed_types', package_bed_types,
                             'total_payable', total_payable,
-                            'total_payment', total_payment
+                            'total_payment', total_payment,
+                            'is_package_assigned', is_package_assigned
                         ) AS item,
                         total_count
                     FROM filtered_data

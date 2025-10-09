@@ -53,6 +53,7 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     package_bed_types: Optional[str] = None
     package_duration: Optional[int] = None
     add_ons_services: Optional[Dict[str, Any]] = None
+    is_package_assigned: Optional[bool] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None

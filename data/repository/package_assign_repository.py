@@ -81,7 +81,8 @@ async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_na
                 package_bed_types=request.package_bed_types,
                 add_ons_services=request.add_ons_services,
                 total_payable=total_payable,
-                updated_by=agency_name
+                updated_by=agency_name,
+                is_package_assigned=True
             )
         )
         await db.commit()

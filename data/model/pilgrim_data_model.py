@@ -46,4 +46,5 @@ class PilgrimDataModel(Base, BaseMixinModel):
     package_duration = Column(Integer, nullable=True)
     package_bed_types = Column(String, nullable=True)
     add_ons_services = Column(JSON, nullable=True)
+    is_package_assigned = Column(Boolean, nullable=True)
 
