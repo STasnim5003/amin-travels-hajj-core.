@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
 
-from botocore.parsers import BaseEventStreamParser
 from pydantic import BaseModel
 
 
@@ -10,8 +9,8 @@ class PaymentSchema(BaseModel):
     date: Optional[str] = None
     amount: int
     category: str
-    pilgrims_id : Optional[List[str]] = None
-    group_leader : Optional[str] = None
+    pilgrims_id: Optional[List[str]] = None
+    group_leader: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -24,31 +23,37 @@ class PaymentResponseSchema(PaymentSchema):
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
     transaction_id: Optional[str] = None
-    no_of_hajji : Optional[int] = None
+    no_of_hajji: Optional[int] = None
+    payable_id: Optional[int] = None
 
-class GroupLeaderPaymentSchema(BaseModel):
+
+class AgencyPaymentSchemaForGroupLeader(BaseModel):
     description: Optional[str] = None
     date: Optional[str] = None
-    amount : int
-    category: str
-    pilgrims_id: Optional[List[str]] = None
+    amount: int
+    category: Optional[str]
+    group_leader : Optional[str] = None
+    payable_id : int
+
 
 class PaginatedPaymentResponseForGroupLeader(BaseModel):
     payments: List[PaymentResponseSchema]
-    page : int
-    size : int
-    total : int
-    total_payable : Optional[int] = None
-    total_payment : Optional[int] = None
-    total_due : Optional[int] = None
+    page: int
+    size: int
+    total: int
+    total_payable: Optional[int] = None
+    total_payment: Optional[int] = None
+    total_due: Optional[int] = None
 
     class Config:
         from_attributes = True
+
+
 class PaginatedPaymentResponseForAgency(BaseModel):
     payments: List[PaymentResponseSchema]
-    page : int
-    size : int
-    total : int
+    page: int
+    size: int
+    total: int
 
     class Config:
         from_attributes = True

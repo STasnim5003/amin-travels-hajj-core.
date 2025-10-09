@@ -1,28 +1,30 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import payment_repository
-from infrastructure.schema.payment_schema import PaymentSchema, GroupLeaderPaymentSchema, PaymentResponseSchema, \
-    PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency
+from infrastructure.schema.payment_schema import PaymentSchema, PaymentResponseSchema, \
+    PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader
 
 
-async def create_payable_for_group_leader(db:AsyncSession, payment_request:PaymentSchema, agency_name:str):
+async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str):
     try:
         return await payment_repository.create_payable_for_group_leader(db, payment_request, agency_name)
     except Exception as e:
         raise e
 
-async def create_group_leader_payment(db: AsyncSession, request : GroupLeaderPaymentSchema, group_leader:str):
+
+async def create_group_leader_payment(db: AsyncSession, request: AgencyPaymentSchemaForGroupLeader, agency_name: str):
     try:
-        return await payment_repository.create_payment_of_group_leader(db, request, group_leader)
+        return await payment_repository.create_payment_for_group_leader(db, request, agency_name)
     except Exception as e:
         raise e
 
+
 async def get_group_leader_payments(
-    db,
-    group_leader: str,
-    category: str | None,
-    page: int,
-    size: int
+        db,
+        group_leader: str,
+        category: str | None,
+        page: int,
+        size: int
 ):
     (
         payments,
@@ -44,18 +46,19 @@ async def get_group_leader_payments(
         total_due=total_due
     )
 
+
 async def get_agency_payments(
-    db,
-    agency_name: str,
-    group_leader : str | None,
-    category: str | None,
-    page: int,
-    size: int
+        db,
+        agency_name: str,
+        group_leader: str | None,
+        category: str | None,
+        page: int,
+        size: int
 ):
     (
         payments,
         total
-    ) = await payment_repository.get_payments_by_agency(db, agency_name, group_leader,category, page, size)
+    ) = await payment_repository.get_payments_by_agency(db, agency_name, group_leader, category, page, size)
 
     payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
 
@@ -65,4 +68,3 @@ async def get_agency_payments(
         size=size,
         total=total
     )
-
