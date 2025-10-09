@@ -14,7 +14,7 @@ async def prp_data_fetch_update(
         request_schema : RunScriptRequestSchema,
         current_user: dict = Depends(get_current_user)
 ):
-    role = current_user["role"]
-    if role != "SUPER_ADMIN" or role != "AGENCY":
+
+    if current_user["role"] not in ["SUPER_ADMIN", "AGENCY"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     return await script_service.prp_data_fetch_update(request_schema)
