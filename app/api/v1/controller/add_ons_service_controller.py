@@ -20,7 +20,7 @@ async def create_add_ons(
     agency_name = current_user["agency_name"]
     return await add_ons_service.create_add_ons(db, request, agency_name)
 
-@private_router.get("/add-ons-service", response_model=list[AddOnsServiceResponse])
+@private_router.get("/add-ons-service", response_model=list[AddOnsServiceResponse], tags = ["Add-Ons"])
 async def list_add_on_services(
     db: AsyncSession = Depends(get_async_db),
     current_user: dict = Depends(get_current_user)
@@ -31,7 +31,7 @@ async def list_add_on_services(
     return await add_ons_service.get_all_add_on_services(db, agency_name)
 
 
-@private_router.get("/add-ons-service/{service_id}", response_model=AddOnsServiceResponse)
+@private_router.get("/add-ons-service/{service_id}", response_model=AddOnsServiceResponse, tags = ["Add-Ons"])
 async def get_add_on_service(
     service_id: int,
     db: AsyncSession = Depends(get_async_db),
