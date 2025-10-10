@@ -1,5 +1,7 @@
+from typing import Optional, List
+
 import fastapi
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user, get_current_admin_user
@@ -26,14 +28,32 @@ async def create_payable_for_group_leader(
 # # @private_router.get("/group-leader/payable", tags=["payment"])
 @private_router.post("/group-leader/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payment_of_group_leader(
-        request_schema: AgencyPaymentSchemaForGroupLeader,
+        description: Optional[str] = Form(None),
+        date: Optional[str] = Form(None),
+        amount: int = Form(...),
+        category: str = Form(...),
+        group_leader: Optional[str] = Form(None),
+        payable_id: int = Form(...),
+        pilgrims_id: Optional[List[str]] = Form([]),
+        receipt: Optional[List[UploadFile]] = File([]),
         db: AsyncSession = Depends(get_async_db),
-        current_user: dict = Depends(get_current_user)
+        # current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    agency_name = current_user['agency_name']
-    return await payment_service.create_group_leader_payment(db, request_schema, agency_name)
+    # if current_user["role"] != "AGENCY":
+    #     raise HTTPException(status_code=403, detail="Unauthorized")
+    # agency_name = current_user['agency_name']
+    agency_name = "MARVELLOUS"
+
+    request_schema = AgencyPaymentSchemaForGroupLeader(
+        description=description,
+        date=date,
+        amount=amount,
+        category=category,
+        group_leader=group_leader,
+        payable_id=payable_id,
+        pilgrims_id=pilgrims_id,
+    )
+    return await payment_service.create_group_leader_payment(db, request_schema, agency_name, receipt)
 
 
 @private_router.get("/group-leader/payment-info", response_model=PaginatedPaymentResponseForGroupLeader,

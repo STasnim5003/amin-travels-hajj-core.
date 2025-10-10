@@ -1,6 +1,9 @@
+from typing import List
+
+from fastapi import UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.repository import payment_repository
+from data.repository import payment_repository, file_repository
 from infrastructure.schema.payment_schema import PaymentSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader
 
@@ -12,9 +15,18 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
         raise e
 
 
-async def create_group_leader_payment(db: AsyncSession, request: AgencyPaymentSchemaForGroupLeader, agency_name: str):
+async def create_group_leader_payment(db: AsyncSession, request: AgencyPaymentSchemaForGroupLeader, agency_name: str, receipt: List[UploadFile] = None):
+    receipt_data = []
+    if receipt:
+        try:
+            for file in receipt:
+                receipt_resp = await file_repository.upload_file(file=file, name="receipt")
+                receipt_data.append(receipt_resp.model_dump())
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"File upload failed: {str(e)}")
+
     try:
-        return await payment_repository.create_payment_for_group_leader(db, request, agency_name)
+        return await payment_repository.create_payment_for_group_leader(db, request, agency_name, receipt_data)
     except Exception as e:
         raise e
 
@@ -31,7 +43,8 @@ async def get_group_leader_payments(
         total,
         group_leader_total_payable,
         group_leader_total_payment,
-        group_leader_total_due
+        group_leader_total_due,
+        group_leader_total_available_amount
     ) = await payment_repository.get_payments_by_group_leader(db, group_leader, category, page, size)
 
     payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]

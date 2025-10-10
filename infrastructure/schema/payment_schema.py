@@ -50,6 +50,7 @@ class PaginatedPaymentResponseForGroupLeader(BaseModel):
     total_payable: Optional[int] = None
     total_payment: Optional[int] = None
     total_due: Optional[int] = None
+    total_available_amount: Optional[int] = None
 
     class Config:
         from_attributes = True

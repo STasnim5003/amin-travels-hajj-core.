@@ -1,5 +1,6 @@
 import random
 import string
+from typing import Optional, List
 
 from fastapi import HTTPException
 from sqlalchemy import insert, select, update, func
@@ -61,7 +62,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
 
 
 async def create_payment_for_group_leader(db: AsyncSession, request: AgencyPaymentSchemaForGroupLeader,
-                                          agency_name: str):
+                                          agency_name: str, receipt: Optional[List[dict]] = None):
     try:
         # Check payable
         payment_query = select(PaymentModel).where(PaymentModel.id == request.payable_id)
@@ -89,7 +90,8 @@ async def create_payment_for_group_leader(db: AsyncSession, request: AgencyPayme
             "created_by": agency_name,
             "updated_by": agency_name,
             "payable_id": request.payable_id,
-            "no_of_hajji": len(request.pilgrims_id)
+            "no_of_hajji": len(request.pilgrims_id),
+            "receipt" : receipt
         })
 
         # Step 3: Insert into payment table
@@ -104,13 +106,22 @@ async def create_payment_for_group_leader(db: AsyncSession, request: AgencyPayme
 
 
         if admin_user:
-            new_total_due = (admin_user.total_due or 0) - payment_data["amount"]
+            prev_due = admin_user.total_due or 0
+            amount_paid = payment_data["amount"]
+            if amount_paid >= prev_due:
+                new_total_due = 0
+                extra_amount = amount_paid - prev_due
+            else:
+                new_total_due = prev_due - amount_paid
+                extra_amount = 0
             new_total_payment = (admin_user.total_payment or 0) + payment_data["amount"]
+            new_total_available_amount = (admin_user.total_available_amount or 0) + extra_amount
             await db.execute(
                 update(AdminUserModel)
                 .where(AdminUserModel.code == request.group_leader)
                 .values(total_due=new_total_due)
                 .values(total_payment=new_total_payment)
+                .values(total_available_amount=new_total_available_amount)
             )
 
         await db.commit()
@@ -151,7 +162,8 @@ async def get_payments_by_group_leader(
             select(
                 AdminUserModel.total_payable,
                 AdminUserModel.total_payment,
-                AdminUserModel.total_due
+                AdminUserModel.total_due,
+                AdminUserModel.total_available_amount
             )
             .where(AdminUserModel.code == group_leader)
         )
@@ -162,9 +174,9 @@ async def get_payments_by_group_leader(
         if not row:
             raise HTTPException(status_code=400, detail="Group leader not found")
 
-        total_payable, total_payment, total_due = row
+        total_payable, total_payment, total_due, total_available_amount = row
 
-        return payments, total, total_payable, total_payment, total_due
+        return payments, total, total_payable, total_payment, total_due, total_available_amount
 
     except Exception as e:
         raise Exception(f"Error fetching group leader payments: {str(e)}")

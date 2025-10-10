@@ -23,3 +23,4 @@ class AdminUserModel(Base, BaseMixinModel):
     total_payable = Column(Integer, nullable=True)
     total_due = Column(Integer, nullable=True)
     total_payment = Column(Integer, nullable=True)
+    total_available_amount = Column(Integer, nullable=True)
