@@ -49,7 +49,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
                 payable_amount = payment_data["amount"]
                 if payable_amount >= prev_available_amount:
                     new_available_amount = 0
-                    new_total_due = payable_amount - prev_available_amount
+                    new_total_due = admin_user.total_due +( payable_amount - prev_available_amount)
                 else:
                     new_total_due = 0
                     new_available_amount = prev_available_amount -  payable_amount
