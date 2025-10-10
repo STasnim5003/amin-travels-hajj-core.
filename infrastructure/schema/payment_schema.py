@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel
 
@@ -29,6 +29,7 @@ class PaymentResponseSchema(PaymentSchema):
     total_payable: Optional[int] = 0
     total_paid: Optional[int] = 0
     total_due: Optional[int] = 0
+    receipt: Optional[List[Dict[str, Any]]] = None
 
 
 

@@ -21,7 +21,7 @@ async def create_payable_for_group_leader(
         category: str = Form(...),
         pilgrims_id: Optional[List[str]] = Form([]),
         group_leader: str = Form(...),
-        receipt: Optional[List[UploadFile]] = File([]),
+        receipt: List[UploadFile] = File(default=[]),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
@@ -50,7 +50,7 @@ async def create_payment_of_group_leader(
         group_leader: Optional[str] = Form(None),
         payable_id: int = Form(...),
         pilgrims_id: Optional[List[str]] = Form([]),
-        receipt: Optional[List[UploadFile]] = File([]),
+        receipt: List[UploadFile] = File(default=[]),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
