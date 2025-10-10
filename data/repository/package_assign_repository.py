@@ -6,7 +6,7 @@ from data.model.package_model import PackageModel
 from data.model.pilgrim_data_model import PilgrimDataModel
 from infrastructure.schema.package_assign_schema import PackageAssignSchema
 
-
+# TODO : package er sthe agency diye filter korte hobe
 async def get_all_package_names(db: AsyncSession, agency_name: str):
     stmt = (
         select(PackageModel.name)
@@ -14,7 +14,7 @@ async def get_all_package_names(db: AsyncSession, agency_name: str):
             PackageModel.hajj_year == 2026,
             PackageModel.description_type == "DETAILS",
             PackageModel.package_type == "HAJJ",
-            PackageModel.agency_name == agency_name
+            # PackageModel.agency_name == agency_name
         )
         .distinct()
     )
@@ -29,8 +29,8 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
             PackageModel.name == package_name,
             PackageModel.hajj_year == 2026,
             PackageModel.description_type == "DETAILS",
-            PackageModel.package_type == "HAJJ",
-            PackageModel.agency_name == agency_name
+            PackageModel.package_type == "HAJJ"
+            # PackageModel.agency_name == agency_name
         )
         .distinct()
     )
@@ -47,8 +47,8 @@ async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, age
             PackageModel.name == package_name,
             PackageModel.hajj_year == 2026,
             PackageModel.description_type == "DETAILS",
-            PackageModel.package_type == "HAJJ",
-            PackageModel.agency_name == agency_name
+            PackageModel.package_type == "HAJJ"
+            # PackageModel.agency_name == agency_name
         )
     )
     result = await db.execute(stmt)

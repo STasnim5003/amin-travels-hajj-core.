@@ -46,7 +46,7 @@ async def get_group_leader_payments(
         payable.payments = related_payments
         payable.total_payable = payable.amount
         payable.total_paid = sum(p.amount for p in related_payments)
-        payable.total_due = payable.total_payable - payable.total_paid
+        payable.total_due = max(payable.total_payable - payable.total_paid, 0)
 
     return PaginatedPaymentResponseForGroupLeader(
         payments=payables,
@@ -84,7 +84,7 @@ async def get_agency_payments(
         payable.payments = related_payments
         payable.total_payable = payable.amount
         payable.total_paid = sum(p.amount for p in related_payments)
-        payable.total_due = payable.total_payable - payable.total_paid
+        payable.total_due = max(payable.total_payable - payable.total_paid, 0)
 
     return PaginatedPaymentResponseForAgency(
         payments=payables,
