@@ -19,8 +19,8 @@ async def create_payable_for_group_leader(
         date: Optional[str] = Form(None),
         amount: int = Form(...),
         category: str = Form(...),
-        pilgrims_id: Optional[List[str]] = Form([]),
         group_leader: str = Form(...),
+        pilgrims_id: List[str] = Form(default=[]),
         receipt: List[UploadFile] = File(default=[]),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
@@ -28,7 +28,7 @@ async def create_payable_for_group_leader(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-
+    # agency_name = "MARVELLOUS"
     payment_request = PaymentSchema(
         description=description,
         date=date,
@@ -49,7 +49,7 @@ async def create_payment_of_group_leader(
         category: str = Form(...),
         group_leader: Optional[str] = Form(None),
         payable_id: int = Form(...),
-        pilgrims_id: Optional[List[str]] = Form([]),
+        pilgrims_id: List[str] = Form(default=[]),
         receipt: List[UploadFile] = File(default=[]),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
