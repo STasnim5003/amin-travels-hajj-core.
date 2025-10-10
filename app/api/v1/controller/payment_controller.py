@@ -37,12 +37,12 @@ async def create_payment_of_group_leader(
         pilgrims_id: Optional[List[str]] = Form([]),
         receipt: Optional[List[UploadFile]] = File([]),
         db: AsyncSession = Depends(get_async_db),
-        # current_user: dict = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
-    # if current_user["role"] != "AGENCY":
-    #     raise HTTPException(status_code=403, detail="Unauthorized")
-    # agency_name = current_user['agency_name']
-    agency_name = "MARVELLOUS"
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user['agency_name']
+    # agency_name = "MARVELLOUS"
 
     request_schema = AgencyPaymentSchemaForGroupLeader(
         description=description,

@@ -68,7 +68,8 @@ async def get_group_leader_payments(
         total=total,
         total_payable=group_leader_total_payable,
         total_payment=group_leader_total_payment,
-        total_due=group_leader_total_due
+        total_due=group_leader_total_due,
+        total_available_amount=group_leader_total_available_amount
     )
 
 
