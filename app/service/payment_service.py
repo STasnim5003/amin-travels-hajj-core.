@@ -29,21 +29,33 @@ async def get_group_leader_payments(
     (
         payments,
         total,
-        total_payable,
-        total_payment,
-        total_due
+        group_leader_total_payable,
+        group_leader_total_payment,
+        group_leader_total_due
     ) = await payment_repository.get_payments_by_group_leader(db, group_leader, category, page, size)
 
     payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
 
+    payables = [p for p in payment_list if p.payable_id is None]
+    non_payables = [p for p in payment_list if p.payable_id is not None]
+
+    # Map non-payables to their payables
+    for payable in payables:
+        related_payments = [p for p in non_payables if p.payable_id == payable.id]
+
+        payable.payments = related_payments
+        payable.total_payable = payable.amount
+        payable.total_paid = sum(p.amount for p in related_payments)
+        payable.total_due = payable.total_payable - payable.total_paid
+
     return PaginatedPaymentResponseForGroupLeader(
-        payments=payment_list,
+        payments=payables,
         page=page,
         size=size,
         total=total,
-        total_payable=total_payable,
-        total_payment=total_payment,
-        total_due=total_due
+        total_payable=group_leader_total_payable,
+        total_payment=group_leader_total_payment,
+        total_due=group_leader_total_due
     )
 
 
@@ -62,8 +74,20 @@ async def get_agency_payments(
 
     payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
 
+    payables = [p for p in payment_list if p.payable_id is None]
+    non_payables = [p for p in payment_list if p.payable_id is not None]
+
+    # Map non-payables to their payables
+    for payable in payables:
+        related_payments = [p for p in non_payables if p.payable_id == payable.id]
+
+        payable.payments = related_payments
+        payable.total_payable = payable.amount
+        payable.total_paid = sum(p.amount for p in related_payments)
+        payable.total_due = payable.total_payable - payable.total_paid
+
     return PaginatedPaymentResponseForAgency(
-        payments=payment_list,
+        payments=payables,
         page=page,
         size=size,
         total=total

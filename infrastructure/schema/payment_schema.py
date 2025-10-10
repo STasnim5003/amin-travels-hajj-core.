@@ -25,6 +25,11 @@ class PaymentResponseSchema(PaymentSchema):
     transaction_id: Optional[str] = None
     no_of_hajji: Optional[int] = None
     payable_id: Optional[int] = None
+    payments: Optional[List["PaymentResponseSchema"]] = []  # nested payments
+    total_payable: Optional[int] = 0
+    total_paid: Optional[int] = 0
+    total_due: Optional[int] = 0
+
 
 
 class AgencyPaymentSchemaForGroupLeader(BaseModel):
@@ -34,6 +39,7 @@ class AgencyPaymentSchemaForGroupLeader(BaseModel):
     category: Optional[str]
     group_leader : Optional[str] = None
     payable_id : int
+    pilgrims_id: Optional[List[str]] = None
 
 
 class PaginatedPaymentResponseForGroupLeader(BaseModel):
