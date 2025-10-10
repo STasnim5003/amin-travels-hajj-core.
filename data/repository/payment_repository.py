@@ -88,7 +88,8 @@ async def create_payment_for_group_leader(db: AsyncSession, request: AgencyPayme
             "transaction_id": transaction_id,
             "created_by": agency_name,
             "updated_by": agency_name,
-            "payable_id": request.payable_id
+            "payable_id": request.payable_id,
+            "no_of_hajji": len(request.pilgrims_id)
         })
 
         # Step 3: Insert into payment table
