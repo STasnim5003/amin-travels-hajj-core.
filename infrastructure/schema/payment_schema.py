@@ -33,11 +33,11 @@ class PaymentResponseSchema(PaymentSchema):
 
 
 class AgencyPaymentSchemaForGroupLeader(BaseModel):
+    group_leader: Optional[str] = None
     description: Optional[str] = None
     date: Optional[str] = None
     amount: int
     category: Optional[str]
-    group_leader : Optional[str] = None
     payable_id : int
     pilgrims_id: Optional[List[str]] = None
 

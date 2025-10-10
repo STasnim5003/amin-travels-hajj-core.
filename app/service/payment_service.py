@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,9 +8,17 @@ from infrastructure.schema.payment_schema import PaymentSchema, PaymentResponseS
     PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader
 
 
-async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str):
+async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str, receipt : Optional[List[UploadFile]]):
+    receipt_data = []
+    if receipt:
+        try:
+            for file in receipt:
+                receipt_resp = await file_repository.upload_file(file=file, name="receipt")
+                receipt_data.append(receipt_resp.model_dump())
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"File upload failed: {str(e)}")
     try:
-        return await payment_repository.create_payable_for_group_leader(db, payment_request, agency_name)
+        return await payment_repository.create_payable_for_group_leader(db, payment_request, agency_name, receipt_data)
     except Exception as e:
         raise e
 

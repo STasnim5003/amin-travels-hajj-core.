@@ -15,14 +15,29 @@ private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/privat
 
 @private_router.post("/group-leader/create-payable", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payable_for_group_leader(
-        payment_request: PaymentSchema,
+        description: Optional[str] = Form(None),
+        date: Optional[str] = Form(None),
+        amount: int = Form(...),
+        category: str = Form(...),
+        pilgrims_id: Optional[List[str]] = Form([]),
+        group_leader: str = Form(...),
+        receipt: Optional[List[UploadFile]] = File([]),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await payment_service.create_payable_for_group_leader(db, payment_request, agency_name)
+
+    payment_request = PaymentSchema(
+        description=description,
+        date=date,
+        amount=amount,
+        category=category,
+        pilgrims_id=pilgrims_id,
+        group_leader=group_leader
+    )
+    return await payment_service.create_payable_for_group_leader(db, payment_request, agency_name, receipt)
 
 
 # # @private_router.get("/group-leader/payable", tags=["payment"])
@@ -101,3 +116,15 @@ async def get_group_leader_payment_info(
         page=page,
         size=size
     )
+
+# @private_router.get("/agency/payment-info/{payment_id}", tags=["payment"])
+# async def get_agency_payment_info_by_id(
+#         payment_id: int,
+#         db: AsyncSession = Depends(get_async_db),
+#         current_user: dict = Depends(get_current_user)
+# ):
+#     if current_user["role"] != "AGENCY":
+#         raise HTTPException(status_code=403, detail="Unauthorized")
+#
+#     agency_name = current_user["agency_name"]
+#     retrun await

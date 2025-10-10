@@ -2,7 +2,7 @@ import random
 import string
 from typing import Optional, List
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from sqlalchemy import insert, select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +11,7 @@ from data.model.payment_model import PaymentModel
 from infrastructure.schema.payment_schema import PaymentSchema, AgencyPaymentSchemaForGroupLeader
 
 
-async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str):
+async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str, receipt : Optional[List[UploadFile]]):
     try:
         # Generate an 8-character random alphanumeric transaction ID
         transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
@@ -22,7 +22,8 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
             "transaction_id": transaction_id,
             "created_by": agency_name,
             "updated_by": agency_name,
-            "no_of_hajji": len(payment_request.pilgrims_id)
+            "no_of_hajji": len(payment_request.pilgrims_id),
+            "receipt": receipt
         })
 
         # Insert into payment_info
@@ -44,13 +45,23 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
 
             if admin_user:
                 # Increase total_due by the payment amount
-                new_total_due = (admin_user.total_due or 0) + payment_data["amount"]
+                prev_available_amount = admin_user.total_available_amount or 0
+                payable_amount = payment_data["amount"]
+                if payable_amount >= prev_available_amount:
+                    new_available_amount = 0
+                    new_total_due = payable_amount - prev_available_amount
+                else:
+                    new_total_due = 0
+                    new_available_amount = prev_available_amount -  payable_amount
+
                 new_total_payable = (admin_user.total_payable or 0) + payment_data["amount"]
+                total_available_amount = new_available_amount
                 await db.execute(
                     update(AdminUserModel)
                     .where(AdminUserModel.code == group_leader_code)
                     .values(total_due=new_total_due)
                     .values(total_payable=new_total_payable)
+                    .values(total_available_amount=total_available_amount)
                 )
 
         await db.commit()
