@@ -77,7 +77,7 @@ async def get_group_leader_payment_info(
         db: AsyncSession = Depends(get_async_db),
         category: str | None = Query(None, description="Filter by payment category"),
         page: int = Query(1, ge=1),
-        size: int = Query(10, ge=1, le=100),
+        size: int = Query(100, ge=1),
         current_user: dict = Depends(get_current_admin_user)
 ):
     if current_user["role"] != "GROUP_LEADER":
@@ -100,7 +100,7 @@ async def get_group_leader_payment_info(
         category: str | None = Query(None, description="Filter by payment category"),
         group_leader: str | None = Query(None, description="Filter by group leader"),
         page: int = Query(1, ge=1),
-        size: int = Query(10, ge=1, le=100),
+        size: int = Query(100, ge=1),
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
