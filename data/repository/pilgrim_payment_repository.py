@@ -3,6 +3,7 @@ import string
 from typing import Optional, List
 
 from fastapi import UploadFile, HTTPException
+from soupsieve import select
 from sqlalchemy import insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +28,8 @@ async def create_payable_for_pilgrim(
         "created_by": agency_name,
         "updated_by": agency_name,
         "receipt": receipt,
-        "total_payable": payment_data.get("amount")
+        "total_payable": payment_data.get("amount"),
+        "total_due": payment_data.get("amount")
     })
 
     stmt = (
@@ -39,6 +41,32 @@ async def create_payable_for_pilgrim(
     created_payment = result.scalar_one()
     return created_payment
 
+async def create_payment_for_pilgrim(
+        db: AsyncSession,
+        payment_request: PaymentSchema,
+        agency_name: str,
+        receipt: Optional[List[UploadFile]]
+):
+    transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+    # Prepare data for insertion
+    payment_data = payment_request.model_dump(exclude_unset=True)
+    payment_data.update({
+        "transaction_id": transaction_id,
+        "created_by": agency_name,
+        "updated_by": agency_name,
+        "receipt": receipt,
+        "total_payment": payment_data.get("amount")
+    })
+
+    stmt = (
+        insert(PaymentModel)
+        .values(**payment_data)
+        .returning(PaymentModel)
+    )
+    result = await db.execute(stmt)
+    created_payment = result.scalar_one()
+    return created_payment
 
 async def update_pilgrim_payment_info(db: AsyncSession, payment_info: PayableInfoUpdateSchema):
     try:
@@ -78,3 +106,12 @@ async def update_pilgrim_payment_info(db: AsyncSession, payment_info: PayableInf
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error updating payment info: {str(e)}")
+
+
+# async def get_payable_by_payable_id(db:AsyncSession, payable_id: int):
+#     try:
+#         stmt = (
+#             select(PaymentModel).where(PaymentModel.id == payable_id)
+#         )
+#     except Exception as e:
+#         raise HTTPException(status_code=400, detail=f"Error getting payable info: {str(e)}")

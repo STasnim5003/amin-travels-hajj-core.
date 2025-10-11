@@ -20,3 +20,6 @@ class PaymentModel(Base, BaseMixinModel):
     payable_id = Column(Integer, nullable=True)
     receipt = Column(JSON, nullable=True)
     tracking_id = Column(String, nullable=True)
+    total_payable = Column(Integer, nullable=True)
+    total_due = Column(Integer, nullable=True)
+    total_payment = Column(Integer, nullable=True)

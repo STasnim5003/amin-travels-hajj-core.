@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user, get_current_admin_user
-from app.service import payment_service
+from app.service import payment_service, pilgrim_payment_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaymentSchema, \
     PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, \
@@ -166,4 +166,21 @@ async def create_payable_for_pilgrim(
         category=category,
         tracking_id=tracking_id
     )
-    return await payment_service.create_payable_for_pilgrim(db, payment_request, agency_name, receipt)
+    return await pilgrim_payment_service.create_payable_for_pilgrim(db, payment_request, agency_name, receipt)
+
+@private_router.post("/pilgrim/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
+async def create_payment_for_pilgrim(
+description: Optional[str] = Form(None),
+        date: Optional[str] = Form(None),
+        amount: int = Form(...),
+        category: str = Form(default="Payment"),
+        tracking_id: Optional[str] = Form(None),
+        payable_id: int = Form(...),
+        receipt: List[UploadFile] = File(default=[]),
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+) -> PaymentResponseSchema:
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    pass
