@@ -246,26 +246,29 @@ async def get_pilgrim_by_mobile_no(db: AsyncSession, mobile_no: str):
 
 
 async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
-    query = text("""
-        SELECT 
-            p.name_bn, p.name_en, p.father_name, p.mother_name, p.spouse_name, p.occupation, 
-            p.nid, p.voucher, p.type, p.listed_in, p.date_of_birth, p.gender, p.management, 
-            p.passport_address, p.present_address, p.permanent_address,p.serial_no, p.password,
-            p.group_name, p.registration_status, p.tracking_id, p.mobile_no, p.is_assigned, 
-            p.updated_at,p.created_at, p.updated_by, p.created_by, p.id, p.passport_copy, p.allocation_status,
-            p.vaccination_center, p.comment_on_package, p.package_name, p.package_duration, p.package_bed_types,
-            p.total_payable, p.total_payment
-        FROM core.pilgrim_data p
-        WHERE p.tracking_id = :tracking_id
-    """)
+    try:
+        query = text("""
+            SELECT 
+                p.name_bn, p.name_en, p.father_name, p.mother_name, p.spouse_name, p.occupation, 
+                p.nid, p.voucher, p.type, p.listed_in, p.date_of_birth, p.gender, p.management, 
+                p.passport_address, p.present_address, p.permanent_address,p.serial_no, p.password,
+                p.group_name, p.registration_status, p.tracking_id, p.mobile_no, p.is_assigned, 
+                p.updated_at,p.created_at, p.updated_by, p.created_by, p.id, p.passport_copy, p.allocation_status,
+                p.vaccination_center, p.comment_on_package, p.package_name, p.package_duration, p.package_bed_types,
+                p.total_payable, p.total_payment, p.total_available_amount, p.total_due, p.add_ons_services
+            FROM core.pilgrim_data p
+            WHERE p.tracking_id = :tracking_id
+        """)
 
-    result = await db.execute(query, {"tracking_id": tracking_id})
-    row = result.fetchone()
+        result = await db.execute(query, {"tracking_id": tracking_id})
+        row = result.fetchone()
 
-    if not row:
-        raise HTTPException(status_code=404, detail="Pilgrim not found")
+        if not row:
+            raise HTTPException(status_code=400, detail="Pilgrim not found")
 
-    return row
+        return row
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistrationRequestSchema):

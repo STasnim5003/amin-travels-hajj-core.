@@ -59,9 +59,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
                 await db.execute(
                     update(AdminUserModel)
                     .where(AdminUserModel.code == group_leader_code)
-                    .values(total_due=new_total_due)
-                    .values(total_payable=new_total_payable)
-                    .values(total_available_amount=total_available_amount)
+                    .values(total_due=new_total_due,total_payable=new_total_payable,total_available_amount=total_available_amount)
                 )
 
         await db.commit()
@@ -246,3 +244,4 @@ async def update_payable(db: AsyncSession, payable_id: int, update_data: dict):
 
     await db.commit()
     return updated_payment
+

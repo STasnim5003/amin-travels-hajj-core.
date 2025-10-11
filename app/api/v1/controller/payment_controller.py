@@ -142,3 +142,28 @@ async def update_payable(
     agency_name = current_user["agency_name"]
 
     return await payment_service.update_payable(db, payable_id, payable_request.dict(exclude_unset=True), agency_name)
+
+@private_router.post("/pilgrim/create-payable", response_model=PaymentResponseSchema, tags=["payment"])
+async def create_payable_for_pilgrim(
+        description: Optional[str] = Form(None),
+        date: Optional[str] = Form(None),
+        amount: int = Form(...),
+        category: str = Form(default="Payable"),
+        tracking_id: str = Form(...),
+        receipt: List[UploadFile] = File(default=[]),
+        db: AsyncSession = Depends(get_async_db),
+        # current_user: dict = Depends(get_current_user)
+) -> PaymentResponseSchema:
+    # if current_user["role"] != "AGENCY":
+    #     raise HTTPException(status_code=403, detail="Unauthorized")
+    # agency_name = current_user["agency_name"]
+
+    agency_name = "MARVELLOUS"
+    payment_request = PaymentSchema(
+        description=description,
+        date=date,
+        amount=amount,
+        category=category,
+        tracking_id=tracking_id
+    )
+    return await payment_service.create_payable_for_pilgrim(db, payment_request, agency_name, receipt)

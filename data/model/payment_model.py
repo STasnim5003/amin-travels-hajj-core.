@@ -19,3 +19,4 @@ class PaymentModel(Base, BaseMixinModel):
     no_of_hajji = Column(Integer, nullable=True)
     payable_id = Column(Integer, nullable=True)
     receipt = Column(JSON, nullable=True)
+    tracking_id = Column(String, nullable=True)

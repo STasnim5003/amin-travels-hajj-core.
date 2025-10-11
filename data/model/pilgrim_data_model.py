@@ -47,4 +47,6 @@ class PilgrimDataModel(Base, BaseMixinModel):
     package_bed_types = Column(String, nullable=True)
     add_ons_services = Column(JSON, nullable=True)
     is_package_assigned = Column(Boolean, nullable=True)
+    total_due = Column(Integer, nullable=True)
+    total_available_amount = Column(Integer, nullable=True)
 
