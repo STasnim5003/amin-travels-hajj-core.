@@ -71,6 +71,15 @@ async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_na
             raise HTTPException(status_code=403, detail="Agency Name Mismatched")
 
         total_payable = pilgrim.total_payable + request.total_payable
+        total_available_amount = pilgrim.total_available_amount or 0
+        total_due = pilgrim.total_due or 0
+
+        if total_payable >= total_available_amount:
+            new_available_amount = 0
+            new_due = total_payable - total_available_amount
+        else:
+            new_available_amount = total_available_amount - total_payable
+            new_due = 0
 
         await db.execute(
             update(PilgrimDataModel)
@@ -81,6 +90,8 @@ async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_na
                 package_bed_types=request.package_bed_types,
                 add_ons_services=request.add_ons_services,
                 total_payable=total_payable,
+                total_available_amount=new_available_amount,
+                total_due=new_due,
                 updated_by=agency_name,
                 is_package_assigned=True
             )
