@@ -65,3 +65,13 @@ class PaginatedPaymentResponseForAgency(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PaymentUpdateSchema(BaseModel):
+    description: Optional[str] = None
+    date: Optional[str] = None
+    amount: Optional[int] = None
+    pilgrims_id: Optional[List[str]] = None
+    group_leader: Optional[str] = None
+
+    class Config:
+        from_attributes = True

@@ -217,3 +217,32 @@ async def get_payments_by_agency(db: AsyncSession, agency_name: str, group_leade
 
     except Exception as e:
         raise Exception(f"Error fetching group leader payments: {str(e)}")
+
+async def get_by_id(db: AsyncSession, payable_id: int):
+    result = await db.execute(
+        select(PaymentModel).where(PaymentModel.id == payable_id)
+    )
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=400, detail="Payable not found")
+    return payment
+
+
+async def update_payable(db: AsyncSession, payable_id: int, update_data: dict):
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided to update")
+
+    query = (
+        update(PaymentModel)
+        .where(PaymentModel.id == payable_id)
+        .values(**update_data)
+        .returning(PaymentModel)
+    )
+    result = await db.execute(query)
+    updated_payment = result.scalar_one_or_none()
+
+    if not updated_payment:
+        raise HTTPException(status_code=400, detail="Update failed — Payable not found")
+
+    await db.commit()
+    return updated_payment

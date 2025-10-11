@@ -8,7 +8,8 @@ from app.core.middleware.middleware import get_current_user, get_current_admin_u
 from app.service import payment_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaymentSchema, \
-    PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader
+    PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, \
+    PaymentUpdateSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -128,3 +129,16 @@ async def get_group_leader_payment_info(
 #
 #     agency_name = current_user["agency_name"]
 #     retrun await
+
+@private_router.put("/update-payable/{payable_id}", response_model=PaymentResponseSchema, tags=["payment"])
+async def update_payable(
+        payable_id: int,
+        payable_request : PaymentUpdateSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+) -> PaymentResponseSchema:
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=400, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+
+    return await payment_service.update_payable(db, payable_id, payable_request.dict(exclude_unset=True), agency_name)

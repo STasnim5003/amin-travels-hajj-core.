@@ -1,8 +1,10 @@
 from typing import List, Optional
 
 from fastapi import UploadFile, HTTPException
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from data.model.admin_user_model import AdminUserModel
 from data.repository import payment_repository, file_repository
 from infrastructure.schema.payment_schema import PaymentSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader
@@ -114,3 +116,70 @@ async def get_agency_payments(
         size=size,
         total=total
     )
+
+async def update_payable(
+        db: AsyncSession,
+        payable_id: int,
+        payment_data: dict,
+        agency_name: str
+):
+    existing_payment = await payment_repository.get_by_id(db, payable_id)
+
+    if existing_payment.created_by != agency_name:
+        raise HTTPException(status_code=403, detail="Unauthorized to update this payable")
+
+    filtered_data = {k: v for k, v in payment_data.items() if v is not None}
+
+    if not filtered_data:
+        raise HTTPException(status_code=400, detail="No valid fields provided to update")
+
+    if "amount" in filtered_data:
+        new_amount = filtered_data["amount"]
+        old_amount = existing_payment.amount or 0
+
+        # Only recalculate if the amount actually changed
+        if new_amount != old_amount:
+            group_leader_code = existing_payment.group_leader
+
+            if group_leader_code:
+                query = select(AdminUserModel).where(AdminUserModel.code == group_leader_code)
+                res = await db.execute(query)
+                admin_user = res.scalar_one_or_none()
+
+                if admin_user:
+                    # Reverse the old amount effect first
+                    prev_available_amount = admin_user.total_available_amount or 0
+                    prev_due = admin_user.total_due or 0
+                    prev_total_payable = admin_user.total_payable or 0
+
+                    # Subtract old amount first
+                    prev_total_payable -= old_amount
+                    if prev_available_amount >= old_amount:
+                        prev_available_amount -= old_amount
+                    else:
+                        diff = old_amount - prev_available_amount
+                        prev_due = max(prev_due - diff, 0)
+                        prev_available_amount = 0
+
+                    # Now add the new amount
+                    if new_amount >= prev_available_amount:
+                        new_available_amount = 0
+                        new_total_due = prev_due + (new_amount - prev_available_amount)
+                    else:
+                        new_total_due = prev_due
+                        new_available_amount = prev_available_amount - new_amount
+
+                    new_total_payable = prev_total_payable + new_amount
+
+                    await db.execute(
+                        update(AdminUserModel)
+                        .where(AdminUserModel.code == group_leader_code)
+                        .values(
+                            total_due=new_total_due,
+                            total_payable=new_total_payable,
+                            total_available_amount=new_available_amount,
+                        )
+                    )
+
+    updated_payment = await payment_repository.update_payable(db, payable_id, filtered_data)
+    return updated_payment
