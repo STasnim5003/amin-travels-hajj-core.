@@ -255,7 +255,7 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
                 p.group_name, p.registration_status, p.tracking_id, p.mobile_no, p.is_assigned, 
                 p.updated_at,p.created_at, p.updated_by, p.created_by, p.id, p.passport_copy, p.allocation_status,
                 p.vaccination_center, p.comment_on_package, p.package_name, p.package_duration, p.package_bed_types,
-                p.total_payable, p.total_payment, p.total_available_amount, p.total_due, p.add_ons_services
+                p.total_payable, p.total_payment, p.total_available_amount, p.total_due, p.add_ons_services, p.is_package_assigned
             FROM core.pilgrim_data p
             WHERE p.tracking_id = :tracking_id
         """)
