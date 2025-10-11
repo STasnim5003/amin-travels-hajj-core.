@@ -152,13 +152,13 @@ async def create_payable_for_pilgrim(
         tracking_id: str = Form(...),
         receipt: List[UploadFile] = File(default=[]),
         db: AsyncSession = Depends(get_async_db),
-        # current_user: dict = Depends(get_current_user)
+        current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
-    # if current_user["role"] != "AGENCY":
-    #     raise HTTPException(status_code=403, detail="Unauthorized")
-    # agency_name = current_user["agency_name"]
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
 
-    agency_name = "MARVELLOUS"
+    # agency_name = "MARVELLOUS"
     payment_request = PaymentSchema(
         description=description,
         date=date,
