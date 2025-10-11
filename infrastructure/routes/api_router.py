@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from app.api.v1.controller import (file_controller, training_controller, program_controller, pilgrim_controller,
                                    view_field_controller, customer_controller, food_menu_controller, route_controller,
                                    ziara_controller, script_controller, admin_user_controller, payment_controller,
-                                   add_ons_service_controller, package_assign_controller)
+                                   add_ons_service_controller, package_assign_controller, search_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
 from app.api.v1.controller.admin_user_controller import public_router
 
@@ -43,3 +43,5 @@ router.include_router(payment_controller.private_router)
 
 router.include_router(add_ons_service_controller.private_router)
 router.include_router(package_assign_controller.private_router)
+
+router.include_router(search_controller.private_router)
