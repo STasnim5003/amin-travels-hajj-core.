@@ -12,6 +12,7 @@ class PaymentSchema(BaseModel):
     pilgrims_id: Optional[List[str]] = None
     group_leader: Optional[str] = None
     tracking_id : Optional[str] = None
+    payable_id : Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -83,3 +84,4 @@ class PayableInfoUpdateSchema(BaseModel):
     total_due: Optional[int] = None
     total_payable: Optional[int] = None
     total_available_amount: Optional[int] = None
+    total_payment: Optional[int] = None

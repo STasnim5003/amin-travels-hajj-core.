@@ -4,7 +4,7 @@ import fastapi
 from fastapi import Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.middleware.middleware import get_current_user, get_current_admin_user
+from app.core.middleware.middleware import get_current_user, get_current_admin_user, get_current_pilgrim
 from app.service import payment_service, pilgrim_payment_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaymentSchema, \
@@ -183,4 +183,34 @@ description: Optional[str] = Form(None),
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    pass
+    # agency_name = "MARVELLOUS"
+    payment_request = PaymentSchema(
+        description=description,
+        date=date,
+        amount=amount,
+        category=category,
+        tracking_id=tracking_id,
+        payable_id=payable_id
+    )
+
+    return await pilgrim_payment_service.create_payment_for_pilgrim(db, payment_request, agency_name, receipt)
+
+@private_router.get("/payment-info/pilgrim", response_model=PaginatedPaymentResponseForGroupLeader, tags=["payment"])
+async def get_pilgrim_payment_info(
+        db: AsyncSession = Depends(get_async_db),
+        category: str | None = Query(None, description="Filter by payment category"),
+        page: int = Query(1, ge=1),
+        size: int = Query(100, ge=1),
+        current_user: dict = Depends(get_current_pilgrim)
+):
+    tracking_id = current_user.get("tracking_id")
+    if not tracking_id:
+        raise HTTPException(status_code=400, detail="Tracking ID is missing in user context")
+
+    return await pilgrim_payment_service.get_pilgrim_payments(
+        db=db,
+        tracking_id=tracking_id,
+        category=category,
+        page=page,
+        size=size
+    )

@@ -4,7 +4,8 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import pilgrim_payment_repository, file_repository, pilgrim_repository
-from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentSchema, PaymentResponseSchema
+from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentSchema, PaymentResponseSchema, \
+    PaginatedPaymentResponseForGroupLeader
 
 
 async def create_payable_for_pilgrim(
@@ -92,3 +93,72 @@ async def create_payment_for_pilgrim(
                 receipt_data.append(receipt_resp.model_dump())
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"File upload failed: {str(e)}")
+
+    try:
+        result = await pilgrim_payment_repository.create_payment_for_pilgrim(db, payment_data, agency_name,
+                                                                             receipt_data)
+        if result:
+            prev_available_amount = pilgrim.total_available_amount or 0
+            prev_due_amount = pilgrim.total_due or 0
+            prev_total_amount = pilgrim.total_payment or 0
+            curr_payment = payment_data.amount
+
+            if curr_payment >= prev_due_amount:
+                new_due_amount = 0
+                new_available_amount = prev_available_amount + curr_payment - prev_due_amount
+            else:
+                new_due_amount = prev_due_amount - curr_payment
+                new_available_amount = prev_available_amount
+            new_total_amount = prev_total_amount + curr_payment
+
+            payment_info = PayableInfoUpdateSchema(
+                total_payment=new_total_amount,
+                total_available_amount=new_available_amount,
+                total_due=new_due_amount,
+                tracking_id=payment_data.tracking_id
+            )
+            response = await pilgrim_payment_repository.update_pilgrim_payment_info(db, payment_info)
+            return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+async def get_pilgrim_payments(
+        db,
+        tracking_id: str,
+        category: str | None,
+        page: int,
+        size: int
+):
+    (
+        payments,
+        total,
+        pilgrim_total_payable,
+        pilgrim_total_payment,
+        pilgrim_total_due,
+        pilgrim_total_available_amount
+    ) = await pilgrim_payment_repository.get_payments_by_tracking_id(db, tracking_id, category, page, size)
+
+    payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
+    payables = [p for p in payment_list if p.payable_id is None]
+    non_payables = [p for p in payment_list if p.payable_id is not None]
+
+    # Map non-payables to their payables
+    for payable in payables:
+        related_payments = [p for p in non_payables if p.payable_id == payable.id]
+
+        payable.payments = related_payments
+        payable.total_payable = payable.amount
+        payable.total_paid = sum(p.amount for p in related_payments)
+        payable.total_due = max(payable.total_payable - payable.total_paid, 0)
+
+    return PaginatedPaymentResponseForGroupLeader(
+        payments=payables,
+        page=page,
+        size=size,
+        total=total,
+        total_payable=pilgrim_total_payable,
+        total_payment=pilgrim_total_payment,
+        total_due=pilgrim_total_due,
+        total_available_amount=pilgrim_total_available_amount
+    )
