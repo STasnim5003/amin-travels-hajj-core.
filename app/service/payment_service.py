@@ -5,10 +5,9 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
-from data.repository import payment_repository, file_repository, pilgrim_repository, pilgrim_payment_repository
-from infrastructure.schema.payment_schema import PaymentSchema, PaymentResponseSchema, \
-    PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, \
-    PayableInfoUpdateSchema
+from data.repository import payment_repository, file_repository
+from infrastructure.schema.payment_schema import PaymentSchema, PaginatedPaymentResponseForGroupLeader, \
+    PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader
 
 
 async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str,
@@ -60,22 +59,8 @@ async def get_group_leader_payments(
         group_leader_total_available_amount
     ) = await payment_repository.get_payments_by_group_leader(db, group_leader, category, page, size)
 
-    payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
-
-    payables = [p for p in payment_list if p.payable_id is None]
-    non_payables = [p for p in payment_list if p.payable_id is not None]
-
-    # Map non-payables to their payables
-    for payable in payables:
-        related_payments = [p for p in non_payables if p.payable_id == payable.id]
-
-        payable.payments = related_payments
-        payable.total_payable = payable.amount
-        payable.total_paid = sum(p.amount for p in related_payments)
-        payable.total_due = max(payable.total_payable - payable.total_paid, 0)
-
     return PaginatedPaymentResponseForGroupLeader(
-        payments=payables,
+        payments=payments,
         page=page,
         size=size,
         total=total,
@@ -90,6 +75,7 @@ async def get_agency_payments(
         db,
         agency_name: str,
         group_leader: str | None,
+        tracking_id: str | None,
         category: str | None,
         page: int,
         size: int
@@ -97,24 +83,11 @@ async def get_agency_payments(
     (
         payments,
         total
-    ) = await payment_repository.get_payments_by_agency(db, agency_name, group_leader, category, page, size)
-
-    payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
-
-    payables = [p for p in payment_list if p.payable_id is None]
-    non_payables = [p for p in payment_list if p.payable_id is not None]
-
-    # Map non-payables to their payables
-    for payable in payables:
-        related_payments = [p for p in non_payables if p.payable_id == payable.id]
-
-        payable.payments = related_payments
-        payable.total_payable = payable.amount
-        payable.total_paid = sum(p.amount for p in related_payments)
-        payable.total_due = max(payable.total_payable - payable.total_paid, 0)
+    ) = await payment_repository.get_payments_by_agency(db, agency_name, group_leader, tracking_id, category, page,
+                                                        size)
 
     return PaginatedPaymentResponseForAgency(
-        payments=payables,
+        payments=payments,
         page=page,
         size=size,
         total=total
@@ -187,6 +160,3 @@ async def update_payable(
 
     updated_payment = await payment_repository.update_payable(db, payable_id, filtered_data)
     return updated_payment
-
-
-

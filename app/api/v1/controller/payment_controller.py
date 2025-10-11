@@ -100,6 +100,7 @@ async def get_group_leader_payment_info(
         db: AsyncSession = Depends(get_async_db),
         category: str | None = Query(None, description="Filter by payment category"),
         group_leader: str | None = Query(None, description="Filter by group leader"),
+        tracking_id: str | None = Query(None),
         page: int = Query(1, ge=1),
         size: int = Query(100, ge=1),
         current_user: dict = Depends(get_current_user)
@@ -113,10 +114,12 @@ async def get_group_leader_payment_info(
         db=db,
         agency_name=agency_name,
         group_leader=group_leader,
+        tracking_id=tracking_id,
         category=category,
         page=page,
         size=size
     )
+
 
 # @private_router.get("/agency/payment-info/{payment_id}", tags=["payment"])
 # async def get_agency_payment_info_by_id(
@@ -133,7 +136,7 @@ async def get_group_leader_payment_info(
 @private_router.put("/update-payable/{payable_id}", response_model=PaymentResponseSchema, tags=["payment"])
 async def update_payable(
         payable_id: int,
-        payable_request : PaymentUpdateSchema,
+        payable_request: PaymentUpdateSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
@@ -142,6 +145,7 @@ async def update_payable(
     agency_name = current_user["agency_name"]
 
     return await payment_service.update_payable(db, payable_id, payable_request.dict(exclude_unset=True), agency_name)
+
 
 @private_router.post("/pilgrim/create-payable", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payable_for_pilgrim(
@@ -168,9 +172,10 @@ async def create_payable_for_pilgrim(
     )
     return await pilgrim_payment_service.create_payable_for_pilgrim(db, payment_request, agency_name, receipt)
 
+
 @private_router.post("/pilgrim/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payment_for_pilgrim(
-description: Optional[str] = Form(None),
+        description: Optional[str] = Form(None),
         date: Optional[str] = Form(None),
         amount: int = Form(...),
         category: str = Form(default="Payment"),
@@ -194,6 +199,7 @@ description: Optional[str] = Form(None),
     )
 
     return await pilgrim_payment_service.create_payment_for_pilgrim(db, payment_request, agency_name, receipt)
+
 
 @private_router.get("/payment-info/pilgrim", response_model=PaginatedPaymentResponseForGroupLeader, tags=["payment"])
 async def get_pilgrim_payment_info(

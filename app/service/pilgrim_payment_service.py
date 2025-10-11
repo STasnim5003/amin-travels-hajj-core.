@@ -65,6 +65,7 @@ async def create_payable_for_pilgrim(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 async def create_payment_for_pilgrim(
         db: AsyncSession, payment_data: PaymentSchema, agency_name: str, receipt: Optional[List[UploadFile]]
 ):
@@ -137,23 +138,10 @@ async def get_pilgrim_payments(
         pilgrim_total_payment,
         pilgrim_total_due,
         pilgrim_total_available_amount
-    ) = await pilgrim_payment_repository.get_payments_by_tracking_id(db, tracking_id, category, page, size)
-
-    payment_list = [PaymentResponseSchema.model_validate(p) for p in payments]
-    payables = [p for p in payment_list if p.payable_id is None]
-    non_payables = [p for p in payment_list if p.payable_id is not None]
-
-    # Map non-payables to their payables
-    for payable in payables:
-        related_payments = [p for p in non_payables if p.payable_id == payable.id]
-
-        payable.payments = related_payments
-        payable.total_payable = payable.amount
-        payable.total_paid = sum(p.amount for p in related_payments)
-        payable.total_due = max(payable.total_payable - payable.total_paid, 0)
+    ) = await pilgrim_payment_repository.get_payments_by_tracking_id(db, tracking_id, page, size)
 
     return PaginatedPaymentResponseForGroupLeader(
-        payments=payables,
+        payments=payments,
         page=page,
         size=size,
         total=total,

@@ -3,7 +3,7 @@ import string
 from typing import Optional, List
 
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import insert, select, update, func, desc
+from sqlalchemy import insert, select, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -11,7 +11,8 @@ from data.model.payment_model import PaymentModel
 from infrastructure.schema.payment_schema import PaymentSchema, AgencyPaymentSchemaForGroupLeader
 
 
-async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str, receipt : Optional[List[UploadFile]]):
+async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str,
+                                          receipt: Optional[List[UploadFile]]):
     try:
         # Generate an 8-character random alphanumeric transaction ID
         transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
@@ -49,17 +50,18 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
                 payable_amount = payment_data["amount"]
                 if payable_amount >= prev_available_amount:
                     new_available_amount = 0
-                    new_total_due = admin_user.total_due +( payable_amount - prev_available_amount)
+                    new_total_due = admin_user.total_due + (payable_amount - prev_available_amount)
                 else:
                     new_total_due = 0
-                    new_available_amount = prev_available_amount -  payable_amount
+                    new_available_amount = prev_available_amount - payable_amount
 
                 new_total_payable = (admin_user.total_payable or 0) + payment_data["amount"]
                 total_available_amount = new_available_amount
                 await db.execute(
                     update(AdminUserModel)
                     .where(AdminUserModel.code == group_leader_code)
-                    .values(total_due=new_total_due,total_payable=new_total_payable,total_available_amount=total_available_amount)
+                    .values(total_due=new_total_due, total_payable=new_total_payable,
+                            total_available_amount=total_available_amount)
                 )
 
         await db.commit()
@@ -100,7 +102,7 @@ async def create_payment_for_group_leader(db: AsyncSession, request: AgencyPayme
             "updated_by": agency_name,
             "payable_id": request.payable_id,
             "no_of_hajji": len(request.pilgrims_id),
-            "receipt" : receipt
+            "receipt": receipt
         })
 
         # Step 3: Insert into payment table
@@ -112,7 +114,6 @@ async def create_payment_for_group_leader(db: AsyncSession, request: AgencyPayme
 
         result = await db.execute(stmt)
         created_payment = result.scalar_one()
-
 
         if admin_user:
             prev_due = admin_user.total_due or 0
@@ -152,70 +153,185 @@ async def get_payments_by_group_leader(
         size: int
 ):
     try:
-        query = select(PaymentModel).where(PaymentModel.group_leader == group_leader)
+        offset = (page - 1) * size
 
-        if category:
-            query = query.where(PaymentModel.category == category)
-
-        # Count total rows before pagination
-        total_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(total_query)
-        total = total_result.scalar() or 0
-
-        # Apply pagination
-        query = query.offset((page - 1) * size).limit(size)
-        result = await db.execute(query)
-        payments = result.scalars().all()
-
-        query = (
-            select(
-                AdminUserModel.total_payable,
-                AdminUserModel.total_payment,
-                AdminUserModel.total_due,
-                AdminUserModel.total_available_amount
-            )
-            .where(AdminUserModel.code == group_leader)
+        query = text("""
+        SELECT
+            p.id AS id,
+                p.description AS description,
+                p.date AS date,
+                p.amount AS amount,
+                p.category AS category,
+                p.no_of_hajji as no_of_hajji,
+                p.pilgrims_id as pilgrims_id,
+                p.total_payment AS total_paid,
+                p.total_due AS total_due,
+                p.tracking_id,
+                p.group_leader,
+                p.transaction_id AS transaction_id,
+                p.created_at AS created_at,
+                p.created_by AS created_by,
+                p.updated_at AS updated_at,
+                p.updated_by AS updated_by,
+                a.total_payable AS admin_user_total_payable,
+                a.total_payment AS admin_user_total_payment,
+                a.total_due AS admin_user_total_due,
+                a.total_available_amount AS admin_user_total_available_amount,
+                COALESCE(p.receipt, '[]'::json) AS receipt,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', c.id,
+                            'description', c.description,
+                            'date', c.date,
+                            'amount', c.amount,
+                            'category', c.category,
+                            'tracking_id', c.tracking_id,
+                            'group_leader', c.group_leader,
+                            'payable_id', c.payable_id,
+                            'transaction_id', c.transaction_id,
+                            'created_at', c.created_at,
+                            'created_by', c.created_by,
+                            'updated_at', c.updated_at,
+                            'updated_by', c.updated_by,
+                            'receipt', COALESCE(c.receipt, '[]'::json),
+                            'total_payable', c.total_payable,
+                            'total_paid', c.total_payment,
+                            'total_due', c.total_due
+                        )
+                    ) FILTER (WHERE c.id IS NOT NULL),
+                    '[]'
+                ) AS payments
+            FROM core.payment p
+            LEFT JOIN core.payment c
+                ON c.payable_id = p.id AND c.category = 'Payment'
+            LEFT JOIN core.admin_user a
+                ON a.code = p.group_leader
+            WHERE p.category = 'Payable' AND p.group_leader = :group_leader
+            GROUP BY p.id, a.code, a.total_payable, a.total_available_amount, a.total_due, a.total_payment
+            ORDER BY p.id DESC
+            LIMIT :size OFFSET :offset;
+        """)
+        result = await db.execute(
+            query,
+            {"group_leader": group_leader, "size": size, "offset": offset}
         )
 
-        result = await db.execute(query)
-        row = result.first()
+        payments = result.mappings().all()  # returns a list of dict-like rows
 
-        if not row:
-            raise HTTPException(status_code=400, detail="Group leader not found")
+        if not payments:
+            raise HTTPException(status_code=400, detail="No payments found for this tracking ID")
 
-        total_payable, total_payment, total_due, total_available_amount = row
+        total_query = text("""
+                            SELECT COUNT(*) FROM core.payment
+                            WHERE group_leader = :group_leader
+                            AND category = 'Payable'
+                        """)
+        total_result = await db.execute(total_query, {"group_leader": group_leader})
+        total = total_result.scalar() or 0
 
-        return payments, total, total_payable, total_payment, total_due, total_available_amount
+        first = payments[0]
+        admin_user_total_payable = first["admin_user_total_payable"]
+        admin_user_total_payment = first["admin_user_total_payment"]
+        admin_user_total_due = first["admin_user_total_due"]
+        admin_user_total_available_amount = first["admin_user_total_available_amount"]
+
+        return payments, total, admin_user_total_payable, admin_user_total_payment, admin_user_total_due, admin_user_total_available_amount
 
     except Exception as e:
         raise Exception(f"Error fetching group leader payments: {str(e)}")
 
 
-async def get_payments_by_agency(db: AsyncSession, agency_name: str, group_leader: str, category: str, page: int,
+async def get_payments_by_agency(db: AsyncSession, agency_name: str, group_leader: str, tracking_id: str, category: str,
+                                 page: int,
                                  size: int):
     try:
-        query = select(PaymentModel).where(PaymentModel.created_by == agency_name)
+        offset = (page - 1) * size
 
-        if category:
-            query = query.where(PaymentModel.category == category)
+        filters = ["p.category = 'Payable'", "p.created_by = :agency_name"]
+        params = {"agency_name": agency_name, "size": size, "offset": offset}
+
         if group_leader:
-            query = query.where(PaymentModel.group_leader == group_leader)
+            filters.append("p.group_leader = :group_leader")
+            params["group_leader"] = group_leader
+        if tracking_id:
+            filters.append("p.tracking_id = :tracking_id")
+            params["tracking_id"] = tracking_id
 
-        # Count total rows before pagination
-        total_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(total_query)
+        filter_clause = " AND ".join(filters)
+
+        # ✅ Use f-string here
+        query = text(f"""
+            SELECT
+                p.id AS id,
+                p.description AS description,
+                p.date AS date,
+                p.amount AS amount,
+                p.category AS category,
+                p.no_of_hajji AS no_of_hajji,
+                p.pilgrims_id AS pilgrims_id,
+                p.total_payment AS total_paid,
+                p.total_due AS total_due,
+                p.tracking_id,
+                p.group_leader,
+                p.transaction_id AS transaction_id,
+                p.created_at AS created_at,
+                p.created_by AS created_by,
+                p.updated_at AS updated_at,
+                p.updated_by AS updated_by,
+                COALESCE(p.receipt, '[]'::json) AS receipt,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', c.id,
+                            'description', c.description,
+                            'date', c.date,
+                            'amount', c.amount,
+                            'category', c.category,
+                            'tracking_id', c.tracking_id,
+                            'group_leader', c.group_leader,
+                            'payable_id', c.payable_id,
+                            'transaction_id', c.transaction_id,
+                            'created_at', c.created_at,
+                            'created_by', c.created_by,
+                            'updated_at', c.updated_at,
+                            'updated_by', c.updated_by,
+                            'receipt', COALESCE(c.receipt, '[]'::json),
+                            'total_payable', c.total_payable,
+                            'total_paid', c.total_payment,
+                            'total_due', c.total_due
+                        )
+                    ) FILTER (WHERE c.id IS NOT NULL),
+                    '[]'
+                ) AS payments
+            FROM core.payment p
+            LEFT JOIN core.payment c
+                ON c.payable_id = p.id AND c.category = 'Payment'
+            WHERE {filter_clause}
+            GROUP BY p.id
+            ORDER BY p.id DESC
+            LIMIT :size OFFSET :offset
+        """)
+
+        result = await db.execute(query, params)
+        payments = result.mappings().all()
+
+        if not payments:
+            raise HTTPException(status_code=400, detail="No payments found for this tracking ID")
+
+        total_query = text("""
+                            SELECT COUNT(*) FROM core.payment
+                            WHERE created_by = :agency_name
+                            AND category = 'Payable'
+                        """)
+        total_result = await db.execute(total_query, {"agency_name": agency_name})
         total = total_result.scalar() or 0
-
-        # Apply pagination
-        query = query.order_by(desc(PaymentModel.id)).offset((page - 1) * size).limit(size)
-
-        result = await db.execute(query)
-        payments = result.scalars().all()
 
         return payments, total
 
     except Exception as e:
         raise Exception(f"Error fetching group leader payments: {str(e)}")
+
 
 async def get_by_id(db: AsyncSession, payable_id: int):
     result = await db.execute(
@@ -245,4 +361,3 @@ async def update_payable(db: AsyncSession, payable_id: int, update_data: dict):
 
     await db.commit()
     return updated_payment
-

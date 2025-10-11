@@ -3,7 +3,7 @@ import string
 from typing import Optional, List
 
 from fastapi import UploadFile, HTTPException
-from sqlalchemy import insert, update, select, func, desc
+from sqlalchemy import insert, update, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -39,6 +39,7 @@ async def create_payable_for_pilgrim(
     result = await db.execute(stmt)
     created_payment = result.scalar_one()
     return created_payment
+
 
 async def create_payment_for_pilgrim(
         db: AsyncSession,
@@ -85,6 +86,7 @@ async def create_payment_for_pilgrim(
         return created_payment
     except Exception as e:
         raise e
+
 
 async def update_pilgrim_payment_info(db: AsyncSession, payment_info: PayableInfoUpdateSchema):
     try:
@@ -154,48 +156,97 @@ async def get_payable_by_payable_id(db: AsyncSession, payable_id: int):
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error retrieving payable: {str(e)}")
 
+
 async def get_payments_by_tracking_id(
         db: AsyncSession,
         tracking_id: str,
-        category: str | None,
-        page: int,
-        size: int
+        page: int = 1,
+        size: int = 100
 ):
     try:
-        query = select(PaymentModel).where(PaymentModel.tracking_id == tracking_id)
+        offset = (page - 1) * size
 
-        if category:
-            query = query.where(PaymentModel.category == category)
+        query = text("""
+            SELECT
+                p.id AS id,
+                p.description AS description,
+                p.date AS date,
+                p.amount AS amount,
+                p.category AS category,
+                p.total_payment AS total_paid,
+                p.total_due AS total_due,
+                p.tracking_id,
+                p.group_leader,
+                p.transaction_id AS transaction_id,
+                p.created_at AS created_at,
+                p.created_by AS created_by,
+                p.updated_at AS updated_at,
+                p.updated_by AS updated_by,
+                pd.total_payable AS pilgrim_total_payable,
+                pd.total_payment AS pilgrim_total_payment,
+                pd.total_due AS pilgrim_total_due,
+                pd.total_available_amount AS pilgrim_total_available_amount,
+                COALESCE(p.receipt, '[]'::json) AS receipt,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', c.id,
+                            'description', c.description,
+                            'date', c.date,
+                            'amount', c.amount,
+                            'category', c.category,
+                            'tracking_id', c.tracking_id,
+                            'payable_id', c.payable_id,
+                            'transaction_id', c.transaction_id,
+                            'created_at', c.created_at,
+                            'created_by', c.created_by,
+                            'updated_at', c.updated_at,
+                            'updated_by', c.updated_by,
+                            'receipt', COALESCE(c.receipt, '[]'::json),
+                            'total_payable', c.total_payable,
+                            'total_paid', c.total_payment,
+                            'total_due', c.total_due
+                        )
+                    ) FILTER (WHERE c.id IS NOT NULL),
+                    '[]'
+                ) AS payments
+            FROM core.payment p
+            LEFT JOIN core.payment c
+                ON c.payable_id = p.id AND c.category = 'Payment'
+            LEFT JOIN core.pilgrim_data pd
+                ON pd.tracking_id = p.tracking_id
+            WHERE p.category = 'Payable' AND p.tracking_id = :tracking_id
+            GROUP BY p.id, pd.tracking_id, pd.total_payable, pd.total_available_amount, pd.total_due, pd.total_payment
+            ORDER BY p.id DESC
+            LIMIT :size OFFSET :offset;
+        """)
 
-        # Count total rows before pagination
-        total_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(total_query)
-        total = total_result.scalar() or 0
-
-        # Apply pagination
-        query = query.order_by(desc(PaymentModel.id)).offset((page - 1) * size).limit(size)
-        result = await db.execute(query)
-        payments = result.scalars().all()
-
-        query = (
-            select(
-                PilgrimDataModel.total_payable,
-                PilgrimDataModel.total_payment,
-                PilgrimDataModel.total_due,
-                PilgrimDataModel.total_available_amount
-            )
-            .where(PilgrimDataModel.tracking_id == tracking_id)
+        result = await db.execute(
+            query,
+            {"tracking_id": tracking_id, "size": size, "offset": offset}
         )
 
-        result = await db.execute(query)
-        row = result.first()
+        payments = result.mappings().all()  # returns a list of dict-like rows
 
-        if not row:
-            raise HTTPException(status_code=400, detail="Group leader not found")
+        if not payments:
+            raise HTTPException(status_code=400, detail="No payments found for this tracking ID")
 
-        total_payable, total_payment, total_due, total_available_amount = row
+        total_query = text("""
+                    SELECT COUNT(*) FROM core.payment
+                    WHERE tracking_id = :tracking_id
+                    AND category = 'Payable'
+                """)
+        total_result = await db.execute(total_query, {"tracking_id": tracking_id})
+        total = total_result.scalar() or 0
 
-        return payments, total, total_payable, total_payment, total_due, total_available_amount
+        first = payments[0]
+        pilgrim_total_payable = first["pilgrim_total_payable"]
+        pilgrim_total_payment = first["pilgrim_total_payment"]
+        pilgrim_total_due = first["pilgrim_total_due"]
+        pilgrim_total_available_amount = first["pilgrim_total_available_amount"]
+
+        return payments, total, pilgrim_total_payable, pilgrim_total_payment, pilgrim_total_due, pilgrim_total_available_amount
 
     except Exception as e:
-        raise Exception(f"Error fetching group leader payments: {str(e)}")
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
