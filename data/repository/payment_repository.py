@@ -3,7 +3,7 @@ import string
 from typing import Optional, List
 
 from fastapi import HTTPException, UploadFile
-from sqlalchemy import insert, select, update, func
+from sqlalchemy import insert, select, update, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -207,7 +207,8 @@ async def get_payments_by_agency(db: AsyncSession, agency_name: str, group_leade
         total = total_result.scalar() or 0
 
         # Apply pagination
-        query = query.offset((page - 1) * size).limit(size)
+        query = query.order_by(desc(PaymentModel.id)).offset((page - 1) * size).limit(size)
+
         result = await db.execute(query)
         payments = result.scalars().all()
 
