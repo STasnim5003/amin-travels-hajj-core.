@@ -1,11 +1,8 @@
 from typing import List, Optional
 
 from fastapi import UploadFile, HTTPException
-from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.model.admin_user_model import AdminUserModel
-from data.model.pilgrim_data_model import PilgrimDataModel
 from data.repository import payment_repository, file_repository, admin_user_repository, pilgrim_payment_repository, \
     pilgrim_repository
 from infrastructure.schema.payment_schema import PaymentSchema, PaginatedPaymentResponseForGroupLeader, \
@@ -17,7 +14,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
     if payment_request.amount < 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
-    #check group leader
+    # check group leader
     try:
         if payment_request.group_leader:
             existing_group_leader = await admin_user_repository.get_admin_user_by_code(db, payment_request.group_leader)
@@ -38,7 +35,8 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"File upload failed: {str(e)}")
     try:
-        result = await payment_repository.create_payable_for_group_leader(db, payment_request, agency_name, receipt_data)
+        result = await payment_repository.create_payable_for_group_leader(db, payment_request, agency_name,
+                                                                          receipt_data)
 
         # update group leader payment info
         if result:
@@ -196,7 +194,6 @@ async def update_payable(
         payment_data: dict,
         agency_name: str
 ):
-
     existing_payment = await payment_repository.get_by_id(db, payable_id)
 
     if existing_payment.created_by != agency_name:
