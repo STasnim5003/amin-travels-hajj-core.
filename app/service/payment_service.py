@@ -5,7 +5,9 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
-from data.repository import payment_repository, file_repository, admin_user_repository, pilgrim_payment_repository
+from data.model.pilgrim_data_model import PilgrimDataModel
+from data.repository import payment_repository, file_repository, admin_user_repository, pilgrim_payment_repository, \
+    pilgrim_repository
 from infrastructure.schema.payment_schema import PaymentSchema, PaginatedPaymentResponseForGroupLeader, \
     PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, PayableInfoUpdateSchema
 
@@ -73,17 +75,20 @@ async def create_group_leader_payment(db: AsyncSession, request: AgencyPaymentSc
     receipt_data = []
 
     try:
+        # Check Payable
         payable_id = request.payable_id
         group_leader = request.group_leader
         payable = await pilgrim_payment_repository.get_payable_by_payable_id(db, payable_id)
         if not payable:
             raise HTTPException(status_code=400, detail="Payable does not exist")
 
+        # Update Payable amount
         new_due_amount = payable.total_due - request.amount
         new_due_amount = max(new_due_amount, 0)
 
         new_total_payment = request.amount + payable.total_payment
 
+        # Check Group Leader & Agency
         admin_user = await admin_user_repository.get_admin_user_by_code(db, group_leader)
         if not admin_user:
             raise HTTPException(status_code=400, detail="Group leader does not exist")
@@ -94,6 +99,7 @@ async def create_group_leader_payment(db: AsyncSession, request: AgencyPaymentSc
     except Exception as e:
         raise e
 
+    # Upload Receipt
     if receipt:
         try:
             for file in receipt:
@@ -106,6 +112,7 @@ async def create_group_leader_payment(db: AsyncSession, request: AgencyPaymentSc
         result = await payment_repository.create_payment_for_group_leader(db, request, agency_name,
                                                                           new_total_payment, new_due_amount,
                                                                           receipt_data)
+        # Adjust Group Leader Payment
         if result:
             prev_available_amount = admin_user.total_available_amount or 0
             prev_due_amount = admin_user.total_due or 0
@@ -189,6 +196,7 @@ async def update_payable(
         payment_data: dict,
         agency_name: str
 ):
+
     existing_payment = await payment_repository.get_by_id(db, payable_id)
 
     if existing_payment.created_by != agency_name:
@@ -205,47 +213,46 @@ async def update_payable(
 
         # Only recalculate if the amount actually changed
         if new_amount != old_amount:
+
+            # Fix the Payable itself
+            payable_due_itself = 0
+            if new_amount >= existing_payment.total_payment:
+                payable_due_itself = new_amount - existing_payment.total_payment
+
+            filtered_data.update({
+                "total_payable": new_amount,
+                "total_due": payable_due_itself
+            })
+
             group_leader_code = existing_payment.group_leader
-
+            tracking_id = existing_payment.tracking_id
+            user = None
             if group_leader_code:
-                query = select(AdminUserModel).where(AdminUserModel.code == group_leader_code)
-                res = await db.execute(query)
-                admin_user = res.scalar_one_or_none()
+                user = await admin_user_repository.get_admin_user_by_code(db, group_leader_code)
 
-                if admin_user:
-                    # Reverse the old amount effect first
-                    prev_available_amount = admin_user.total_available_amount or 0
-                    prev_due = admin_user.total_due or 0
-                    prev_total_payable = admin_user.total_payable or 0
+            elif tracking_id:
+                user = await pilgrim_repository.get_pilgrim_by_tracking_id(db, tracking_id)
 
-                    # Subtract old amount first
-                    prev_total_payable -= old_amount
-                    if prev_available_amount >= old_amount:
-                        prev_available_amount -= old_amount
-                    else:
-                        diff = old_amount - prev_available_amount
-                        prev_due = max(prev_due - diff, 0)
-                        prev_available_amount = 0
+            if user:
+                # Reverse the old amount effect first
+                prev_total_payable = user.total_payable or 0
+                prev_total_payment = user.total_payment or 0
 
-                    # Now add the new amount
-                    if new_amount >= prev_available_amount:
-                        new_available_amount = 0
-                        new_total_due = prev_due + (new_amount - prev_available_amount)
-                    else:
-                        new_total_due = prev_due
-                        new_available_amount = prev_available_amount - new_amount
+                new_total_payable = prev_total_payable - old_amount + new_amount
+                new_total_due = max(0, new_total_payable - prev_total_payment)
+                new_available_amount = max(0, prev_total_payment - new_total_payable)
 
-                    new_total_payable = prev_total_payable + new_amount
+                # Prepare update schema
+                payment_info = PayableInfoUpdateSchema(
+                    total_payable=new_total_payable,
+                    total_available_amount=new_available_amount,
+                    total_due=new_total_due,
+                    group_leader_code=group_leader_code if group_leader_code else None,
+                    tracking_id=tracking_id if tracking_id else None
+                )
 
-                    await db.execute(
-                        update(AdminUserModel)
-                        .where(AdminUserModel.code == group_leader_code)
-                        .values(
-                            total_due=new_total_due,
-                            total_payable=new_total_payable,
-                            total_available_amount=new_available_amount,
-                        )
-                    )
+                # Update payment info (for either leader or pilgrim)
+                await pilgrim_payment_repository.update_payment_info(db, payment_info)
 
     updated_payment = await payment_repository.update_payable(db, payable_id, filtered_data)
     return updated_payment

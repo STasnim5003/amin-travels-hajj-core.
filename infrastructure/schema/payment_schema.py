@@ -73,7 +73,6 @@ class PaymentUpdateSchema(BaseModel):
     date: Optional[str] = None
     amount: Optional[int] = None
     pilgrims_id: Optional[List[str]] = None
-    group_leader: Optional[str] = None
 
     class Config:
         from_attributes = True

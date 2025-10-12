@@ -286,20 +286,23 @@ async def get_by_id(db: AsyncSession, payable_id: int):
 
 
 async def update_payable(db: AsyncSession, payable_id: int, update_data: dict):
-    if not update_data:
-        raise HTTPException(status_code=400, detail="No fields provided to update")
+    try:
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields provided to update")
 
-    query = (
-        update(PaymentModel)
-        .where(PaymentModel.id == payable_id)
-        .values(**update_data)
-        .returning(PaymentModel)
-    )
-    result = await db.execute(query)
-    updated_payment = result.scalar_one_or_none()
+        query = (
+            update(PaymentModel)
+            .where(PaymentModel.id == payable_id)
+            .values(**update_data)
+            .returning(PaymentModel)
+        )
+        result = await db.execute(query)
+        updated_payment = result.scalar_one_or_none()
 
-    if not updated_payment:
-        raise HTTPException(status_code=400, detail="Update failed — Payable not found")
+        if not updated_payment:
+            raise HTTPException(status_code=400, detail="Update failed — Payable not found")
 
-    await db.commit()
-    return updated_payment
+        await db.commit()
+        return updated_payment
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
