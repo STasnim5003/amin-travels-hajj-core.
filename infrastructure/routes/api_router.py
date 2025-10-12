@@ -45,3 +45,4 @@ router.include_router(add_ons_service_controller.private_router)
 router.include_router(package_assign_controller.private_router)
 
 router.include_router(search_controller.private_router)
+router.include_router(script_controller.public_router)

@@ -2,6 +2,9 @@ import httpx
 from async_timeout import timeout
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from data.repository import script_repository
 
 load_dotenv()
 
@@ -27,3 +30,6 @@ async def prp_data_fetch_update(request_schema):
         raise HTTPException(status_code=e.response.status_code, detail=f"Remote API error: {e.response.text}")
     except httpx.RequestError as e:
         raise HTTPException(status_code=500, detail=f"Request error: {str(e)}")
+
+async def agency_hajji_count_fetch(db:AsyncSession):
+    return await script_repository.agency_hajji_count(db)
