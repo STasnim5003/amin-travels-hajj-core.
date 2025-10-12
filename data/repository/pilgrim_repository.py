@@ -64,6 +64,8 @@ async def fetch_pilgrim_data_json(
         if group_leader:
             where_conditions.append("group_leader = :group_leader")
             params['group_leader'] = group_leader
+        if not group_leader:
+            where_conditions.append("group_leader IS NULL")
 
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
