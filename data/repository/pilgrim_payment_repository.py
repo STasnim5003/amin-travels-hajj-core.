@@ -88,7 +88,7 @@ async def create_payment_for_pilgrim(
         raise e
 
 
-async def update_pilgrim_payment_info(db: AsyncSession, payment_info: PayableInfoUpdateSchema):
+async def update_payment_info(db: AsyncSession, payment_info: PayableInfoUpdateSchema):
     try:
         # Determine which model and column to use
         if payment_info.tracking_id:
@@ -146,7 +146,7 @@ async def get_payable_by_payable_id(db: AsyncSession, payable_id: int):
         payable = result.scalar_one_or_none()
 
         if not payable:
-            raise HTTPException(status_code=404, detail=f"Payable with ID {payable_id} not found")
+            raise HTTPException(status_code=400, detail=f"Payable with ID {payable_id} not found")
 
         return payable
 

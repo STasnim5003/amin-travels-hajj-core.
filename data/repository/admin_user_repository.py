@@ -217,3 +217,11 @@ async def get_group_leader_with_pilgrim_count(db: AsyncSession, agency_name: str
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error fetching group leader data: {str(e)}")
+
+async def get_admin_user_by_code(db:AsyncSession, code : str):
+    try:
+        query = select(AdminUserModel).where(AdminUserModel.code == code)
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

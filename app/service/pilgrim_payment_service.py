@@ -44,6 +44,7 @@ async def create_payable_for_pilgrim(
         if result:
             prev_available_amount = pilgrim.total_available_amount or 0
             payable_amount = payment_data.amount
+
             if payable_amount >= prev_available_amount:
                 new_available_amount = 0
                 new_total_due = pilgrim.total_due + (payable_amount - prev_available_amount)
@@ -60,7 +61,7 @@ async def create_payable_for_pilgrim(
                 total_due=new_total_due,
                 tracking_id=payment_data.tracking_id
             )
-            response = await pilgrim_payment_repository.update_pilgrim_payment_info(db, payment_info)
+            response = await pilgrim_payment_repository.update_payment_info(db, payment_info)
             return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -118,7 +119,7 @@ async def create_payment_for_pilgrim(
                 total_due=new_due_amount,
                 tracking_id=payment_data.tracking_id
             )
-            response = await pilgrim_payment_repository.update_pilgrim_payment_info(db, payment_info)
+            response = await pilgrim_payment_repository.update_payment_info(db, payment_info)
             return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
