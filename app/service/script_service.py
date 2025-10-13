@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import script_repository
+from infrastructure.schema.script_schema import AgencyHajjiCountFetchResponseSchema
 
 load_dotenv()
 
@@ -32,4 +33,24 @@ async def prp_data_fetch_update(request_schema):
         raise HTTPException(status_code=500, detail=f"Request error: {str(e)}")
 
 async def agency_hajji_count_fetch(db:AsyncSession):
-    return await script_repository.agency_hajji_count(db)
+    results = await script_repository.agency_hajji_count(db)
+    response = []
+    for row in results:
+        response.append(
+            AgencyHajjiCountFetchResponseSchema(
+                hl=row.hl,
+                agency=row.agency,
+                preregistered_pilgrim=row.preregistered_pilgrim,
+                registered_pilgrim=row.registered_pilgrim,
+                voucher_from_details=row.voucher_from_details,
+                need_to_pay_voucher=row.need_to_pay_voucher,
+                registered_percentage=row.percentage_registered,  # ✅ map DB → API
+                total_pilgrims=row.total_pilgrims,
+                created_at=row.created_at
+            )
+        )
+
+    return response
+
+
+

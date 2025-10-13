@@ -24,4 +24,5 @@ async def prp_data_fetch_update(
 async def agency_hajji_count_fetch(
         db: AsyncSession = Depends(get_async_db)
 ):
-    return await script_service.agency_hajji_count_fetch(db)
+    result = await script_service.agency_hajji_count_fetch(db)
+    return [r.model_dump(by_alias=False) for r in result]
