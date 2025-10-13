@@ -32,10 +32,10 @@ private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/privat
 @private_router.get("/download-url", response_model=FileDownloadResponseSchema ,tags=["files"])
 async def get_download_url(
         key: str,
-        current_user: dict = Depends(get_current_user)
+        # current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] not in ["SUPER_ADMIN", "AGENCY"]:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    # if current_user["role"] not in ["SUPER_ADMIN", "AGENCY"]:
+    #     raise HTTPException(status_code=403, detail="Not authorized")
     response = await file_service.get_download_url(key=key)
     return JSONResponse(content=jsonable_encoder(response))
 
