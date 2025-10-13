@@ -33,24 +33,27 @@ async def prp_data_fetch_update(request_schema):
         raise HTTPException(status_code=500, detail=f"Request error: {str(e)}")
 
 async def agency_hajji_count_fetch(db:AsyncSession):
-    results = await script_repository.agency_hajji_count(db)
-    response = []
-    for row in results:
-        response.append(
-            AgencyHajjiCountFetchResponseSchema(
-                hl=row.hl,
-                agency=row.agency,
-                preregistered_pilgrim=row.preregistered_pilgrim,
-                registered_pilgrim=row.registered_pilgrim,
-                voucher_from_details=row.voucher_from_details,
-                need_to_pay_voucher=row.need_to_pay_voucher,
-                registered_percentage=row.percentage_registered,  # ✅ map DB → API
-                total_pilgrims=row.total_pilgrims,
-                created_at=row.created_at
+    try:
+        results = await script_repository.agency_hajji_count_with_total_raw(db)
+        response = []
+        for row in results:
+            response.append(
+                AgencyHajjiCountFetchResponseSchema(
+                    hl=row["hl"],
+                    agency=row["agency"],
+                    preregistered_pilgrim=row["preregistered_pilgrim"],
+                    registered_pilgrim=row["registered_pilgrim"],
+                    voucher_from_details=row["voucher_from_details"],
+                    need_to_pay_voucher=row["need_to_pay_voucher"],
+                    registered_percentage=row["percentage_registered"],  # ✅ map DB → API
+                    total_pilgrims=row["total_pilgrims"],
+                    created_at=row["created_at"]
+                )
             )
-        )
 
-    return response
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 
