@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel
 
@@ -11,6 +11,8 @@ class PaymentSchema(BaseModel):
     category: str
     pilgrims_id: Optional[List[str]] = None
     group_leader: Optional[str] = None
+    tracking_id : Optional[str] = None
+    payable_id : Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -29,15 +31,16 @@ class PaymentResponseSchema(PaymentSchema):
     total_payable: Optional[int] = 0
     total_paid: Optional[int] = 0
     total_due: Optional[int] = 0
+    receipt: Optional[List[Dict[str, Any]]] = None
 
 
 
 class AgencyPaymentSchemaForGroupLeader(BaseModel):
+    group_leader: Optional[str] = None
     description: Optional[str] = None
     date: Optional[str] = None
     amount: int
     category: Optional[str]
-    group_leader : Optional[str] = None
     payable_id : int
     pilgrims_id: Optional[List[str]] = None
 
@@ -50,6 +53,7 @@ class PaginatedPaymentResponseForGroupLeader(BaseModel):
     total_payable: Optional[int] = None
     total_payment: Optional[int] = None
     total_due: Optional[int] = None
+    total_available_amount: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -63,3 +67,20 @@ class PaginatedPaymentResponseForAgency(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PaymentUpdateSchema(BaseModel):
+    description: Optional[str] = None
+    date: Optional[str] = None
+    amount: Optional[int] = None
+    pilgrims_id: Optional[List[str]] = None
+
+    class Config:
+        from_attributes = True
+
+class PayableInfoUpdateSchema(BaseModel):
+    tracking_id: Optional[str] = None
+    group_leader_code : Optional[str] = None
+    total_due: Optional[int] = None
+    total_payable: Optional[int] = None
+    total_available_amount: Optional[int] = None
+    total_payment: Optional[int] = None

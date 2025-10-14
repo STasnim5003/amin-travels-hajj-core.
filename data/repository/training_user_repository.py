@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import insert, select, func, or_
+from sqlalchemy import insert, select, func, or_, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.training_user_model import TrainingUserModel
@@ -50,6 +50,8 @@ async def get_training_users(db: AsyncSession,
                 TrainingUserModel.whats_app_no.ilike(search_term)
             )
         )
+
+    query = query.order_by(desc(TrainingUserModel.id))
 
     total_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(total_query)

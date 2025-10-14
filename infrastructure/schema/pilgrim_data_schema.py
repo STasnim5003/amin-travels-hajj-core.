@@ -50,6 +50,8 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     group_leader: Optional[str] = None
     total_payable: Optional[int] = None
     total_payment: Optional[int] = None
+    total_due : Optional[int] = None
+    total_available_amount : Optional[int] = None
     package_bed_types: Optional[str] = None
     package_duration: Optional[int] = None
     add_ons_services: Optional[Dict[str, Any]] = None
