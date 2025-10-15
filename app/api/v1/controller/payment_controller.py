@@ -152,7 +152,6 @@ async def create_payable_for_pilgrim(
         description: Optional[str] = Form(None),
         date: Optional[str] = Form(None),
         amount: int = Form(...),
-        category: str = Form(default="Payable"),
         tracking_id: str = Form(...),
         receipt: List[UploadFile] = File(default=[]),
         db: AsyncSession = Depends(get_async_db),
@@ -167,7 +166,7 @@ async def create_payable_for_pilgrim(
         description=description,
         date=date,
         amount=amount,
-        category=category,
+        category="Payable",
         tracking_id=tracking_id
     )
     return await pilgrim_payment_service.create_payable_for_pilgrim(db, payment_request, agency_name, receipt)

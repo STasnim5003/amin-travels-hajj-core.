@@ -1,16 +1,23 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 
 from pydantic import BaseModel
 
-
-class PackageAssignSchema(BaseModel):
-    tracking_id : str
-    package_name : str
-    package_duration : int
+class PackageAssignBaseSchema(BaseModel):
+    package_name: str
+    package_duration: int
     package_bed_types: str
     add_ons_services : Dict[str, Any]
-    total_payable : int
-    discount: Optional[int] = None
+    total_payable: int
+    add_ons_services: Optional[Dict[str, Any]] = None
+    package_price_discount: Optional[int] = None
+
+
+class PackageAssignSchema(PackageAssignBaseSchema):
+    tracking_id: str
+
+
+class PackageAssignForMultiplePilgrimSchema(PackageAssignBaseSchema):
+    tracking_ids: List[str]
 
 class PackageAssignUpdateSchema(BaseModel):
     tracking_id : str
