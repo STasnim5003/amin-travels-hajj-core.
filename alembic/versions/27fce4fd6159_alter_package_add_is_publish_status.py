@@ -20,7 +20,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.add_column('packages', sa.Column('is_publish', sa.Boolean(), nullable=True, server_default=sa.text('true')), schema='core')
+    op.add_column('pilgrim_data', sa.Column('payment_against', sa.String(), nullable=True, server_default=sa.text("'INDIVIDUAL'")), schema='core')
+    op.add_column('pilgrim_data', sa.Column('package_price_discount', sa.Integer(), nullable=True, server_default=sa.text('0')), schema='core')
+    op.add_column('pilgrim_data', sa.Column('actual_payable', sa.Integer(), nullable=True, server_default=sa.text('0')), schema='core')
 
 
 def downgrade() -> None:
     op.drop_column('packages', 'is_publish', schema='core')
+    op.drop_column('pilgrim_data', 'payment_against', schema='core')
+    op.drop_column('pilgrim_data', 'package_price_discount', schema='core')
+    op.drop_column('pilgrim_data', 'actual_payable', schema='core')

@@ -1,10 +1,13 @@
 from datetime import datetime
+from unicodedata import category
 
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.service import pilgrim_payment_service
-from data.repository import package_assign_repository, pilgrim_payment_repository
-from infrastructure.schema.package_assign_schema import PackageAssignSchema
+from data.repository import package_assign_repository, pilgrim_payment_repository, pilgrim_repository, \
+    admin_user_repository
+from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema
 from infrastructure.schema.payment_schema import PaymentSchema
 
 
@@ -22,5 +25,71 @@ async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, age
 async def assign_package(db:AsyncSession, request : PackageAssignSchema, agency_name : str):
     try:
         return await package_assign_repository.assign_package(db, request, agency_name)
+    except Exception as e:
+        raise e
+
+async def update_assigned_package(db:AsyncSession, request : PackageAssignUpdateSchema, agency_name : str):
+    try:
+        if request.total_payable < 0:
+            raise HTTPException(status_code=400, detail="Payment Amount Must be Positive")
+
+        pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, request.tracking_id)
+        if not pilgrim:
+            raise HTTPException(status_code=400, detail="Pilgrim not found")
+        if pilgrim.group_name != agency_name or not pilgrim.is_package_assigned:
+            raise HTTPException(status_code=400, detail="This pilgrim not in your agency")
+
+
+        prev_total_payable = pilgrim.total_payable
+        prev_total_payment = pilgrim.total_payment
+
+        new_total_payable = prev_total_payable + request.total_payable
+        discount = request.package_price_discount or 0
+
+        request_dict = request.model_dump(exclude_unset=True)
+        filtered_data = {k: v for k, v in request_dict.items() if v is not None}
+
+        # Add computed values
+        filtered_data.update({
+            "total_payable": new_total_payable,
+            "total_available_amount": max(0, prev_total_payment - new_total_payable),
+            "total_due": max(0, new_total_payable - prev_total_payment),
+            "actual_payable": new_total_payable - discount,
+            "updated_by": agency_name
+        })
+
+        payable_create_schema = PaymentSchema(
+            description = "Package Update",
+            date = datetime.today().strftime('%Y-%m-%d'),
+            amount = new_total_payable,
+            category = "Payable",
+            tracking_id = request.tracking_id
+        )
+
+        # if pilgrim.payment_against != "INDIVIDUAL":
+        #     group_leader_code = pilgrim.group_leader
+        #     group_leader = await admin_user_repository.get_admin_user_by_code(db, group_leader_code)
+        #
+        #     group_leader_prev_payable = group_leader.total_payable
+        #     group_leader_total_payment = group_leader.total_payment
+        #
+        #     group_leader_new_payable = group_leader_prev_payable + request.total_payable
+        #     group_leader_new_due = max(group_leader_new_payable - group_leader_total_payment, 0)
+        #     group_leader_new_available = max(group_leader_total_payment - group_leader_new_payable, 0)
+        #
+        #     group_leader_payable_create_schema = PaymentSchema(
+        #
+        #     )
+
+
+        return await package_assign_repository.update_assigned_package(db, filtered_data, payable_create_schema, agency_name)
+
+    except Exception as e:
+        raise e
+
+
+async def get_package_assigned_pilgrims(db:AsyncSession, agency_name:str):
+    try:
+        return await package_assign_repository.get_package_assigned_pilgrims(db, agency_name)
     except Exception as e:
         raise e

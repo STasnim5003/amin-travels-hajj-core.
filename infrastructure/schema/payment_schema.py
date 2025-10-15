@@ -84,3 +84,5 @@ class PayableInfoUpdateSchema(BaseModel):
     total_payable: Optional[int] = None
     total_available_amount: Optional[int] = None
     total_payment: Optional[int] = None
+    actual_payable: Optional[int] = None
+    package_price_discount: Optional[int] = None

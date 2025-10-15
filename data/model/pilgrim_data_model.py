@@ -49,4 +49,6 @@ class PilgrimDataModel(Base, BaseMixinModel):
     is_package_assigned = Column(Boolean, nullable=True)
     total_due = Column(Integer, nullable=True)
     total_available_amount = Column(Integer, nullable=True)
+    actual_payable = Column(Integer, nullable=True)
+    package_price_discount = Column(Integer, nullable=True)
 
