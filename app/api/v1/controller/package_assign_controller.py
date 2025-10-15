@@ -1,11 +1,14 @@
 import fastapi
 from fastapi import Depends, HTTPException
+from requests.packages import package
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
 from app.service import package_assign_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema
+from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema, \
+    PackageAssignForMultiplePilgrimSchema
+PackageAssignForMultiplePilgrimSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -66,3 +69,15 @@ async def get_package_assigned_pilgrims(
         raise HTTPException(status_code=403, detail="Not Authorized")
     agency_name = current_user["agency_name"]
     return await package_assign_service.get_package_assigned_pilgrims(db, agency_name)
+
+
+@private_router.post("/assign-package-multiple-pilgrim", tags=["package-assign"])
+async def assign_package_multiple_pilgrim(
+        request: PackageAssignForMultiplePilgrimSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Not Authorized")
+    agency_name = current_user["agency_name"]
+    return await package_assign_service.assign_package_for_multiple_pilgrims(db, request, agency_name)

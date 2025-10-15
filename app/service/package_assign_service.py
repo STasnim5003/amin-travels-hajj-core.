@@ -1,13 +1,11 @@
 from datetime import datetime
-from unicodedata import category
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.service import pilgrim_payment_service
-from data.repository import package_assign_repository, pilgrim_payment_repository, pilgrim_repository, \
-    admin_user_repository
-from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema
+from data.repository import package_assign_repository, pilgrim_repository
+from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema, \
+    PackageAssignForMultiplePilgrimSchema
 from infrastructure.schema.payment_schema import PaymentSchema
 
 
@@ -22,13 +20,15 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
 async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, agency_name: str):
     return await package_assign_repository.get_bed_types_by_package_name(db, package_name, agency_name)
 
-async def assign_package(db:AsyncSession, request : PackageAssignSchema, agency_name : str):
+
+async def assign_package(db: AsyncSession, request: PackageAssignSchema, agency_name: str):
     try:
         return await package_assign_repository.assign_package(db, request, agency_name)
     except Exception as e:
         raise e
 
-async def update_assigned_package(db:AsyncSession, request : PackageAssignUpdateSchema, agency_name : str):
+
+async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdateSchema, agency_name: str):
     try:
         if request.total_payable < 0:
             raise HTTPException(status_code=400, detail="Payment Amount Must be Positive")
@@ -38,7 +38,6 @@ async def update_assigned_package(db:AsyncSession, request : PackageAssignUpdate
             raise HTTPException(status_code=400, detail="Pilgrim not found")
         if pilgrim.group_name != agency_name or not pilgrim.is_package_assigned:
             raise HTTPException(status_code=400, detail="This pilgrim not in your agency")
-
 
         prev_total_payable = pilgrim.total_payable
         prev_total_payment = pilgrim.total_payment
@@ -59,11 +58,11 @@ async def update_assigned_package(db:AsyncSession, request : PackageAssignUpdate
         })
 
         payable_create_schema = PaymentSchema(
-            description = "Package Update",
-            date = datetime.today().strftime('%Y-%m-%d'),
-            amount = new_total_payable,
-            category = "Payable",
-            tracking_id = request.tracking_id
+            description="Package Update",
+            date=datetime.today().strftime('%Y-%m-%d'),
+            amount=new_total_payable,
+            category="Payable",
+            tracking_id=request.tracking_id
         )
 
         # if pilgrim.payment_against != "INDIVIDUAL":
@@ -81,15 +80,23 @@ async def update_assigned_package(db:AsyncSession, request : PackageAssignUpdate
         #
         #     )
 
-
-        return await package_assign_repository.update_assigned_package(db, filtered_data, payable_create_schema, agency_name)
+        return await package_assign_repository.update_assigned_package(db, filtered_data, payable_create_schema,
+                                                                       agency_name)
 
     except Exception as e:
         raise e
 
 
-async def get_package_assigned_pilgrims(db:AsyncSession, agency_name:str):
+async def get_package_assigned_pilgrims(db: AsyncSession, agency_name: str):
     try:
         return await package_assign_repository.get_package_assigned_pilgrims(db, agency_name)
+    except Exception as e:
+        raise e
+
+
+async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: PackageAssignForMultiplePilgrimSchema,
+                                               agency_name: str):
+    try:
+        return await package_assign_repository.assign_package_for_multiple_pilgrim(db, request, agency_name)
     except Exception as e:
         raise e

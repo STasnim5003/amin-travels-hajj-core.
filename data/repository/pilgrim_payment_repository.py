@@ -1,5 +1,6 @@
 import random
 import string
+from datetime import datetime
 from typing import Optional, List
 
 from fastapi import UploadFile, HTTPException
@@ -13,32 +14,55 @@ from infrastructure.schema.payment_schema import PaymentSchema, PayableInfoUpdat
 
 
 async def create_payable_for_pilgrim(
-        db: AsyncSession,
-        payment_request: PaymentSchema,
-        agency_name: str,
-        receipt: Optional[List[UploadFile]]
+    db: AsyncSession,
+    payment_request: PaymentSchema,
+    agency_name: str,
+    receipt: Optional[List[UploadFile]],
+    pilgrim_prev_total_payable: int,
+    pilgrim_prev_total_payment: int,
 ):
     transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-
-    # Prepare data for insertion
     payment_data = payment_request.model_dump(exclude_unset=True)
     payment_data.update({
         "transaction_id": transaction_id,
         "created_by": agency_name,
         "updated_by": agency_name,
-        "receipt": receipt,
-        "total_payable": payment_data.get("amount"),
-        "total_due": payment_data.get("amount")
+        "receipt": receipt
     })
 
-    stmt = (
-        insert(PaymentModel)
-        .values(**payment_data)
-        .returning(PaymentModel)
-    )
-    result = await db.execute(stmt)
-    created_payment = result.scalar_one()
-    return created_payment
+    try:
+        # Create Payable
+        stmt = (
+            insert(PaymentModel)
+            .values(**payment_data)
+            .returning(PaymentModel)
+        )
+        result = await db.execute(stmt)
+        created_payment = result.scalar_one()
+
+        # Update Payment Info for Pilgrim
+        new_total_payable = pilgrim_prev_total_payable + payment_request.amount
+        new_total_due = max(0, new_total_payable - pilgrim_prev_total_payment)
+        new_available_amount = max(0, pilgrim_prev_total_payment - new_total_payable)
+
+        update_stmt = (
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.tracking_id == payment_request.tracking_id)
+            .values(
+                total_payable=new_total_payable,
+                total_due=new_total_due,
+                total_available_amount=new_available_amount,
+                updated_by=agency_name
+            )
+        )
+        await db.execute(update_stmt)
+
+        await db.commit()
+
+        return created_payment
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 async def create_payment_for_pilgrim(

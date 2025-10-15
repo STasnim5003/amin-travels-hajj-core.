@@ -12,7 +12,6 @@ class PaymentSchema(BaseModel):
     pilgrims_id: Optional[List[str]] = None
     group_leader: Optional[str] = None
     tracking_id : Optional[str] = None
-    payable_id : Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -26,11 +25,6 @@ class PaymentResponseSchema(PaymentSchema):
     updated_by: Optional[str] = None
     transaction_id: Optional[str] = None
     no_of_hajji: Optional[int] = None
-    payable_id: Optional[int] = None
-    payments: Optional[List["PaymentResponseSchema"]] = []  # nested payments
-    total_payable: Optional[int] = 0
-    total_paid: Optional[int] = 0
-    total_due: Optional[int] = 0
     receipt: Optional[List[Dict[str, Any]]] = None
 
 
