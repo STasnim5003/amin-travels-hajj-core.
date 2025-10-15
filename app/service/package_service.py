@@ -3,7 +3,8 @@ from http.client import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import package_repository
-from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema, PackageCreateSchema
+from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema, PackageCreateSchema, \
+    PackageUpdateSchema
 
 
 async def get_packages(name, search, hajj_year, package_type, duration, description_type, hajj_month, agency_name,db):
@@ -46,5 +47,23 @@ async def get_package_by_id_for_agency(db: AsyncSession, package_id : int, agenc
             return response
         else:
             raise HTTPException(status_code=400,detail=f"{str(e)}")
+    except Exception as e:
+        raise e
+
+async def update_package(db:AsyncSession, package_id: int, package: PackageUpdateSchema, agency_name : str) -> PackageResponseSchema:
+    try:
+        existing_package = await package_repository.get_package_by_id_for_agency(db, package_id, agency_name)
+        if not existing_package:
+            raise HTTPException(status_code=400, detail = "Package not found")
+
+        update_data = package.model_dump(exclude_unset=True)
+        update_data = {k: v for k, v in update_data.items() if v is not None}
+
+        if not update_data:
+            return existing_package
+
+        updated_package = await package_repository.update_package(db, package_id, agency_name, update_data)
+
+        return PackageResponseSchema.model_validate(updated_package)
     except Exception as e:
         raise e
