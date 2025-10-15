@@ -8,7 +8,7 @@ from app.core.middleware.middleware import get_current_user
 from app.service import package_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.package_schema import PackagesResponseSchema, PackageMasterDataForFilterListSchema, \
-    PackageResponseSchema, PackageBaseSchema
+    PackageResponseSchema, PackageBaseSchema, PackageUpdateSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -103,12 +103,14 @@ async def get_package_by_id_for_agency(
     agency_name = current_user["agency_name"]
     return await package_service.get_package_by_id_for_agency(db, package_id, agency_name)
 
-@private_router.get("/packages", tags=["packages"])
-async def get_agency_packages(
-        db:AsyncSession = Depends(get_async_db),
+@private_router.put("/package/{package_id}", response_model=PackageResponseSchema, tags=["packages"])
+async def update_package(
+        package_id: int,
+        request_body : PackageUpdateSchema,
+        db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
-):
+) -> PackageResponseSchema:
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await package_service
+    return await package_service.update_package(db, package_id, request_body, agency_name)
