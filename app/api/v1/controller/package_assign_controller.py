@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.middleware.middleware import get_current_user
 from app.service import package_assign_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.package_assign_schema import PackageAssignSchema
+from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -45,3 +45,24 @@ async def assign_package(
         raise HTTPException(status_code=403, detail="Not Authorized")
     agency_name = current_user["agency_name"]
     return await package_assign_service.assign_package(db, request, agency_name)
+
+@private_router.put("/update-assigned-package", tags=["package-assign"])
+async def update_assign_package(
+        request: PackageAssignUpdateSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Not Authorized")
+    agency_name = current_user["agency_name"]
+    return await package_assign_service.update_assigned_package(db, request, agency_name)
+
+@private_router.get("/package-assigned-pilgrims", tags=["package-assign"])
+async def get_package_assigned_pilgrims(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Not Authorized")
+    agency_name = current_user["agency_name"]
+    return await package_assign_service.get_package_assigned_pilgrims(db, agency_name)

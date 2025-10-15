@@ -122,3 +122,42 @@ async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_na
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+async def update_assigned_package(
+        db: AsyncSession,
+        request_dict: dict,
+        payable_create_schema: PaymentSchema,
+        agency_name : str
+):
+    try:
+        stmt = (
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.tracking_id == request_dict["tracking_id"])
+            .values(**request_dict)
+            .returning(PilgrimDataModel)
+        )
+
+
+
+        result = await db.execute(stmt)
+        await pilgrim_payment_repository.create_payable_for_pilgrim(db, payable_create_schema, agency_name, None)
+        await db.commit()
+        updated_pilgrim = result.scalar_one_or_none()
+        if not updated_pilgrim:
+            raise HTTPException(status_code=400, detail="Pilgrim not found for update")
+
+        return updated_pilgrim
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Database Error")
+
+
+async def get_package_assigned_pilgrims(db:AsyncSession, agency_name:str):
+    try:
+        stmt = (
+            select(PilgrimDataModel)
+            .where(PilgrimDataModel.group_name == agency_name, PilgrimDataModel.is_package_assigned == True)
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Database Error")
