@@ -42,6 +42,7 @@ async def get_packages(db: AsyncSession,
             query = query.where(PackageModel.hajj_month == hajj_month)
         if agency_name:
             query = query.where(PackageModel.agency_name == agency_name)
+        query = query.where(PackageModel.is_publish == True)
 
         query = query.order_by(PackageModel.id.asc())
 

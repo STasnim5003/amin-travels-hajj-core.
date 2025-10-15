@@ -37,6 +37,32 @@ async def get_packages_endpoint(
                                                   db=db)
     return JSONResponse(content=jsonable_encoder(response))
 
+@private_router.get("/packages", response_model=PackagesResponseSchema, tags=["packages"])
+async def get_packages_endpoint(
+        name: str = None,
+        search: str = None,
+        hajj_year: int = None,
+        package_type: str = "HAJJ",
+        duration: int = None,
+        description_type: str = None,
+        hajj_month: str = None,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=400, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    response = await package_service.get_packages(name=name,
+                                                  search=search,
+                                                  hajj_year=hajj_year,
+                                                  package_type=package_type,
+                                                  duration=duration,
+                                                  description_type=description_type,
+                                                  hajj_month=hajj_month,
+                                                  agency_name=agency_name,
+                                                  db=db)
+    return JSONResponse(content=jsonable_encoder(response))
+
 @router.get("/package-filtering", response_model=PackageMasterDataForFilterListSchema, tags=["packages"])
 async def get_master_data_for_package_filtering(
         package_type: str = "HAJJ",

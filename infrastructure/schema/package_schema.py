@@ -16,6 +16,7 @@ class PackageBaseSchema(BaseModel):
     duration: Optional[int] = None
     description_type: Optional[str] = None
     package_type: str
+    is_publish: Optional[bool] = None
 
     # New fields from migration
     duration_range: Optional[Dict[str, Any]] = None
