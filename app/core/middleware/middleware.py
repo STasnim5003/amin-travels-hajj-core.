@@ -59,3 +59,4 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme)) -> Dict:
         return {"code": code, "role": role, "agency_name": agency_name, "mobile_no": mobile_no}
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+

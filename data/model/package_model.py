@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Date, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -17,6 +17,7 @@ class PackageModel(Base, BaseMixinModel):
     duration = Column(Integer, nullable=True)
     description_type = Column(String, nullable=True)
     package_type = Column(String, nullable=False)
+    is_publish = Column(Boolean, nullable = True)
 
 
     # Existing JSON fields

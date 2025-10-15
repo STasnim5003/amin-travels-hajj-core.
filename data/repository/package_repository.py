@@ -1,6 +1,6 @@
 from attr import attributes
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -42,6 +42,7 @@ async def get_packages(db: AsyncSession,
             query = query.where(PackageModel.hajj_month == hajj_month)
         if agency_name:
             query = query.where(PackageModel.agency_name == agency_name)
+        query = query.where(PackageModel.is_publish == True)
 
         query = query.order_by(PackageModel.id.asc())
 
@@ -146,3 +147,24 @@ async def get_package_by_id_for_agency(db: AsyncSession, package_id:int, agency_
         return PackageResponseSchema.model_validate(package).model_dump()
     except Exception as e:
         raise e
+
+async def update_package(db: AsyncSession, package_id: int, agency_name: str, update_data: dict):
+    stmt = (
+            update(PackageModel)
+            .where(
+                PackageModel.id == package_id,
+                PackageModel.agency_name == agency_name
+            )
+            .values(**update_data)
+            .returning(PackageModel)
+        )
+    result = await db.execute(stmt)
+    updated_package = result.scalar_one_or_none()
+    await db.commit()
+
+    if not updated_package:
+        raise HTTPException(status_code=400, detail="Package not found after update")
+
+    await db.refresh(updated_package, attribute_names=["route", "ziara", "food_menu"])
+
+    return updated_package

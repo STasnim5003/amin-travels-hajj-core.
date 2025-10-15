@@ -16,6 +16,7 @@ class PackageBaseSchema(BaseModel):
     duration: Optional[int] = None
     description_type: Optional[str] = None
     package_type: str
+    is_publish: Optional[bool] = None
 
     # New fields from migration
     duration_range: Optional[Dict[str, Any]] = None
@@ -88,3 +89,26 @@ class PackageMasterDataForFilterListSchema(BaseModel):
         from_attributes = True
         populate_by_name = True
         extra = "allow"
+
+class PackageUpdateSchema(BaseModel):
+    discount: Optional[str] = None
+    price: Optional[int] = None
+    duration: Optional[int] = None
+    description_type: Optional[str] = None
+    is_publish: Optional[bool] = None
+
+    # New fields from migration
+    duration_range: Optional[Dict[str, Any]] = None
+    makkah: Optional[Dict[str, Any]] = None
+    madinah: Optional[Dict[str, Any]] = None
+    azizia: Optional[Dict[str, Any]] = None
+    flight_date: Optional[Dict[str, Any]] = None
+    bed_type: Optional[Dict[str, Any]] = None
+    return_ticket: Optional[str] = None
+    fixed_or_shifting: Optional[str] = None
+    food_menu_id: Optional[int] = None
+    ziara_id: Optional[int] = None
+    special_services: Optional[Dict[str, Any]] = None
+    other_services: Optional[Dict[str, Any]] = None
+    route_id: Optional[int] = None
+    airlines: Optional[str] = None
