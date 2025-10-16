@@ -22,3 +22,13 @@ async def create_payment_category(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await payment_category_service.create_payment_category(db, request, agency_name)
+
+@private_router.get("/payment-category", tags=["payment"])
+async def list_payment_categories(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await payment_category_service.get_payment_category(db, agency_name)

@@ -15,3 +15,12 @@ async def create_payment_category(
         return await payment_category_repository.create_payment_category(db, request_dict)
     except Exception as e:
         raise e
+
+async def get_payment_category(
+        db:AsyncSession,
+        agency_name:str
+):
+    try:
+        return await payment_category_repository.get_payment_categories(db, agency_name)
+    except Exception as e:
+        raise e
