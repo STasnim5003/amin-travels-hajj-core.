@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import List, Dict, Optional, Any
 
 from pydantic import BaseModel
@@ -112,3 +112,14 @@ class PackageUpdateSchema(BaseModel):
     other_services: Optional[Dict[str, Any]] = None
     route_id: Optional[int] = None
     airlines: Optional[str] = None
+
+class PackageNameBaseSchema(BaseModel):
+    name: str
+
+class PackageNameResponseSchema(PackageNameBaseSchema):
+    id: int
+    agency_name : Optional[str] = None
+    created_by : Optional[str] = None
+    updated_by : Optional[str] = None
+    created_at : Optional[datetime] = None
+    updated_at : Optional[datetime] = None

@@ -55,3 +55,11 @@ class PackageModel(Base, BaseMixinModel):
             "azizia": self.azizia or [],
             "others_feature": self.others_feature or [],
         }
+
+class PackageNameModel(Base, BaseMixinModel):
+    __tablename__ = 'package_name'
+    __table_args__ = {'schema': 'core'}
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    agency_name = Column(String, nullable=True)

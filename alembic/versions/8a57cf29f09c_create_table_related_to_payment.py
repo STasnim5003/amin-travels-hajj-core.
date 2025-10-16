@@ -41,6 +41,21 @@ def upgrade() -> None:
         schema='core'
     )
 
+    op.create_table(
+        'package_name',
+        sa.Column('id', sa.Integer, primary_key=True),
+        sa.Column('name', sa.String, nullable=False),
+        sa.Column('agency_name', sa.String, nullable=False),
+        sa.Column('created_at', sa.DateTime(),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
+        sa.Column('updated_at', sa.DateTime(),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),
+        sa.Column('created_by', sa.String(), nullable=True),
+        sa.Column('updated_by', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+        schema='core'
+    )
+
     # Create bank_info table
     op.create_table(
         'bank_info',
@@ -83,12 +98,12 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Drop foreign key if created
-    op.drop_constraint('fk_payment_bank_info', 'payment', type_='foreignkey')
+    op.drop_constraint('fk_payment_bank_info', 'payment', type_='foreignkey', schema='core')
 
     # Drop added columns from payment table
-    op.drop_column('payment', 'way_of_payment')
-    op.drop_column('payment', 'payment_category')
-    op.drop_column('payment', 'bank_info_id')
+    op.drop_column('payment', 'way_of_payment', schema='core')
+    op.drop_column('payment', 'payment_category', schema='core')
+    op.drop_column('payment', 'bank_info_id', schema='core')
 
     # Drop bank_info table
     op.drop_index(op.f('ix_core_bank_info_id'), table_name='bank_info', schema='core')
@@ -97,3 +112,5 @@ def downgrade() -> None:
     # Drop payment_category table
     op.drop_index(op.f('ix_core_payment_category_id'), table_name='payment_category', schema='core')
     op.drop_table('payment_category', schema='core')
+
+    op.drop_table('package_name', schema='core')

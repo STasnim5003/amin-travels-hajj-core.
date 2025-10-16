@@ -1,11 +1,11 @@
 from attr import attributes
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import select, update, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from data.filter.query_filter import filter_query
-from data.model.package_model import PackageModel
+from data.model.package_model import PackageModel, PackageNameModel
 from infrastructure.schema.package_schema import PackageResponseSchema, PackageMasterDataForFilterSchema, \
     PackageMasterDataForFilterListSchema, PackageBaseSchema, PackageCreateSchema
 
@@ -168,3 +168,34 @@ async def update_package(db: AsyncSession, package_id: int, agency_name: str, up
     await db.refresh(updated_package, attribute_names=["route", "ziara", "food_menu"])
 
     return updated_package
+
+async def create_package_name(
+        db: AsyncSession, request : dict
+):
+    try:
+        stmt = (
+            insert(PackageNameModel)
+            .values(**request)
+            .returning(PackageNameModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def get_package_names(
+        db: AsyncSession,
+        agency_name: str
+):
+    try:
+        stmt = (
+            select(PackageNameModel).where(PackageNameModel.agency_name == agency_name)
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        raise e
