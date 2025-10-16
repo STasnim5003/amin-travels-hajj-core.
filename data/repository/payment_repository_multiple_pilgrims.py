@@ -73,24 +73,12 @@ async def create_payable_for_multiple_pilgrims(
             )
         )
 
-        payments_data = [
-            {
-                "description": payment_request.description,
-                "date": payment_request.date,
-                "amount": per_pilgrim_amount,
-                "tracking_id": tracking_id,
-                "created_by": agency_name,
-                "updated_by": agency_name,
-                "category": payment_request.category
-            }
-            for tracking_id in tracking_ids
-        ]
-
-        stmt = insert(PaymentModel).values(payments_data).returning(PaymentModel)
+        payment_request_dict = payment_request.model_dump()
+        stmt = insert(PaymentModel).values(**payment_request_dict).returning(PaymentModel)
         result = await db.execute(stmt)
 
         await db.commit()
-        return result.scalars().all()
+        return result.scalars().one_or_none()
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
