@@ -1,16 +1,19 @@
-from typing import List, Optional
+import random
+import string
+from typing import List
 
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import payment_repository, file_repository, admin_user_repository, pilgrim_payment_repository, \
-    pilgrim_repository
-from infrastructure.schema.payment_schema import PaymentSchema, PaginatedPaymentResponseForGroupLeader, \
-    PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, PayableInfoUpdateSchema
+    pilgrim_repository, payment_repository_multiple_pilgrims
+from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
+    PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, PayableInfoUpdateSchema, \
+    GroupLeaderPayableBaseSchema
 
 
-async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str,
-                                          receipt: Optional[List[UploadFile]]):
+async def create_payable_for_group_leader(db: AsyncSession, payment_request: GroupLeaderPayableBaseSchema,
+                                          agency_name: str):
     if payment_request.amount < 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
@@ -25,41 +28,36 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Pay
     except Exception as e:
         raise e
 
-    # upload receipt
-    receipt_data = []
-    if receipt:
-        try:
-            for file in receipt:
-                receipt_resp = await file_repository.upload_file(file=file, name="receipt")
-                receipt_data.append(receipt_resp.model_dump())
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"File upload failed: {str(e)}")
     try:
-        result = await payment_repository.create_payable_for_group_leader(db, payment_request, agency_name,
-                                                                          receipt_data)
-
-        # update group leader payment info
-        if result:
-            prev_available_amount = existing_group_leader.total_available_amount or 0
-            payable_amount = payment_request.amount
-
-            if payable_amount >= prev_available_amount:
-                new_available_amount = 0
-                new_total_due = existing_group_leader.total_due + (payable_amount - prev_available_amount)
-            else:
-                new_total_due = 0
-                new_available_amount = prev_available_amount - payable_amount
-
+        if existing_group_leader.is_payment_distributed:
+            result =  await payment_repository_multiple_pilgrims.create_payable_for_multiple_pilgrims(db, payment_request, agency_name)
+            return result
+        else:
             new_total_payable = (existing_group_leader.total_payable or 0) + payment_request.amount
-            total_available_amount = new_available_amount
+            prev_payment = existing_group_leader.total_payment
 
-            payment_info = PayableInfoUpdateSchema(
+            new_total_available = max(0, prev_payment - new_total_payable)
+            new_total_due = max(0, new_total_payable - prev_payment)
+
+            payable_info = PayableInfoUpdateSchema(
                 total_payable=new_total_payable,
-                total_available_amount=total_available_amount,
+                total_available_amount=new_total_available,
                 total_due=new_total_due,
                 group_leader_code=payment_request.group_leader
             )
-            response = await pilgrim_payment_repository.update_payment_info(db, payment_info)
+
+            # Generate an 8-character random alphanumeric transaction ID
+            transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+            payment_data = payment_request.model_dump(exclude_unset=True)
+            payment_data.update({
+                "transaction_id": transaction_id,
+                "created_by": agency_name,
+                "updated_by": agency_name,
+                "no_of_hajji": len(payment_request.pilgrims_tracking_id)
+            })
+
+            result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info, agency_name)
             return result
     except Exception as e:
         raise e
