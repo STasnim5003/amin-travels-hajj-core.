@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import package_repository
 from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema, PackageCreateSchema, \
-    PackageUpdateSchema
+    PackageUpdateSchema, PackageNameBaseSchema
 
 
 async def get_packages(name, search, hajj_year, package_type, duration, description_type, hajj_month, agency_name,db):
@@ -65,5 +65,25 @@ async def update_package(db:AsyncSession, package_id: int, package: PackageUpdat
         updated_package = await package_repository.update_package(db, package_id, agency_name, update_data)
 
         return PackageResponseSchema.model_validate(updated_package)
+    except Exception as e:
+        raise e
+
+async def create_package_names(db:AsyncSession, request : PackageNameBaseSchema, agency_name:str):
+
+    try:
+        request_dict = request.model_dump(exclude_unset=True)
+        request_dict['agency_name'] = agency_name
+        request_dict['created_by'] = agency_name
+        request_dict['updated_by'] = agency_name
+
+        return await package_repository.create_package_name(db, request_dict)
+    except Exception as e:
+        raise e
+
+async def get_package_names(
+        db: AsyncSession, agency_name: str
+):
+    try:
+        return await package_repository.get_package_names(db, agency_name)
     except Exception as e:
         raise e
