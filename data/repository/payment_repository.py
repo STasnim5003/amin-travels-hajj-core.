@@ -8,40 +8,38 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
 from data.model.payment_model import PaymentModel
-from infrastructure.schema.payment_schema import PaymentSchema, AgencyPaymentSchemaForGroupLeader
+from infrastructure.schema.payment_schema import PaymentSchema, AgencyPaymentSchemaForGroupLeader, \
+    GroupLeaderPayableBaseSchema, PayableInfoUpdateSchema
 
 
-async def create_payable_for_group_leader(db: AsyncSession, payment_request: PaymentSchema, agency_name: str,
-                                          receipt: Optional[List[UploadFile]]):
+async def create_payable_for_group_leader(db: AsyncSession, payment_request: dict, payable_info : PayableInfoUpdateSchema, agency_name: str):
     try:
-        # Generate an 8-character random alphanumeric transaction ID
-        transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-
-        # Prepare data for payment table insertion
-        payment_data = payment_request.model_dump(exclude_unset=True)
-        payment_data.update({
-            "transaction_id": transaction_id,
-            "created_by": agency_name,
-            "updated_by": agency_name,
-            "no_of_hajji": len(payment_request.pilgrims_id),
-            "receipt": receipt,
-            "total_payable": payment_data["amount"],
-            "total_due" : payment_data["amount"],
-        })
-
         # Insert into payment_info
         stmt = (
             insert(PaymentModel)
-            .values(**payment_data)
+            .values(**payment_request)
             .returning(PaymentModel)
         )
         result = await db.execute(stmt)
+
+        stmt = (
+            update(AdminUserModel)
+            .values(
+                total_payable = payable_info.total_payable,
+                total_due = payable_info.total_due,
+                total_available_amount = payable_info.total_available_amount
+            )
+            .where(AdminUserModel.code == payable_info.group_leader_code)
+        )
+
+        await db.execute(stmt)
+        await db.commit()
         created_payment = result.scalar_one()
         return created_payment
 
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error creating payment record: {str(e)}")
+        raise HTTPException(status_code=400, detail="Error creating payment record")
 
 
 async def create_payment_for_group_leader(db: AsyncSession, request: AgencyPaymentSchemaForGroupLeader,

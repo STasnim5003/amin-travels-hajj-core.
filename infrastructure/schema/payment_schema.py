@@ -80,3 +80,12 @@ class PayableInfoUpdateSchema(BaseModel):
     total_payment: Optional[int] = None
     actual_payable: Optional[int] = None
     package_price_discount: Optional[int] = None
+
+class GroupLeaderPayableBaseSchema(BaseModel):
+    description: Optional[str] = None
+    date: Optional[str] = None
+    amount : int
+    category : str
+    group_leader: str
+    pilgrims_tracking_id: Optional[List[str]] = None
+    payment_category: Optional[str] = None

@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String
+
+from sqlalchemy import Column, Integer, String, Boolean
 
 from data.model.base_mixin_model import BaseMixinModel, Base
 
@@ -24,3 +25,4 @@ class AdminUserModel(Base, BaseMixinModel):
     total_due = Column(Integer, nullable=True)
     total_payment = Column(Integer, nullable=True)
     total_available_amount = Column(Integer, nullable=True)
+    is_payment_distributed = Column(Boolean, nullable=True)
