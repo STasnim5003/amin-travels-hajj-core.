@@ -42,7 +42,7 @@ async def get_packages_endpoint(
         name: str = None,
         search: str = None,
         hajj_year: int = None,
-        package_type: str = "HAJJ",
+        package_type: str = None,
         duration: int = None,
         description_type: str = None,
         hajj_month: str = None,
