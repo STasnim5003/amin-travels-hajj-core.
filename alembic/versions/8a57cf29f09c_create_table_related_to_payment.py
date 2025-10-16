@@ -83,6 +83,7 @@ def upgrade() -> None:
     op.add_column('payment', sa.Column('bank_info_id', sa.Integer(), nullable=True), schema='core')
     op.add_column('payment', sa.Column('payment_category', sa.String(), nullable=True), schema='core')
     op.add_column('payment', sa.Column('way_of_payment', sa.String(), nullable=True), schema='core')
+    op.add_column('payment', sa.Column('transfer_no', sa.String(), nullable=True), schema='core')
 
     # Optional: add foreign key constraint to bank_info if applicable
     op.create_foreign_key(
@@ -104,6 +105,7 @@ def downgrade() -> None:
     op.drop_column('payment', 'way_of_payment', schema='core')
     op.drop_column('payment', 'payment_category', schema='core')
     op.drop_column('payment', 'bank_info_id', schema='core')
+    op.drop_column('payment', 'transfer_no', schema='core')
 
     # Drop bank_info table
     op.drop_index(op.f('ix_core_bank_info_id'), table_name='bank_info', schema='core')
