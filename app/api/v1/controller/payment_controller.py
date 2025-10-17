@@ -9,7 +9,8 @@ from app.service import payment_service, pilgrim_payment_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaymentSchema, \
     PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, \
-    PaymentUpdateSchema, GroupLeaderPayableBaseSchema
+    PaymentUpdateSchema, GroupLeaderPayableBaseSchema, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
+    GroupLeaderPaymentBaseSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -27,35 +28,17 @@ async def create_payable_for_group_leader(
     return await payment_service.create_payable_for_group_leader(db, request, agency_name)
 
 
-# # @private_router.get("/group-leader/payable", tags=["payment"])
 @private_router.post("/group-leader/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payment_of_group_leader(
-        description: Optional[str] = Form(None),
-        date: Optional[str] = Form(None),
-        amount: int = Form(...),
-        category: str = Form(...),
-        group_leader: Optional[str] = Form(None),
-        payable_id: int = Form(...),
-        pilgrims_id: List[str] = Form(default=[]),
-        receipt: List[UploadFile] = File(default=[]),
+        request_schema: GroupLeaderPaymentBaseSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user['agency_name']
-    # agency_name = "MARVELLOUS"
 
-    request_schema = AgencyPaymentSchemaForGroupLeader(
-        description=description,
-        date=date,
-        amount=amount,
-        category=category,
-        group_leader=group_leader,
-        payable_id=payable_id,
-        pilgrims_id=pilgrims_id,
-    )
-    return await payment_service.create_group_leader_payment(db, request_schema, agency_name, receipt)
+    return await payment_service.create_group_leader_payment(db, request_schema, agency_name)
 
 
 @private_router.get("/group-leader/payment-info", response_model=PaginatedPaymentResponseForGroupLeader,
@@ -81,7 +64,7 @@ async def get_group_leader_payment_info(
     )
 
 
-@private_router.get("/agency/payment-info", response_model=PaginatedPaymentResponseForAgency, tags=["payment"])
+@private_router.get("/agency/payment-info",  tags=["payment"])
 async def get_group_leader_payment_info(
         db: AsyncSession = Depends(get_async_db),
         category: str | None = Query(None, description="Filter by payment category"),
@@ -101,23 +84,9 @@ async def get_group_leader_payment_info(
         agency_name=agency_name,
         group_leader=group_leader,
         tracking_id=tracking_id,
-        category=category,
         page=page,
         size=size
     )
-
-
-# @private_router.get("/agency/payment-info/{payment_id}", tags=["payment"])
-# async def get_agency_payment_info_by_id(
-#         payment_id: int,
-#         db: AsyncSession = Depends(get_async_db),
-#         current_user: dict = Depends(get_current_user)
-# ):
-#     if current_user["role"] != "AGENCY":
-#         raise HTTPException(status_code=403, detail="Unauthorized")
-#
-#     agency_name = current_user["agency_name"]
-#     retrun await
 
 @private_router.put("/update-payable/{payable_id}", response_model=PaymentResponseSchema, tags=["payment"])
 async def update_payable(
@@ -135,11 +104,7 @@ async def update_payable(
 
 @private_router.post("/pilgrim/create-payable", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payable_for_pilgrim(
-        description: Optional[str] = Form(None),
-        date: Optional[str] = Form(None),
-        amount: int = Form(...),
-        tracking_id: str = Form(...),
-        receipt: List[UploadFile] = File(default=[]),
+        request: PilgrimPayableBaseSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
@@ -147,43 +112,21 @@ async def create_payable_for_pilgrim(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
 
-    # agency_name = "MARVELLOUS"
-    payment_request = PaymentSchema(
-        description=description,
-        date=date,
-        amount=amount,
-        category="Payable",
-        tracking_id=tracking_id
-    )
-    return await pilgrim_payment_service.create_payable_for_pilgrim(db, payment_request, agency_name, receipt)
+    result = await pilgrim_payment_service.create_payable_for_pilgrim(db, request, agency_name)
+    return PaymentResponseSchema.model_validate(result)
 
 
 @private_router.post("/pilgrim/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payment_for_pilgrim(
-        description: Optional[str] = Form(None),
-        date: Optional[str] = Form(None),
-        amount: int = Form(...),
-        category: str = Form(default="Payment"),
-        tracking_id: Optional[str] = Form(None),
-        payable_id: int = Form(...),
-        receipt: List[UploadFile] = File(default=[]),
+        request: PilgrimPaymentBaseSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    # agency_name = "MARVELLOUS"
-    payment_request = PaymentSchema(
-        description=description,
-        date=date,
-        amount=amount,
-        category=category,
-        tracking_id=tracking_id,
-        payable_id=payable_id
-    )
 
-    return await pilgrim_payment_service.create_payment_for_pilgrim(db, payment_request, agency_name, receipt)
+    return await pilgrim_payment_service.create_payment_for_pilgrim(db, request, agency_name)
 
 
 @private_router.get("/payment-info/pilgrim", response_model=PaginatedPaymentResponseForGroupLeader, tags=["payment"])

@@ -8,8 +8,8 @@ class PaymentSchema(BaseModel):
     description: Optional[str] = None
     date: Optional[str] = None
     amount: int
-    category: str
-    pilgrims_id: Optional[List[str]] = None
+    category: Optional[str]
+    pilgrims_tracking_id: Optional[List[str]] = None
     group_leader: Optional[str] = None
     tracking_id : Optional[str] = None
 
@@ -25,7 +25,6 @@ class PaymentResponseSchema(PaymentSchema):
     updated_by: Optional[str] = None
     transaction_id: Optional[str] = None
     no_of_hajji: Optional[int] = None
-    receipt: Optional[List[Dict[str, Any]]] = None
 
 
 
@@ -54,7 +53,7 @@ class PaginatedPaymentResponseForGroupLeader(BaseModel):
 
 
 class PaginatedPaymentResponseForAgency(BaseModel):
-    payments: List[PaymentResponseSchema]
+    payments: Dict[str, List[PaymentResponseSchema]]
     page: int
     size: int
     total: int
@@ -81,11 +80,33 @@ class PayableInfoUpdateSchema(BaseModel):
     actual_payable: Optional[int] = None
     package_price_discount: Optional[int] = None
 
-class GroupLeaderPayableBaseSchema(BaseModel):
+class PaymentPayableBaseSchema(BaseModel):
     description: Optional[str] = None
     date: Optional[str] = None
-    amount : int
-    category : str
+    amount: int
+    category: str
+    payment_category: Optional[str] = None
+
+class GroupLeaderPayableBaseSchema(PaymentPayableBaseSchema):
     group_leader: str
     pilgrims_tracking_id: Optional[List[str]] = None
-    payment_category: Optional[str] = None
+
+
+class PilgrimPayableBaseSchema(PaymentPayableBaseSchema):
+    tracking_id : str
+
+class PilgrimPaymentBaseSchema(PaymentPayableBaseSchema):
+    tracking_id: str
+    bank_info_id : Optional[int] = None
+    way_of_payment: Optional[str] = None
+    transfer_no : Optional[str] = None
+
+class GroupLeaderPaymentBaseSchema(PaymentPayableBaseSchema):
+    group_leader: str
+    pilgrims_tracking_id: Optional[List[str]] = None
+    bank_info_id: Optional[int] = None
+    way_of_payment: Optional[str] = None
+    transfer_no: Optional[str] = None
+
+
+
