@@ -21,3 +21,6 @@ class PaymentModel(Base, BaseMixinModel):
     receipt = Column(JSON, nullable=True)
     tracking_id = Column(String, nullable=True)
     payment_category = Column(String, nullable=True)
+    way_of_payment = Column(String, nullable=True)
+    bank_info_id = Column(Integer, nullable=True)
+    transfer_no = Column(String, nullable=True)
