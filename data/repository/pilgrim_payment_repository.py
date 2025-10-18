@@ -160,8 +160,6 @@ async def get_payments_by_tracking_id(
                 p.date AS date,
                 p.amount AS amount,
                 p.category AS category,
-                p.total_payment AS total_paid,
-                p.total_due AS total_due,
                 p.tracking_id,
                 p.group_leader,
                 p.transaction_id AS transaction_id,
@@ -172,37 +170,11 @@ async def get_payments_by_tracking_id(
                 pd.total_payable AS pilgrim_total_payable,
                 pd.total_payment AS pilgrim_total_payment,
                 pd.total_due AS pilgrim_total_due,
-                pd.total_available_amount AS pilgrim_total_available_amount,
-                COALESCE(p.receipt, '[]'::json) AS receipt,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', c.id,
-                            'description', c.description,
-                            'date', c.date,
-                            'amount', c.amount,
-                            'category', c.category,
-                            'tracking_id', c.tracking_id,
-                            'payable_id', c.payable_id,
-                            'transaction_id', c.transaction_id,
-                            'created_at', c.created_at,
-                            'created_by', c.created_by,
-                            'updated_at', c.updated_at,
-                            'updated_by', c.updated_by,
-                            'receipt', COALESCE(c.receipt, '[]'::json),
-                            'total_payable', c.total_payable,
-                            'total_paid', c.total_payment,
-                            'total_due', c.total_due
-                        )
-                    ) FILTER (WHERE c.id IS NOT NULL),
-                    '[]'
-                ) AS payments
+                pd.total_available_amount AS pilgrim_total_available_amount
             FROM core.payment p
-            LEFT JOIN core.payment c
-                ON c.payable_id = p.id AND c.category = 'Payment'
             LEFT JOIN core.pilgrim_data pd
                 ON pd.tracking_id = p.tracking_id
-            WHERE p.category = 'Payable' AND p.tracking_id = :tracking_id
+            WHERE p.tracking_id = :tracking_id
             GROUP BY p.id, pd.tracking_id, pd.total_payable, pd.total_available_amount, pd.total_due, pd.total_payment
             ORDER BY p.id DESC
             LIMIT :size OFFSET :offset;
@@ -221,7 +193,6 @@ async def get_payments_by_tracking_id(
         total_query = text("""
                     SELECT COUNT(*) FROM core.payment
                     WHERE tracking_id = :tracking_id
-                    AND category = 'Payable'
                 """)
         total_result = await db.execute(total_query, {"tracking_id": tracking_id})
         total = total_result.scalar() or 0

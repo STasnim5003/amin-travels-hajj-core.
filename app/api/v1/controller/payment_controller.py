@@ -1,15 +1,14 @@
-from typing import Optional, List
-
 import fastapi
-from fastapi import Depends, HTTPException, Query, UploadFile, File, Form
+from fastapi import Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.controller.pilgrim_controller import public_router
 from app.core.middleware.middleware import get_current_user, get_current_admin_user, get_current_pilgrim
 from app.service import payment_service, pilgrim_payment_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.payment_schema import PaymentResponseSchema, PaymentSchema, \
-    PaginatedPaymentResponseForGroupLeader, PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, \
-    PaymentUpdateSchema, GroupLeaderPayableBaseSchema, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
+from infrastructure.schema.payment_schema import PaymentResponseSchema, PaginatedPaymentResponseForGroupLeader, \
+    PaginatedPaymentResponseForAgency, PaymentUpdateSchema, GroupLeaderPayableBaseSchema, PilgrimPayableBaseSchema, \
+    PilgrimPaymentBaseSchema, \
     GroupLeaderPaymentBaseSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -64,7 +63,7 @@ async def get_group_leader_payment_info(
     )
 
 
-@private_router.get("/agency/payment-info", response_model=PaginatedPaymentResponseForAgency,  tags=["payment"])
+@private_router.get("/agency/payment-info", response_model=PaginatedPaymentResponseForAgency, tags=["payment"])
 async def get_group_leader_payment_info(
         db: AsyncSession = Depends(get_async_db),
         category: str | None = Query(None, description="Filter by payment category"),
@@ -79,21 +78,10 @@ async def get_group_leader_payment_info(
 
     agency_name = current_user["agency_name"]
 
-    payments, total = await payment_service.get_agency_payments(
-        db=db,
-        agency_name=agency_name,
-        group_leader=group_leader,
-        tracking_id=tracking_id,
-        page=page,
-        size=size
+    return await payment_service.get_agency_payments(
+        db, agency_name, group_leader, tracking_id, page, size
     )
 
-    return PaginatedPaymentResponseForAgency(
-        payments = payments,
-        total = total,
-        page=page,
-        size=size
-    )
 
 @private_router.put("/update-payable/{payable_id}", response_model=PaymentResponseSchema, tags=["payment"])
 async def update_payable(
@@ -155,3 +143,11 @@ async def get_pilgrim_payment_info(
         page=page,
         size=size
     )
+
+@public_router.get("/payment/{payment_id}", tags=["payment"])
+async def get_payment_by_id(
+        payment_id: int,
+        db: AsyncSession = Depends(get_async_db),
+):
+    return await payment_service.get_payment_by_id(db,payment_id)
+
