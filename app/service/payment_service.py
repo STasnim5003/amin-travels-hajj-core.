@@ -148,30 +148,7 @@ async def get_agency_payments(
         total
     ) = await payment_repository.get_payments_by_agency(db, agency_name, group_leader, tracking_id, page,
                                                         size)
-
-    # grouped = {}
-    #
-    # # payments is a dict: { "key": [payment_dicts] }
-    # for key, payment_list in payments.items():
-    #     if key not in grouped:
-    #         grouped[key] = []
-    #     grouped[key].extend(payment_list)
-    #
-    #     # ✅ Sort group leaders first, then tracking IDs
-    # grouped = dict(
-    #     sorted(
-    #         grouped.items(),
-    #         key=lambda item: (0 if item[0].startswith("GL_") or "GL" in item[0] else 1, item[0])
-    #     )
-    # )
-
-    # return PaginatedPaymentResponseForAgency(
-    #     payments=grouped,
-    #     page=page,
-    #     size=size,
-    #     total=total
-    # )
-    return payments
+    return payments, total
 
 
 async def update_payable(
