@@ -64,7 +64,7 @@ async def get_group_leader_payment_info(
     )
 
 
-@private_router.get("/agency/payment-info",  tags=["payment"])
+@private_router.get("/agency/payment-info", response_model=PaginatedPaymentResponseForAgency,  tags=["payment"])
 async def get_group_leader_payment_info(
         db: AsyncSession = Depends(get_async_db),
         category: str | None = Query(None, description="Filter by payment category"),
@@ -79,11 +79,18 @@ async def get_group_leader_payment_info(
 
     agency_name = current_user["agency_name"]
 
-    return await payment_service.get_agency_payments(
+    payments, total = await payment_service.get_agency_payments(
         db=db,
         agency_name=agency_name,
         group_leader=group_leader,
         tracking_id=tracking_id,
+        page=page,
+        size=size
+    )
+
+    return PaginatedPaymentResponseForAgency(
+        payments = payments,
+        total = total,
         page=page,
         size=size
     )

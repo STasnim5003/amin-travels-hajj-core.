@@ -25,6 +25,10 @@ class PaymentResponseSchema(PaymentSchema):
     updated_by: Optional[str] = None
     transaction_id: Optional[str] = None
     no_of_hajji: Optional[int] = None
+    pilgrims_tracking_id: Optional[List[str]] = None
+    way_of_payment : Optional[str] = None
+    transfer_no : Optional[str] = None
+
 
 
 
@@ -53,7 +57,7 @@ class PaginatedPaymentResponseForGroupLeader(BaseModel):
 
 
 class PaginatedPaymentResponseForAgency(BaseModel):
-    payments: Dict[str, List[PaymentResponseSchema]]
+    payments: Optional[List[PaymentResponseSchema]] =  None
     page: int
     size: int
     total: int

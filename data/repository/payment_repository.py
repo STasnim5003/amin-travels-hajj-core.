@@ -1,18 +1,14 @@
-import random
-import string
-from typing import Optional, List
-
-from fastapi import HTTPException, UploadFile
-from sqlalchemy import insert, select, update, text
+from fastapi import HTTPException
+from sqlalchemy import insert, select, update, text, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
 from data.model.payment_model import PaymentModel
-from infrastructure.schema.payment_schema import PaymentSchema, AgencyPaymentSchemaForGroupLeader, \
-    GroupLeaderPayableBaseSchema, PayableInfoUpdateSchema, PaymentUpdateSchema
+from infrastructure.schema.payment_schema import PayableInfoUpdateSchema
 
 
-async def create_payable_for_group_leader(db: AsyncSession, payment_request: dict, payable_info : PayableInfoUpdateSchema, agency_name: str):
+async def create_payable_for_group_leader(db: AsyncSession, payment_request: dict,
+                                          payable_info: PayableInfoUpdateSchema, agency_name: str):
     try:
         # Insert into payment_info
         stmt = (
@@ -26,9 +22,9 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: dic
             update(AdminUserModel)
             .values(
                 updated_by=agency_name,
-                total_payable = payable_info.total_payable,
-                total_due = payable_info.total_due,
-                total_available_amount = payable_info.total_available_amount
+                total_payable=payable_info.total_payable,
+                total_due=payable_info.total_due,
+                total_available_amount=payable_info.total_available_amount
             )
             .where(AdminUserModel.code == payable_info.group_leader_code)
         )
@@ -44,7 +40,8 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: dic
         raise HTTPException(status_code=400, detail="Error creating payment record")
 
 
-async def create_payment_for_group_leader(db: AsyncSession, payment_data: dict,agency_name: str, payment_info:PayableInfoUpdateSchema):
+async def create_payment_for_group_leader(db: AsyncSession, payment_data: dict, agency_name: str,
+                                          payment_info: PayableInfoUpdateSchema):
     try:
 
         #  Insert into payment table
@@ -90,21 +87,20 @@ async def get_payments_by_group_leader(
         query = text("""
         SELECT
             p.id AS id,
-                p.description AS description,
-                p.date AS date,
-                p.amount AS amount,
-                p.category AS category,
-                p.no_of_hajji as no_of_hajji,
-                p.pilgrims_id as pilgrims_id,
-                p.total_payment AS total_paid,
-                p.total_due AS total_due,
-                p.tracking_id,
                 p.group_leader,
-                p.transaction_id AS transaction_id,
-                p.created_at AS created_at,
-                p.created_by AS created_by,
-                p.updated_at AS updated_at,
-                p.updated_by AS updated_by,
+                p.description,
+                p.date,
+                p.amount,
+                p.category,
+                p.no_of_hajji,
+                p.pilgrims_tracking_id,
+                p.way_of_payment,
+                p.transfer_no,
+                p.transaction_id,
+                p.created_at,
+                p.created_by,
+                p.updated_at,
+                p.updated_by,
                 a.total_payable AS admin_user_total_payable,
                 a.total_payment AS admin_user_total_payment,
                 a.total_due AS admin_user_total_due,
@@ -172,87 +168,116 @@ async def get_payments_by_group_leader(
 
 
 async def get_payments_by_agency(
-    db: AsyncSession,
-    agency_name: str,
-    group_leader: str = None,
-    tracking_id: str = None,
-    page: int = 1,
-    size: int = 20
+        db: AsyncSession,
+        agency_name: str,
+        group_leader: str = None,
+        tracking_id: str = None,
+        page: int = 1,
+        size: int = 20
 ):
     try:
         offset = (page - 1) * size
 
-        # ✅ Base filters and params
-        filters = ["p.created_by = :agency_name"]
-        params = {
-            "agency_name": agency_name,
-            "size": size,
-            "offset": offset
-        }
-
-        # ✅ Add optional filters dynamically
+        filters = [PaymentModel.created_by == agency_name]
         if group_leader:
-            filters.append("p.group_leader = :group_leader")
-            params["group_leader"] = group_leader
+            filters.append(PaymentModel.group_leader == group_leader)
         if tracking_id:
-            filters.append("p.tracking_id = :tracking_id")
-            params["tracking_id"] = tracking_id
+            filters.append(PaymentModel.tracking_id == tracking_id)
 
-        # ✅ Convert to SQL string
-        filter_clause = " AND ".join(filters)
-
-        # ✅ Single query with group leaders first, then tracking IDs
-        query = text(f"""
-            SELECT
-                key,
-                json_agg(to_jsonb(p) - 'id') AS payments
-            FROM (
-                SELECT 
-                    p.group_leader AS key,
-                    p.*,
-                    1 AS type_order
-                FROM core.payment p
-                WHERE p.group_leader IS NOT NULL 
-                  AND {filter_clause}
-
-                UNION ALL
-
-                SELECT 
-                    p.tracking_id AS key,
-                    p.*,
-                    2 AS type_order
-                FROM core.payment p
-                WHERE p.tracking_id IS NOT NULL 
-                  AND {filter_clause}
-            ) AS p
-            GROUP BY key, type_order
-            ORDER BY type_order, key, MAX(p.created_at) DESC
-            LIMIT :size OFFSET :offset
-        """)
-
-        result = await db.execute(query, params)
-        rows = result.mappings().all()
-
-        if not rows:
-            raise HTTPException(status_code=400, detail="No payments found for this agency")
-
-        grouped_payments = {row["key"]: row["payments"] for row in rows}
-
-        # ✅ Count total for pagination
-        total_query = text("""
-            SELECT COUNT(*) 
-            FROM core.payment 
-            WHERE created_by = :agency_name
-        """)
-        total_result = await db.execute(total_query, {
-            "agency_name": agency_name
-        })
+        # --- Count total records ---
+        total_query = select(func.count()).select_from(PaymentModel).where(*filters)
+        total_result = await db.execute(total_query)
         total = total_result.scalar() or 0
 
-        return grouped_payments, total
+        # --- Fetch paginated data ---
+        query = (
+            select(PaymentModel)
+            .where(*filters)
+            .order_by(desc(PaymentModel.created_at))
+            .offset(offset)
+            .limit(size)
+        )
+
+        result = await db.execute(query)
+        payments = result.scalars().all()
+        return payments, total
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail="Error fetching payments")
+    # try:
+    #     offset = (page - 1) * size
+    #
+    #     # ✅ Base filters and params
+    #     filters = ["p.created_by = :agency_name"]
+    #     params = {
+    #         "agency_name": agency_name,
+    #         "size": size,
+    #         "offset": offset
+    #     }
+    #
+    #     # ✅ Add optional filters dynamically
+    #     if group_leader:
+    #         filters.append("p.group_leader = :group_leader")
+    #         params["group_leader"] = group_leader
+    #     if tracking_id:
+    #         filters.append("p.tracking_id = :tracking_id")
+    #         params["tracking_id"] = tracking_id
+    #
+    #     # ✅ Convert to SQL string
+    #     filter_clause = " AND ".join(filters)
+
+    # # ✅ Single query with group leaders first, then tracking IDs
+    # query = text(f"""
+    #     SELECT
+    #         key,
+    #         json_agg(to_jsonb(p) - 'id') AS payments
+    #     FROM (
+    #         SELECT
+    #             p.group_leader AS key,
+    #             p.*,
+    #             1 AS type_order
+    #         FROM core.payment p
+    #         WHERE p.group_leader IS NOT NULL
+    #           AND {filter_clause}
+    #
+    #         UNION ALL
+    #
+    #         SELECT
+    #             p.tracking_id AS key,
+    #             p.*,
+    #             2 AS type_order
+    #         FROM core.payment p
+    #         WHERE p.tracking_id IS NOT NULL
+    #           AND {filter_clause}
+    #     ) AS p
+    #     GROUP BY key, type_order
+    #     ORDER BY type_order, key, MAX(p.created_at) DESC
+    #     LIMIT :size OFFSET :offset
+    # """)
+
+    #     result = await db.execute(query, params)
+    #     rows = result.mappings().all()
+    #
+    #     if not rows:
+    #         raise HTTPException(status_code=400, detail="No payments found for this agency")
+    #
+    #     grouped_payments = {row["key"]: row["payments"] for row in rows}
+    #
+    #     # ✅ Count total for pagination
+    #     total_query = text("""
+    #         SELECT COUNT(*)
+    #         FROM core.payment
+    #         WHERE created_by = :agency_name
+    #     """)
+    #     total_result = await db.execute(total_query, {
+    #         "agency_name": agency_name
+    #     })
+    #     total = total_result.scalar() or 0
+    #
+    #     return grouped_payments, total
+    #
+    # except Exception as e:
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 
 async def get_by_id(db: AsyncSession, payable_id: int):
