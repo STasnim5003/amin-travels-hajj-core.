@@ -1,15 +1,15 @@
 import random
 import string
-from typing import List
 
-from fastapi import UploadFile, HTTPException
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.repository import payment_repository, file_repository, admin_user_repository, pilgrim_payment_repository, \
+from data.repository import payment_repository, admin_user_repository, pilgrim_payment_repository, \
     pilgrim_repository, payment_repository_multiple_pilgrims
 from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
-    PaginatedPaymentResponseForAgency, AgencyPaymentSchemaForGroupLeader, PayableInfoUpdateSchema, \
-    GroupLeaderPayableBaseSchema, GroupLeaderPaymentBaseSchema
+    PayableInfoUpdateSchema, \
+    GroupLeaderPayableBaseSchema, GroupLeaderPaymentBaseSchema, OverallSummarySchema, \
+    BankSummarySchema, PaginatedPaymentResponseForAgency
 
 
 async def create_payable_for_group_leader(db: AsyncSession, payment_request: GroupLeaderPayableBaseSchema,
@@ -51,17 +51,19 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
 
     try:
         if existing_group_leader.is_payment_distributed and len(payment_request.pilgrims_tracking_id) > 0:
-            result =  await payment_repository_multiple_pilgrims.create_payable_for_multiple_pilgrims(db, payment_data, agency_name, payable_info)
+            result = await payment_repository_multiple_pilgrims.create_payable_for_multiple_pilgrims(db, payment_data,
+                                                                                                     agency_name,
+                                                                                                     payable_info)
             return result
         else:
-            result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info, agency_name)
+            result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info,
+                                                                              agency_name)
             return result
     except Exception as e:
         raise e
 
 
 async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaymentBaseSchema, agency_name: str):
-
     if request.amount < 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
@@ -97,10 +99,13 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
     )
     try:
         if existing_group_leader.is_payment_distributed and len(request.pilgrims_tracking_id) > 0:
-            result = await payment_repository_multiple_pilgrims.create_payment_for_multiple_pilgrims(db, payment_data, agency_name, payment_info)
+            result = await payment_repository_multiple_pilgrims.create_payment_for_multiple_pilgrims(db, payment_data,
+                                                                                                     agency_name,
+                                                                                                     payment_info)
             return result
         else:
-            result = await payment_repository.create_payment_for_group_leader(db, payment_data, agency_name, payment_info)
+            result = await payment_repository.create_payment_for_group_leader(db, payment_data, agency_name,
+                                                                              payment_info)
 
             return result
     except Exception as e:
@@ -143,12 +148,50 @@ async def get_agency_payments(
         page: int,
         size: int
 ):
-    (
-        payments,
-        total
-    ) = await payment_repository.get_payments_by_agency(db, agency_name, group_leader, tracking_id, page,
-                                                        size)
-    return payments, total
+    try:
+        result = await payment_repository.get_payment_summary_for_agency(
+            db, agency_name, page, size, group_leader, tracking_id
+        )
+
+        # Extract data from result
+        payments = result.get("payments", [])
+        total = result.get("total_count", 0)  # Get actual total count
+        bank_summary_data = result.get("bank_summary", [])
+        overall_summary_data = result.get("overall_summary", {})
+
+        # Map bank summary data to schema
+        bank_summary = []
+        for bank in bank_summary_data:
+            bank_summary.append(
+                BankSummarySchema(
+                    bank_info_id=bank.get("bank_info_id"),
+                    bank_name=bank.get("bank_name"),
+                    bank_branch=bank.get("bank_branch"),
+                    bank_account=bank.get("bank_account"),
+                    total_payment=bank.get("total_payment"),
+                )
+            )
+
+        # Map overall summary data to schema
+        overall_summary = OverallSummarySchema(
+            total_payment=overall_summary_data.get("total_payment"),
+            last_7_days_payment=overall_summary_data.get("last_7_days_payment"),
+            today_payment=overall_summary_data.get("today_payment"),
+            yesterday_payment=overall_summary_data.get("yesterday_payment"),
+        )
+
+        return PaginatedPaymentResponseForAgency(
+            payments = payments,
+            page = page,
+            size=size,
+            total=total,
+            bank_summary=bank_summary,
+            overall_summary=overall_summary
+        )
+
+
+    except Exception as e:
+        raise e
 
 
 async def update_payable(
@@ -216,3 +259,9 @@ async def update_payable(
 
     updated_payment = await payment_repository.update_payable(db, payable_id, filtered_data)
     return updated_payment
+
+async def get_payment_by_id(db:AsyncSession, payment_id:int):
+    try:
+        return await payment_repository.get_payment_by_id(db, payment_id)
+    except Exception as e:
+        raise e

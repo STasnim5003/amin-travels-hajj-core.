@@ -3,6 +3,8 @@ from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel
 
+from infrastructure.schema.bank_info_schema import BankInfoBaseSchema, BankInfoResponseSchema
+
 
 class PaymentSchema(BaseModel):
     description: Optional[str] = None
@@ -56,11 +58,34 @@ class PaginatedPaymentResponseForGroupLeader(BaseModel):
         from_attributes = True
 
 
+class BankSummarySchema(BaseModel):
+    bank_info_id: Optional[int] = None
+    bank_name: Optional[str] = None
+    bank_branch: Optional[str] = None
+    bank_account: Optional[str] = None
+    total_payment: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class OverallSummarySchema(BaseModel):
+    total_payment: Optional[float] = None
+    last_7_days_payment: Optional[float] = None
+    today_payment: Optional[float] = None
+    yesterday_payment: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
 class PaginatedPaymentResponseForAgency(BaseModel):
-    payments: Optional[List[PaymentResponseSchema]] =  None
+    payments: Optional[List[PaymentResponseSchema]] = None
     page: int
     size: int
     total: int
+    bank_summary: Optional[List[BankSummarySchema]] = None
+    overall_summary: Optional[OverallSummarySchema] = None
 
     class Config:
         from_attributes = True

@@ -1,8 +1,12 @@
+from datetime import datetime, timedelta
+
+import pytz
 from fastapi import HTTPException
-from sqlalchemy import insert, select, update, text, desc, func
+from sqlalchemy import insert, select, update, text, desc, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
+from data.model.bank_info_model import BankInfoModel
 from data.model.payment_model import PaymentModel
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema
 
@@ -104,35 +108,11 @@ async def get_payments_by_group_leader(
                 a.total_payable AS admin_user_total_payable,
                 a.total_payment AS admin_user_total_payment,
                 a.total_due AS admin_user_total_due,
-                a.total_available_amount AS admin_user_total_available_amount,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', c.id,
-                            'description', c.description,
-                            'date', c.date,
-                            'amount', c.amount,
-                            'category', c.category,
-                            'tracking_id', c.tracking_id,
-                            'group_leader', c.group_leader,
-                            'transaction_id', c.transaction_id,
-                            'created_at', c.created_at,
-                            'created_by', c.created_by,
-                            'updated_at', c.updated_at,
-                            'updated_by', c.updated_by,
-                            'total_payable', c.total_payable,
-                            'total_paid', c.total_payment,
-                            'total_due', c.total_due
-                        )
-                    ) FILTER (WHERE c.id IS NOT NULL),
-                    '[]'
-                ) AS payments
+                a.total_available_amount AS admin_user_total_available_amount
             FROM core.payment p
-            LEFT JOIN core.payment c
-                ON c.payable_id = p.id AND c.category = 'Payment'
             LEFT JOIN core.admin_user a
                 ON a.code = p.group_leader
-            WHERE p.category = 'Payable' AND p.group_leader = :group_leader
+            WHERE p.group_leader = :group_leader
             GROUP BY p.id, a.code, a.total_payable, a.total_available_amount, a.total_due, a.total_payment
             ORDER BY p.id DESC
             LIMIT :size OFFSET :offset;
@@ -150,7 +130,6 @@ async def get_payments_by_group_leader(
         total_query = text("""
                             SELECT COUNT(*) FROM core.payment
                             WHERE group_leader = :group_leader
-                            AND category = 'Payable'
                         """)
         total_result = await db.execute(total_query, {"group_leader": group_leader})
         total = total_result.scalar() or 0
@@ -167,117 +146,124 @@ async def get_payments_by_group_leader(
         raise Exception(f"Error fetching group leader payments: {str(e)}")
 
 
-async def get_payments_by_agency(
+async def get_payment_summary_for_agency(
         db: AsyncSession,
         agency_name: str,
+        page: int,
+        size: int,
         group_leader: str = None,
         tracking_id: str = None,
-        page: int = 1,
-        size: int = 20
 ):
     try:
         offset = (page - 1) * size
 
-        filters = [PaymentModel.created_by == agency_name]
-        if group_leader:
-            filters.append(PaymentModel.group_leader == group_leader)
-        if tracking_id:
-            filters.append(PaymentModel.tracking_id == tracking_id)
+        # Get current time in Bangladesh timezone
+        tz = pytz.timezone("Asia/Dhaka")
+        now = datetime.now(tz)
 
-        # --- Count total records ---
-        total_query = select(func.count()).select_from(PaymentModel).where(*filters)
-        total_result = await db.execute(total_query)
-        total = total_result.scalar() or 0
+        # Calculate time ranges (convert to naive datetime to match DB)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
+        today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999).replace(tzinfo=None)
 
-        # --- Fetch paginated data ---
-        query = (
-            select(PaymentModel)
-            .where(*filters)
-            .order_by(desc(PaymentModel.created_at))
-            .offset(offset)
-            .limit(size)
-        )
+        yesterday_start = today_start - timedelta(days=1)
+        yesterday_end = today_start
 
-        result = await db.execute(query)
-        payments = result.scalars().all()
-        return payments, total
+        seven_days_ago = (now - timedelta(days=7)).replace(tzinfo=None)
+
+        query = text("""
+            WITH payment_data AS (
+                SELECT 
+                    p.*,
+                    b.name AS bank_name,
+                    b.branch AS bank_branch,
+                    b.account_no AS bank_account
+                FROM core.payment p
+                LEFT JOIN core.bank_info b ON p.bank_info_id = b.id
+                WHERE p.created_by = :agency_name
+                  AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
+                  AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
+            ),
+            total_count AS (
+                SELECT COUNT(*) AS count
+                FROM payment_data
+            ),
+            paginated_payments AS (
+                SELECT *
+                FROM payment_data
+                ORDER BY created_at DESC
+                OFFSET :offset LIMIT :size
+            ),
+            bank_summary AS (
+                SELECT
+                    bank_info_id,
+                    bank_name,
+                    bank_branch,
+                    bank_account,
+                    SUM(amount) AS total_payment
+                FROM payment_data
+                WHERE bank_info_id IS NOT NULL AND category = 'Payment'
+                GROUP BY bank_info_id, bank_name, bank_branch, bank_account
+            ),
+            summary AS (
+                SELECT
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment'), 0) AS total_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :seven_days_ago), 0) AS last_7_days_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :today_start AND created_at < :today_end), 0) AS today_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :yesterday_start AND created_at < :yesterday_end), 0) AS yesterday_payment
+                FROM payment_data
+            )
+            SELECT json_build_object(
+                'payments', COALESCE((SELECT json_agg(row_to_json(p)) FROM paginated_payments p), '[]'::json),
+                'total_count', (SELECT count FROM total_count),
+                'bank_summary', COALESCE((
+                    SELECT json_agg(
+                        json_build_object(
+                            'bank_info_id', bank_info_id,
+                            'bank_name', bank_name,
+                            'bank_branch', bank_branch,
+                            'bank_account', bank_account,
+                            'total_payment', total_payment
+                        )
+                    )
+                    FROM bank_summary
+                ), '[]'::json),
+                'overall_summary', COALESCE((SELECT row_to_json(s) FROM summary s), '{}'::json)
+            ) AS result;
+        """)
+
+        params = {
+            "agency_name": agency_name,
+            "group_leader": group_leader,
+            "tracking_id": tracking_id,
+            "seven_days_ago": seven_days_ago,
+            "today_start": today_start,
+            "today_end": today_end,
+            "yesterday_start": yesterday_start,
+            "yesterday_end": yesterday_end,
+            "offset": offset,
+            "size": size
+        }
+
+        result = await db.execute(query, params)
+        row = result.fetchone()
+
+        if row and row[0]:
+            return row[0]
+        else:
+            return {
+                "payments": [],
+                "total_count": 0,
+                "bank_summary": [],
+                "overall_summary": {
+                    "total_payment": 0,
+                    "last_7_days_payment": 0,
+                    "today_payment": 0,
+                    "yesterday_payment": 0
+                }
+            }
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Error fetching payments")
-    # try:
-    #     offset = (page - 1) * size
-    #
-    #     # ✅ Base filters and params
-    #     filters = ["p.created_by = :agency_name"]
-    #     params = {
-    #         "agency_name": agency_name,
-    #         "size": size,
-    #         "offset": offset
-    #     }
-    #
-    #     # ✅ Add optional filters dynamically
-    #     if group_leader:
-    #         filters.append("p.group_leader = :group_leader")
-    #         params["group_leader"] = group_leader
-    #     if tracking_id:
-    #         filters.append("p.tracking_id = :tracking_id")
-    #         params["tracking_id"] = tracking_id
-    #
-    #     # ✅ Convert to SQL string
-    #     filter_clause = " AND ".join(filters)
-
-    # # ✅ Single query with group leaders first, then tracking IDs
-    # query = text(f"""
-    #     SELECT
-    #         key,
-    #         json_agg(to_jsonb(p) - 'id') AS payments
-    #     FROM (
-    #         SELECT
-    #             p.group_leader AS key,
-    #             p.*,
-    #             1 AS type_order
-    #         FROM core.payment p
-    #         WHERE p.group_leader IS NOT NULL
-    #           AND {filter_clause}
-    #
-    #         UNION ALL
-    #
-    #         SELECT
-    #             p.tracking_id AS key,
-    #             p.*,
-    #             2 AS type_order
-    #         FROM core.payment p
-    #         WHERE p.tracking_id IS NOT NULL
-    #           AND {filter_clause}
-    #     ) AS p
-    #     GROUP BY key, type_order
-    #     ORDER BY type_order, key, MAX(p.created_at) DESC
-    #     LIMIT :size OFFSET :offset
-    # """)
-
-    #     result = await db.execute(query, params)
-    #     rows = result.mappings().all()
-    #
-    #     if not rows:
-    #         raise HTTPException(status_code=400, detail="No payments found for this agency")
-    #
-    #     grouped_payments = {row["key"]: row["payments"] for row in rows}
-    #
-    #     # ✅ Count total for pagination
-    #     total_query = text("""
-    #         SELECT COUNT(*)
-    #         FROM core.payment
-    #         WHERE created_by = :agency_name
-    #     """)
-    #     total_result = await db.execute(total_query, {
-    #         "agency_name": agency_name
-    #     })
-    #     total = total_result.scalar() or 0
-    #
-    #     return grouped_payments, total
-    #
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 async def get_by_id(db: AsyncSession, payable_id: int):
@@ -311,3 +297,13 @@ async def update_payable(db: AsyncSession, payable_id: int, update_data: dict):
         return updated_payment
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+async def get_payment_by_id(db:AsyncSession, payment_id:int):
+    try:
+        result = await db.execute(
+            select(PaymentModel).where(PaymentModel.id == payment_id)
+        )
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Payment not found")
+
