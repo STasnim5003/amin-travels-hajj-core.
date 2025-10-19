@@ -247,8 +247,55 @@ async def get_payment_summary_for_agency(
         result = await db.execute(query, params)
         row = result.fetchone()
 
-        if row and row[0]:
-            return row[0]
+        query = text("""
+            WITH filtered AS (
+                SELECT *
+                FROM core.payment p
+                WHERE p.created_by = :agency_name
+                  AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
+                  AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
+            ),
+            grouped AS (
+                SELECT
+                    COALESCE(f.group_leader, f.tracking_id) AS key,
+                    json_agg(
+                        json_build_object(
+                            'id', f.id,
+                            'tracking_id', f.tracking_id,
+                            'group_leader', f.group_leader,
+                            'category', f.category,
+                            'amount', f.amount,
+                            'created_at', f.created_at,
+                            'bank_info_id', f.bank_info_id
+                        ) ORDER BY f.created_at DESC
+                    ) AS payments,
+                    CASE WHEN f.group_leader IS NOT NULL THEN 1 ELSE 2 END AS sort_order
+                FROM filtered f
+                GROUP BY sort_order, COALESCE(f.group_leader, f.tracking_id)
+            ),
+            ordered AS (
+                SELECT key, payments
+                FROM grouped
+                ORDER BY sort_order, key
+                OFFSET :offset LIMIT :size
+            )
+            SELECT json_object_agg(key, payments) AS result
+            FROM ordered;
+        """)
+
+        params = {
+            "agency_name": agency_name,
+            "group_leader": group_leader or None,
+            "tracking_id": tracking_id or None,
+            "offset": offset,
+            "size": size,
+        }
+
+        response = await db.execute(query, params)
+        another_row = response.fetchone()
+
+        if row and row[0] and another_row and another_row[0]:
+            return row[0], another_row[0]
         else:
             return {
                 "payments": [],
@@ -301,9 +348,26 @@ async def update_payable(db: AsyncSession, payable_id: int, update_data: dict):
 async def get_payment_by_id(db:AsyncSession, payment_id:int):
     try:
         result = await db.execute(
-            select(PaymentModel).where(PaymentModel.id == payment_id)
+            select(PaymentModel, BankInfoModel)
+            .join(
+                BankInfoModel,
+                BankInfoModel.id == PaymentModel.bank_info_id,
+                isouter=True
+            )
+            .where(PaymentModel.id == payment_id)
         )
-        return result.scalar_one_or_none()
+
+        row = result.first()
+        if not row:
+            raise HTTPException(status_code=404, detail="Payment not found")
+
+        payment, bank_info = row
+
+        # Combine data into a single dictionary
+        return {
+            "payment": payment,
+            "bank_info": bank_info
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail="Payment not found")
 

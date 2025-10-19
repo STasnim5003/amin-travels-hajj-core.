@@ -1,15 +1,18 @@
+import json
 import random
 import string
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils import num_to_words
+from app.core.utils.num_to_words import amount_to_words
 from data.repository import payment_repository, admin_user_repository, pilgrim_payment_repository, \
     pilgrim_repository, payment_repository_multiple_pilgrims
 from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
     PayableInfoUpdateSchema, \
     GroupLeaderPayableBaseSchema, GroupLeaderPaymentBaseSchema, OverallSummarySchema, \
-    BankSummarySchema, PaginatedPaymentResponseForAgency
+    BankSummarySchema, PaginatedPaymentResponseForAgency, ReceiptPrintSchema
 
 
 async def create_payable_for_group_leader(db: AsyncSession, payment_request: GroupLeaderPayableBaseSchema,
@@ -149,7 +152,7 @@ async def get_agency_payments(
         size: int
 ):
     try:
-        result = await payment_repository.get_payment_summary_for_agency(
+        result, another_response = await payment_repository.get_payment_summary_for_agency(
             db, agency_name, page, size, group_leader, tracking_id
         )
 
@@ -180,13 +183,21 @@ async def get_agency_payments(
             yesterday_payment=overall_summary_data.get("yesterday_payment"),
         )
 
+        grouped_payments = {}
+        if another_response:
+            if isinstance(another_response, str):
+                grouped_payments = json.loads(another_response)
+            else:
+                grouped_payments = another_response
+
         return PaginatedPaymentResponseForAgency(
             payments = payments,
             page = page,
             size=size,
             total=total,
             bank_summary=bank_summary,
-            overall_summary=overall_summary
+            overall_summary=overall_summary,
+            grouped_payments=grouped_payments
         )
 
 
@@ -262,6 +273,46 @@ async def update_payable(
 
 async def get_payment_by_id(db:AsyncSession, payment_id:int):
     try:
-        return await payment_repository.get_payment_by_id(db, payment_id)
+        result = await payment_repository.get_payment_by_id(db, payment_id)
+        payment = result["payment"]
+        bank_info = result.get("bank_info")
+
+        # Optional: fetch group leader or pilgrim name
+        group_leader_name = None
+        payer_name = None
+        payee_name = payment.created_by
+
+        if payment.group_leader:
+            admin_user = await admin_user_repository.get_admin_user_by_code(db, payment.group_leader)
+            group_leader_name = admin_user.name if admin_user else None
+            payer_name = group_leader_name
+        elif payment.tracking_id:
+            pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, payment.tracking_id)
+            payer_name = pilgrim.name if pilgrim else None
+
+        amount_to_words = num_to_words.amount_to_words(payment.amount)
+
+        receipt = ReceiptPrintSchema(
+            id=payment.id,
+            description=getattr(payment, "description", None),
+            date=getattr(payment, "date", None),
+            amount=payment.amount,
+            group_leader=payment.group_leader,
+            payer_name=payer_name,
+            payee_name=payee_name,
+            category=payment.category,
+            transaction_id=getattr(payment, "transaction_id", None),
+            tracking_id=payment.tracking_id,
+            payment_category=getattr(payment, "payment_category", None),
+            way_of_payment=getattr(payment, "way_of_payment", None),
+            bank_info_id=payment.bank_info_id,
+            transfer_no=getattr(payment, "transfer_no", None),
+            bank_name=bank_info.name if bank_info else None,
+            bank_branch=bank_info.branch if bank_info else None,
+            amount_in_words=amount_to_words
+        )
+
+        return receipt
+
     except Exception as e:
         raise e
