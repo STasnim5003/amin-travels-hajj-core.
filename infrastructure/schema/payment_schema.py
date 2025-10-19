@@ -80,6 +80,7 @@ class OverallSummarySchema(BaseModel):
 
 
 class PaginatedPaymentResponseForAgency(BaseModel):
+    grouped_payments: Optional[Dict[str, List[PaymentResponseSchema]]] = None
     payments: Optional[List[PaymentResponseSchema]] = None
     page: int
     size: int
@@ -137,5 +138,22 @@ class GroupLeaderPaymentBaseSchema(PaymentPayableBaseSchema):
     way_of_payment: Optional[str] = None
     transfer_no: Optional[str] = None
 
-
+class ReceiptPrintSchema(BaseModel):
+    id : int
+    description : Optional[str] = None
+    date :Optional[str] = None
+    amount : int
+    group_leader: Optional[str] = None
+    payer_name: Optional[str] = None
+    payee_name: Optional[str] = None
+    category : Optional[str] = None
+    transaction_id : Optional[str] = None
+    tracking_id : Optional[str] = None
+    payment_category : Optional[str] = None
+    way_of_payment : Optional[str] = None
+    bank_info_id : Optional[int] = None
+    transfer_no : Optional[str] = None
+    bank_name : Optional[str] = None
+    bank_branch: Optional[str] = None
+    amount_in_words: Optional[str] = None
 
