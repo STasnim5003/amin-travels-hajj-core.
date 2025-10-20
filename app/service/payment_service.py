@@ -183,20 +183,28 @@ async def get_agency_payments(
             yesterday_payment=overall_summary_data.get("yesterday_payment"),
         )
 
-        grouped_payments = {}
+        rouped_payments = {}
         if another_response:
             if isinstance(another_response, str):
                 grouped_payments = json.loads(another_response)
             else:
                 grouped_payments = another_response
 
-        final_result = [
-            {
-                "name": key,
-                "children": payments
-            }
-            for key, payments in grouped_payments.items()
-        ]
+        # Collect all possible payment fields
+        payment_fields = set()
+        for payments in grouped_payments.values():
+            if payments and isinstance(payments, list):
+                for payment in payments:
+                    payment_fields.update(payment.keys())
+
+        # Build final result with all payment fields set to None
+        final_result = []
+        for key, payments in grouped_payments.items():
+            # Include name, children, and all payment fields
+            base_fields = {field: None for field in payment_fields}
+            base_fields["name"] = key
+            base_fields["children"] = payments
+            final_result.append(base_fields)
 
         return PaginatedPaymentResponseForAgency(
             payments = payments,

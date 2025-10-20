@@ -81,7 +81,14 @@ class OverallSummarySchema(BaseModel):
 
 class GroupedPayment(BaseModel):
     name: Optional[str] = None
-    children: Optional[List[PaymentResponseSchema]] = None  # Forward reference
+    id: Optional[int] = None
+    tracking_id: Optional[str] = None
+    group_leader: Optional[str] = None
+    category: Optional[str] = None
+    amount: Optional[float] = None
+    created_at: Optional[str] = None
+    bank_info_id: Optional[int] = None
+    children: Optional[List[PaymentResponseSchema]] = None
 
 class PaginatedPaymentResponseForAgency(BaseModel):
     grouped_payments: Optional[List[GroupedPayment]] = None

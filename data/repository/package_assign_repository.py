@@ -130,7 +130,7 @@ async def update_assigned_package(
 
 
         result = await db.execute(stmt)
-        await pilgrim_payment_repository.create_payable_for_pilgrim(db, payable_create_schema, agency_name, None)
+        await pilgrim_payment_repository.create_payable_for_pilgrim(db, payable_create_schema, agency_name)
         await db.commit()
         updated_pilgrim = result.scalar_one_or_none()
         if not updated_pilgrim:
