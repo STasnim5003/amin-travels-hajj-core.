@@ -3,6 +3,7 @@ from pydoc import describe
 
 from fastapi import HTTPException
 from sqlalchemy import select, update, case, insert
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.package_model import PackageModel
@@ -114,12 +115,13 @@ async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_na
         raise HTTPException(status_code=500, detail=str(e))
 
 async def update_assigned_package(
-        db: AsyncSession,
-        request_dict: dict,
-        payable_create_schema: PaymentSchema,
-        agency_name : str
+    db: AsyncSession,
+    request_dict: dict,
+    payable_create_schema: PaymentSchema,
+    agency_name: str
 ):
     try:
+        # Step 1: Update pilgrim and return the updated record
         stmt = (
             update(PilgrimDataModel)
             .where(PilgrimDataModel.tracking_id == request_dict["tracking_id"])
@@ -127,18 +129,36 @@ async def update_assigned_package(
             .returning(PilgrimDataModel)
         )
 
-
-
         result = await db.execute(stmt)
-
-        await db.commit()
         updated_pilgrim = result.scalar_one_or_none()
+
         if not updated_pilgrim:
-            raise HTTPException(status_code=400, detail="Pilgrim not found for update")
+            await db.rollback()
+            raise HTTPException(status_code=404, detail="Pilgrim not found for update")
+
+        # Step 2: Prepare payment data and insert new record
+        payable_create_schema_dict = payable_create_schema.model_dump()
+        payable_create_schema_dict.update({
+            "created_by": agency_name,
+            "updated_by": agency_name
+        })
+
+        await db.execute(
+            insert(PaymentModel).values(**payable_create_schema_dict)
+        )
+
+        # Step 3: Commit both operations
+        await db.commit()
 
         return updated_pilgrim
+
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database error: {str(e)}")
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Database Error")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
 async def get_package_assigned_pilgrims(db:AsyncSession, agency_name:str):
