@@ -65,21 +65,6 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
             tracking_id=request.tracking_id
         )
 
-        # if pilgrim.payment_against != "INDIVIDUAL":
-        #     group_leader_code = pilgrim.group_leader
-        #     group_leader = await admin_user_repository.get_admin_user_by_code(db, group_leader_code)
-        #
-        #     group_leader_prev_payable = group_leader.total_payable
-        #     group_leader_total_payment = group_leader.total_payment
-        #
-        #     group_leader_new_payable = group_leader_prev_payable + request.total_payable
-        #     group_leader_new_due = max(group_leader_new_payable - group_leader_total_payment, 0)
-        #     group_leader_new_available = max(group_leader_total_payment - group_leader_new_payable, 0)
-        #
-        #     group_leader_payable_create_schema = PaymentSchema(
-        #
-        #     )
-
         return await package_assign_repository.update_assigned_package(db, filtered_data, payable_create_schema,
                                                                        agency_name)
 
