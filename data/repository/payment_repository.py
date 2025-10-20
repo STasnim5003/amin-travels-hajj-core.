@@ -249,8 +249,9 @@ async def get_payment_summary_for_agency(
 
         query = text("""
             WITH filtered AS (
-                SELECT *
+                SELECT p.*, b
                 FROM core.payment p
+                LEFT JOIN core.bank_info b ON p.bank_info_id = b.id
                 WHERE p.created_by = :agency_name
                   AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
                   AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
@@ -266,7 +267,7 @@ async def get_payment_summary_for_agency(
                             'category', f.category,
                             'amount', f.amount,
                             'created_at', f.created_at,
-                            'bank_info_id', f.bank_info_id
+                            'bank_info', to_jsonb(f.b)
                         ) ORDER BY f.created_at DESC
                     ) AS payments,
                     CASE WHEN f.group_leader IS NOT NULL THEN 1 ELSE 2 END AS sort_order
