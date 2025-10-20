@@ -1,3 +1,5 @@
+import random
+import string
 from datetime import datetime
 from pydoc import describe
 
@@ -244,6 +246,7 @@ async def assign_package_for_multiple_pilgrim(db:AsyncSession, request:PackageAs
                 "date": datetime.today().strftime("%Y-%m-%d"),
                 "amount": request.total_payable,
                 "tracking_id": tracking_id,
+                "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
                 "created_by": agency_name,
                 "updated_by": agency_name,
             }
