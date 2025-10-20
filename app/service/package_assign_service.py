@@ -54,7 +54,8 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
             "total_available_amount": max(0, prev_total_payment - new_total_payable),
             "total_due": max(0, new_total_payable - prev_total_payment),
             "actual_payable": new_total_payable - discount,
-            "updated_by": agency_name
+            "updated_by": agency_name,
+            "add_ons_services" : request.add_ons_services
         })
 
         payable_create_schema = PaymentSchema(
