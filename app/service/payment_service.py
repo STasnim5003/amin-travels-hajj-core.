@@ -191,14 +191,12 @@ async def get_agency_payments(
         else:
             grouped_payments = {}
 
-        # Collect all possible payment fields dynamically
         payment_fields = set()
         for payments in grouped_payments.values():
             if payments and isinstance(payments, list):
                 for payment in payments:
                     payment_fields.update(payment.keys())
 
-        # Build final structured list
         final_result = []
         for key, payments in grouped_payments.items():
             base_fields = {field: None for field in payment_fields}

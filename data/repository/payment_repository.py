@@ -266,6 +266,8 @@ async def get_payment_summary_for_agency(
                             'group_leader', f.group_leader,
                             'category', f.category,
                             'amount', f.amount,
+                            'way_of_payment', f.way_of_payment,
+                            'transaction_id', f.transaction_id,
                             'created_at', f.created_at,
                             'bank_info', to_jsonb(f.b)
                         ) ORDER BY f.created_at DESC
