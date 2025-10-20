@@ -190,6 +190,14 @@ async def get_agency_payments(
             else:
                 grouped_payments = another_response
 
+        final_result = [
+            {
+                "name": key,
+                "children": payments
+            }
+            for key, payments in grouped_payments.items()
+        ]
+
         return PaginatedPaymentResponseForAgency(
             payments = payments,
             page = page,
@@ -197,7 +205,7 @@ async def get_agency_payments(
             total=total,
             bank_summary=bank_summary,
             overall_summary=overall_summary,
-            grouped_payments=grouped_payments
+            grouped_payments=final_result
         )
 
 

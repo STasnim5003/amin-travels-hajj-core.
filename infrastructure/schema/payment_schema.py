@@ -79,8 +79,12 @@ class OverallSummarySchema(BaseModel):
         from_attributes = True
 
 
+class GroupedPayment(BaseModel):
+    name: Optional[str] = None
+    children: Optional[List[PaymentResponseSchema]] = None  # Forward reference
+
 class PaginatedPaymentResponseForAgency(BaseModel):
-    grouped_payments: Optional[Dict[str, List[PaymentResponseSchema]]] = None
+    grouped_payments: Optional[List[GroupedPayment]] = None
     payments: Optional[List[PaymentResponseSchema]] = None
     page: int
     size: int
