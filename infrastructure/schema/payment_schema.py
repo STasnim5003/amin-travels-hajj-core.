@@ -88,6 +88,11 @@ class GroupedPayment(BaseModel):
     amount: Optional[float] = None
     created_at: Optional[str] = None
     bank_info_id: Optional[int] = None
+    way_of_payment: Optional[str] = None
+    transfer_no: Optional[str] = None
+    pilgrims_tracking_id: Optional[List[str]] = None
+    transaction_id: Optional[str] = None
+
     children: Optional[List[PaymentResponseSchema]] = None
 
 class PaginatedPaymentResponseForAgency(BaseModel):
