@@ -170,91 +170,161 @@ async def get_payment_summary_for_agency(
 
         seven_days_ago = (now - timedelta(days=7)).replace(tzinfo=None)
 
+        # query = text("""
+        #     WITH payment_data AS (
+        #         SELECT
+        #             p.*,
+        #             b.name AS bank_name,
+        #             b.branch AS bank_branch,
+        #             b.account_no AS bank_account
+        #         FROM core.payment p
+        #         LEFT JOIN core.bank_info b ON p.bank_info_id = b.id
+        #         WHERE p.created_by = :agency_name
+        #           AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
+        #           AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
+        #     ),
+        #     total_count AS (
+        #         SELECT COUNT(*) AS count
+        #         FROM payment_data
+        #     ),
+        #     paginated_payments AS (
+        #         SELECT *
+        #         FROM payment_data
+        #         ORDER BY created_at DESC
+        #         OFFSET :offset LIMIT :size
+        #     ),
+        #     bank_summary AS (
+        #         SELECT
+        #             bank_info_id,
+        #             bank_name,
+        #             bank_branch,
+        #             bank_account,
+        #             SUM(amount) AS total_payment
+        #         FROM payment_data
+        #         WHERE bank_info_id IS NOT NULL AND category = 'Payment'
+        #         GROUP BY bank_info_id, bank_name, bank_branch, bank_account
+        #     ),
+        #     summary AS (
+        #         SELECT
+        #             COALESCE(SUM(amount) FILTER (WHERE category = 'Payment'), 0) AS total_payment,
+        #             COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :seven_days_ago), 0) AS last_7_days_payment,
+        #             COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :today_start AND created_at < :today_end), 0) AS today_payment,
+        #             COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :yesterday_start AND created_at < :yesterday_end), 0) AS yesterday_payment
+        #         FROM payment_data
+        #     )
+        #     SELECT json_build_object(
+        #         'payments', COALESCE((SELECT json_agg(row_to_json(p)) FROM paginated_payments p), '[]'::json),
+        #         'total_count', (SELECT count FROM total_count),
+        #         'bank_summary', COALESCE((
+        #             SELECT json_agg(
+        #                 json_build_object(
+        #                     'bank_info_id', bank_info_id,
+        #                     'bank_name', bank_name,
+        #                     'bank_branch', bank_branch,
+        #                     'bank_account', bank_account,
+        #                     'total_payment', total_payment
+        #                 )
+        #             )
+        #             FROM bank_summary
+        #         ), '[]'::json),
+        #         'overall_summary', COALESCE((SELECT row_to_json(s) FROM summary s), '{}'::json)
+        #     ) AS result;
+        # """)
+        #
+        # params = {
+        #     "agency_name": agency_name,
+        #     "group_leader": group_leader,
+        #     "tracking_id": tracking_id,
+        #     "seven_days_ago": seven_days_ago,
+        #     "today_start": today_start,
+        #     "today_end": today_end,
+        #     "yesterday_start": yesterday_start,
+        #     "yesterday_end": yesterday_end,
+        #     "offset": offset,
+        #     "size": size
+        # }
+        #
+        # result = await db.execute(query, params)
+        # row = result.fetchone()
+        #
+        # query = text("""
+        #     WITH filtered AS (
+        #         SELECT p.*, b
+        #         FROM core.payment p
+        #         LEFT JOIN core.bank_info b ON p.bank_info_id = b.id
+        #         WHERE p.created_by = :agency_name
+        #           AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
+        #           AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
+        #     ),
+        #     grouped AS (
+        #         SELECT
+        #             COALESCE(f.group_leader, f.tracking_id) AS key,
+        #             json_agg(
+        #                 json_build_object(
+        #                     'id', f.id,
+        #                     'tracking_id', f.tracking_id,
+        #                     'group_leader', f.group_leader,
+        #                     'category', f.category,
+        #                     'amount', f.amount,
+        #                     'way_of_payment', f.way_of_payment,
+        #                     'transaction_id', f.transaction_id,
+        #                     'created_at', f.created_at,
+        #                     'bank_info', to_jsonb(f.b)
+        #                 ) ORDER BY f.created_at DESC
+        #             ) AS payments,
+        #             CASE WHEN f.group_leader IS NOT NULL THEN 1 ELSE 2 END AS sort_order
+        #         FROM filtered f
+        #         GROUP BY sort_order, COALESCE(f.group_leader, f.tracking_id)
+        #     ),
+        #     ordered AS (
+        #         SELECT key, payments
+        #         FROM grouped
+        #         ORDER BY sort_order, key
+        #         OFFSET :offset LIMIT :size
+        #     )
+        #     SELECT json_object_agg(key, payments) AS result
+        #     FROM ordered;
+        # """)
+        #
+        # params = {
+        #     "agency_name": agency_name,
+        #     "group_leader": group_leader or None,
+        #     "tracking_id": tracking_id or None,
+        #     "offset": offset,
+        #     "size": size,
+        # }
+        #
+        # response = await db.execute(query, params)
+        # another_row = response.fetchone()
+
         query = text("""
-            WITH payment_data AS (
+            WITH filtered AS (
                 SELECT 
                     p.*,
                     b.name AS bank_name,
                     b.branch AS bank_branch,
-                    b.account_no AS bank_account
+                    b.account_no AS bank_account,
+                    CASE 
+                        WHEN p.group_leader IS NOT NULL THEN au.name
+                        ELSE pd.name_en
+                    END AS name,
+                    CASE 
+                        WHEN p.group_leader IS NOT NULL THEN au.mobile_no
+                        ELSE pd.mobile_no
+                    END AS mobile_no
                 FROM core.payment p
-                LEFT JOIN core.bank_info b ON p.bank_info_id = b.id
+                LEFT JOIN core.bank_info b 
+                    ON p.bank_info_id = b.id
+                LEFT JOIN core.admin_user au 
+                    ON p.group_leader = au.code
+                LEFT JOIN core.pilgrim_data pd 
+                    ON p.tracking_id = pd.tracking_id
                 WHERE p.created_by = :agency_name
                   AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
                   AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
             ),
             total_count AS (
-                SELECT COUNT(*) AS count
-                FROM payment_data
-            ),
-            paginated_payments AS (
-                SELECT *
-                FROM payment_data
-                ORDER BY created_at DESC
-                OFFSET :offset LIMIT :size
-            ),
-            bank_summary AS (
-                SELECT
-                    bank_info_id,
-                    bank_name,
-                    bank_branch,
-                    bank_account,
-                    SUM(amount) AS total_payment
-                FROM payment_data
-                WHERE bank_info_id IS NOT NULL AND category = 'Payment'
-                GROUP BY bank_info_id, bank_name, bank_branch, bank_account
-            ),
-            summary AS (
-                SELECT
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment'), 0) AS total_payment,
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :seven_days_ago), 0) AS last_7_days_payment,
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :today_start AND created_at < :today_end), 0) AS today_payment,
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :yesterday_start AND created_at < :yesterday_end), 0) AS yesterday_payment
-                FROM payment_data
-            )
-            SELECT json_build_object(
-                'payments', COALESCE((SELECT json_agg(row_to_json(p)) FROM paginated_payments p), '[]'::json),
-                'total_count', (SELECT count FROM total_count),
-                'bank_summary', COALESCE((
-                    SELECT json_agg(
-                        json_build_object(
-                            'bank_info_id', bank_info_id,
-                            'bank_name', bank_name,
-                            'bank_branch', bank_branch,
-                            'bank_account', bank_account,
-                            'total_payment', total_payment
-                        )
-                    )
-                    FROM bank_summary
-                ), '[]'::json),
-                'overall_summary', COALESCE((SELECT row_to_json(s) FROM summary s), '{}'::json)
-            ) AS result;
-        """)
-
-        params = {
-            "agency_name": agency_name,
-            "group_leader": group_leader,
-            "tracking_id": tracking_id,
-            "seven_days_ago": seven_days_ago,
-            "today_start": today_start,
-            "today_end": today_end,
-            "yesterday_start": yesterday_start,
-            "yesterday_end": yesterday_end,
-            "offset": offset,
-            "size": size
-        }
-
-        result = await db.execute(query, params)
-        row = result.fetchone()
-
-        query = text("""
-            WITH filtered AS (
-                SELECT p.*, b
-                FROM core.payment p
-                LEFT JOIN core.bank_info b ON p.bank_info_id = b.id
-                WHERE p.created_by = :agency_name
-                  AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
-                  AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
+                SELECT COUNT(*) AS count FROM filtered
             ),
             grouped AS (
                 SELECT
@@ -269,7 +339,14 @@ async def get_payment_summary_for_agency(
                             'way_of_payment', f.way_of_payment,
                             'transaction_id', f.transaction_id,
                             'created_at', f.created_at,
-                            'bank_info', to_jsonb(f.b)
+                            'username', f.name,
+                            'mobile_no', f.mobile_no,
+                            'bank_info', json_build_object(
+                                'bank_info_id', f.bank_info_id,
+                                'bank_name', f.bank_name,
+                                'bank_branch', f.bank_branch,
+                                'bank_account', f.bank_account
+                            )
                         ) ORDER BY f.created_at DESC
                     ) AS payments,
                     CASE WHEN f.group_leader IS NOT NULL THEN 1 ELSE 2 END AS sort_order
@@ -281,27 +358,65 @@ async def get_payment_summary_for_agency(
                 FROM grouped
                 ORDER BY sort_order, key
                 OFFSET :offset LIMIT :size
+            ),
+            bank_summary AS (
+                SELECT
+                    bank_info_id,
+                    bank_name,
+                    bank_branch,
+                    bank_account,
+                    SUM(amount) AS total_payment
+                FROM filtered
+                WHERE bank_info_id IS NOT NULL AND category = 'Payment'
+                GROUP BY bank_info_id, bank_name, bank_branch, bank_account
+            ),
+            summary AS (
+                SELECT
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment'), 0) AS total_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :seven_days_ago), 0) AS last_7_days_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :today_start AND created_at < :today_end), 0) AS today_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :yesterday_start AND created_at < :yesterday_end), 0) AS yesterday_payment
+                FROM filtered
             )
-            SELECT json_object_agg(key, payments) AS result
-            FROM ordered;
+            SELECT json_build_object(
+                'grouped_payments', COALESCE((SELECT json_object_agg(key, payments) FROM ordered), '{}'::json),
+                'total_count', (SELECT count FROM total_count),
+                'bank_summary', COALESCE((
+                    SELECT json_agg(
+                        json_build_object(
+                            'bank_info_id', bank_info_id,
+                            'bank_name', bank_name,
+                            'bank_branch', bank_branch,
+                            'bank_account', bank_account,
+                            'total_payment', total_payment
+                        )
+                    ) FROM bank_summary
+                ), '[]'::json),
+                'overall_summary', COALESCE((SELECT row_to_json(s) FROM summary s), '{}'::json)
+            ) AS result;
         """)
 
         params = {
             "agency_name": agency_name,
             "group_leader": group_leader or None,
             "tracking_id": tracking_id or None,
+            "seven_days_ago": seven_days_ago,
+            "today_start": today_start,
+            "today_end": today_end,
+            "yesterday_start": yesterday_start,
+            "yesterday_end": yesterday_end,
             "offset": offset,
             "size": size,
         }
 
-        response = await db.execute(query, params)
-        another_row = response.fetchone()
+        result = await db.execute(query, params)
+        row = result.fetchone()
 
-        if row and row[0] and another_row and another_row[0]:
-            return row[0], another_row[0]
+        if row and row[0]:
+            return row[0]
         else:
             return {
-                "payments": [],
+                "grouped_payments": [],
                 "total_count": 0,
                 "bank_summary": [],
                 "overall_summary": {

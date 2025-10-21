@@ -30,7 +30,7 @@ class PaymentResponseSchema(PaymentSchema):
     pilgrims_tracking_id: Optional[List[str]] = None
     way_of_payment : Optional[str] = None
     transfer_no : Optional[str] = None
-    bank_info: Optional[BankInfoBaseSchema] = None
+    bank_info: Optional[Dict[str, Any]] = None
 
 
 
@@ -94,11 +94,13 @@ class GroupedPayment(BaseModel):
     transfer_no: Optional[str] = None
     pilgrims_tracking_id: Optional[List[str]] = None
     transaction_id: Optional[str] = None
+    mobile_no : Optional[str] = None
+    username: Optional[str] = None
     children: Optional[List[PaymentResponseSchema]] = None
 
 class PaginatedPaymentResponseForAgency(BaseModel):
     grouped_payments: Optional[List[GroupedPayment]] = None
-    payments: Optional[List[PaymentResponseSchema]] = None
+    # payments: Optional[List[PaymentResponseSchema]] = None
     page: int
     size: int
     total: int

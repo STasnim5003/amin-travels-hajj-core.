@@ -152,12 +152,12 @@ async def get_agency_payments(
         size: int
 ):
     try:
-        result, another_response = await payment_repository.get_payment_summary_for_agency(
+        result = await payment_repository.get_payment_summary_for_agency(
             db, agency_name, page, size, group_leader, tracking_id
         )
 
         # Extract data from result
-        payments = result.get("payments", [])
+        grouped_payments = result.get("grouped_payments", {}) or {}
         total = result.get("total_count", 0)  # Get actual total count
         bank_summary_data = result.get("bank_summary", [])
         overall_summary_data = result.get("overall_summary", {})
@@ -183,14 +183,6 @@ async def get_agency_payments(
             yesterday_payment=overall_summary_data.get("yesterday_payment"),
         )
 
-        if another_response:
-            if isinstance(another_response, str):
-                grouped_payments = json.loads(another_response)
-            else:
-                grouped_payments = another_response
-        else:
-            grouped_payments = {}
-
         payment_fields = set()
         for payments in grouped_payments.values():
             if payments and isinstance(payments, list):
@@ -199,14 +191,24 @@ async def get_agency_payments(
 
         final_result = []
         for key, payments in grouped_payments.items():
+            if not payments:
+                continue
+
+            name = payments[0].get("username")
+            mobile_no = payments[0].get("mobile_no")
+
             base_fields = {field: None for field in payment_fields}
-            base_fields["name"] = key
-            base_fields["children"] = payments
+            base_fields.update({
+                "name": key,
+                "username": name,
+                "mobile_no": mobile_no,
+                "children": payments
+            })
+
             final_result.append(base_fields)
 
         # Return paginated response
         return PaginatedPaymentResponseForAgency(
-            payments=payments,
             page=page,
             size=size,
             total=total,
