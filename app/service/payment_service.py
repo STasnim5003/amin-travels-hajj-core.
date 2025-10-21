@@ -144,6 +144,7 @@ async def get_group_leader_payments(
 
 
 async def get_agency_payments(
+        user_type,
         db,
         agency_name: str,
         group_leader: str | None,
@@ -153,7 +154,7 @@ async def get_agency_payments(
 ):
     try:
         result = await payment_repository.get_payment_summary_for_agency(
-            db, agency_name, page, size, group_leader, tracking_id
+            user_type, db, agency_name, page, size, group_leader, tracking_id
         )
 
         # Extract data from result
