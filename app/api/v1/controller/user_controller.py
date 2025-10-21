@@ -96,6 +96,15 @@ async def create_user_login(
     return JSONResponse(content=jsonable_encoder(response))
 
 
+@router.post("/users/refresh", response_model=dict, tags=["users"])
+async def get_access_token_using_refresh(
+        refresh_token: str = Form(...),
+        db: AsyncSession = Depends(get_async_db)
+):
+    response = await user_service.fetch_access_token_using_refresh_token(refresh_token=refresh_token)
+    return JSONResponse(content=jsonable_encoder(response))
+
+
 @private_router.put("/users/{id}/reset-password", response_model=UserResponseSchema, tags=["users"])
 async def update_user_password(
         id: int,

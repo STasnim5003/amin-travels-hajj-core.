@@ -9,7 +9,8 @@ from starlette.datastructures import UploadFile
 from app.core.utils import utils
 from data.repository import user_repository, file_repository
 from infrastructure.schema.user_schema import UserBaseSchema, UserResponseSchema
-from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
+from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token, \
+    rotate_tokens
 
 
 async def create_user(user_request_schema: UserBaseSchema, db: AsyncSession, nid:List[UploadFile]) -> UserResponseSchema:
@@ -58,6 +59,12 @@ async def user_login(request_credential: OAuth2PasswordRequestForm, db: AsyncSes
         "access_token": access_token,
         "refresh_token": refresh_token
     }
+
+async def fetch_access_token_using_refresh_token(refresh_token: str):
+    try:
+        return rotate_tokens(refresh_token=refresh_token)
+    except Exception as e:
+        raise e
 
 
 async def update_user_password(id, username, old_password, new_password, db, current_user):
