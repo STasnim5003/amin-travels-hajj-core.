@@ -46,7 +46,7 @@ class AgencyPaymentSchemaForGroupLeader(BaseModel):
 
 
 class PaginatedPaymentResponseForGroupLeader(BaseModel):
-    payments: List[PaymentResponseSchema]
+    grouped_payments: List[PaymentResponseSchema]
     page: int
     size: int
     total: int
