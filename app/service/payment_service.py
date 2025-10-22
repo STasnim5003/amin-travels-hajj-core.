@@ -306,7 +306,7 @@ async def get_payment_by_id(db:AsyncSession, payment_id:int):
             payer_name = group_leader_name
         elif payment.tracking_id:
             pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, payment.tracking_id)
-            payer_name = pilgrim.name if pilgrim else None
+            payer_name = pilgrim.name_en if pilgrim else None
 
         amount_to_words = num_to_words.amount_to_words(payment.amount)
 
