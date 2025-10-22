@@ -83,6 +83,8 @@ class OverallSummarySchema(BaseModel):
 
 class GroupedPayment(BaseModel):
     name: Optional[str] = None
+    username: Optional[str] = None
+    mobile_no: Optional[str] = None
     id: Optional[int] = None
     tracking_id: Optional[str] = None
     group_leader: Optional[str] = None
@@ -94,8 +96,7 @@ class GroupedPayment(BaseModel):
     transfer_no: Optional[str] = None
     pilgrims_tracking_id: Optional[List[str]] = None
     transaction_id: Optional[str] = None
-    mobile_no : Optional[str] = None
-    username: Optional[str] = None
+
     children: Optional[List[PaymentResponseSchema]] = None
 
 class PaginatedPaymentResponseForAgency(BaseModel):
@@ -174,5 +175,6 @@ class ReceiptPrintSchema(BaseModel):
     transfer_no : Optional[str] = None
     bank_name : Optional[str] = None
     bank_branch: Optional[str] = None
+    bank_account_no : Optional[str] = None
     amount_in_words: Optional[str] = None
 

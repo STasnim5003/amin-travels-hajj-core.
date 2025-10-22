@@ -327,6 +327,7 @@ async def get_payment_by_id(db:AsyncSession, payment_id:int):
             transfer_no=getattr(payment, "transfer_no", None),
             bank_name=bank_info.name if bank_info else None,
             bank_branch=bank_info.branch if bank_info else None,
+            bank_account_no=bank_info.account_no if bank_info else None,
             amount_in_words=amount_to_words
         )
 
