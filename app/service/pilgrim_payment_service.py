@@ -117,7 +117,7 @@ async def get_pilgrim_payments(
     ) = await pilgrim_payment_repository.get_payments_by_tracking_id(db, tracking_id, page, size)
 
     return PaginatedPaymentResponseForGroupLeader(
-        payments=payments,
+        grouped_payments=payments,
         page=page,
         size=size,
         total=total,

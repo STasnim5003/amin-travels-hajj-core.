@@ -325,3 +325,9 @@ async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
             status_code=500,
             detail="Unexpected error occurred while fetching pilgrim by ID."
         )
+
+async def get_pilgrims_by_tracking_ids(db, tracking_ids: list[str]):
+    result = await db.execute(
+        select(PilgrimDataModel).where(PilgrimDataModel.tracking_id.in_(tracking_ids))
+    )
+    return result.scalars().all()

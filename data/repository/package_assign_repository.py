@@ -1,13 +1,11 @@
-import random
-import string
 from datetime import datetime
-from pydoc import describe
 
 from fastapi import HTTPException
-from sqlalchemy import select, update, case, insert
+from sqlalchemy import select, update, insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from data.model.admin_user_model import AdminUserModel
 from data.model.package_model import PackageModel
 from data.model.payment_model import PaymentModel
 from data.model.pilgrim_data_model import PilgrimDataModel
@@ -32,6 +30,7 @@ async def get_all_package_names(db: AsyncSession, agency_name: str):
     names = [row[0] for row in result.fetchall()]
     return names
 
+
 async def get_durations_by_package_name(db: AsyncSession, package_name: str, agency_name: str):
     stmt = (
         select(PackageModel.duration)
@@ -50,6 +49,7 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
         raise HTTPException(status_code=404, detail=f"No durations found for {package_name}")
     return durations
 
+
 async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, agency_name: str):
     stmt = (
         select(PackageModel.bed_type)
@@ -67,7 +67,8 @@ async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, age
         raise HTTPException(status_code=404, detail=f"No bed types found for {package_name}")
     return bed_type_json
 
-async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_name:str):
+
+async def assign_package(db: AsyncSession, request: PackageAssignSchema, agency_name: str):
     try:
         pilgrim_result = await db.execute(
             select(PilgrimDataModel).where(PilgrimDataModel.tracking_id == request.tracking_id)
@@ -108,7 +109,7 @@ async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_na
             db, payable_schema, agency_name, None, prev_total_payable, prev_total_payment
         )
 
-        return {"message" : "Successfully Updated"}
+        return {"message": "Successfully Updated"}
 
     except HTTPException:
         raise
@@ -116,11 +117,12 @@ async def assign_package(db:AsyncSession, request:PackageAssignSchema, agency_na
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 async def update_assigned_package(
-    db: AsyncSession,
-    request_dict: dict,
-    payable_create_schema: PaymentSchema,
-    agency_name: str
+        db: AsyncSession,
+        request_dict: dict,
+        payable_create_schema: PaymentSchema,
+        agency_name: str
 ):
     try:
         # Step 1: Update pilgrim and return the updated record
@@ -163,7 +165,7 @@ async def update_assigned_package(
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
-async def get_package_assigned_pilgrims(db:AsyncSession, agency_name:str):
+async def get_package_assigned_pilgrims(db: AsyncSession, agency_name: str):
     try:
         stmt = (
             select(PilgrimDataModel)
@@ -175,56 +177,15 @@ async def get_package_assigned_pilgrims(db:AsyncSession, agency_name:str):
         await db.rollback()
         raise HTTPException(status_code=400, detail="Database Error")
 
-async def assign_package_for_multiple_pilgrim(db:AsyncSession, request:PackageAssignForMultiplePilgrimSchema, agency_name:str):
-    try:
 
-        # Find each pilgrim and associated agency name
-        pilgrims_result = await db.execute(
-            select(PilgrimDataModel).where(PilgrimDataModel.tracking_id.in_(request.tracking_ids))
-        )
-        pilgrims = pilgrims_result.scalars().all()
-
-        if not pilgrims:
-            raise HTTPException(status_code=400, detail="No pilgrims found for the given tracking IDs")
-
-        for pilgrim in pilgrims:
-            if pilgrim.group_name != agency_name:
-                raise HTTPException(status_code=403, detail=f"Agency name mismatched for {pilgrim.tracking_id}")
-
-        case_total_payable = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                pilgrim.total_payable + (request.total_payable or 0)
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_payable
-        )
-
-        case_total_due = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                max(0, (pilgrim.total_payable + (request.total_payable or 0)) - (pilgrim.total_payment or 0))
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_due
-        )
-
-        case_total_available = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                max(0, (pilgrim.total_payment or 0) - (pilgrim.total_payable + (request.total_payable or 0)))
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_available_amount
-        )
-
-        case_actual_payable = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                (pilgrim.total_payable + (request.total_payable or 0) - request.package_price_discount)
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_payable
-        )
+async def save_pilgrims_package_finance_info(
+        db, tracking_ids, case_total_payable, case_total_due, case_total_available, case_actual_payable, request,
+        agency_name
+):
+    if tracking_ids:
         await db.execute(
             update(PilgrimDataModel)
-            .where(PilgrimDataModel.tracking_id.in_(request.tracking_ids))
+            .where(PilgrimDataModel.tracking_id.in_(tracking_ids))
             .values(
                 package_name=request.package_name,
                 package_duration=request.package_duration,
@@ -236,34 +197,47 @@ async def assign_package_for_multiple_pilgrim(db:AsyncSession, request:PackageAs
                 total_due=case_total_due,
                 total_available_amount=case_total_available,
                 actual_payable=case_actual_payable,
-                package_price_discount= request.package_price_discount
+                package_price_discount=request.package_price_discount
             )
         )
 
-        payments_data = [
-            {
-                "description": "Package Assignment",
-                "date": datetime.today().strftime("%Y-%m-%d"),
-                "amount": request.total_payable,
-                "tracking_id": tracking_id,
-                "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
-                "created_by": agency_name,
-                "updated_by": agency_name,
-            }
-            for tracking_id in request.tracking_ids
-        ]
+async def save_pilgrim_package_info(
+        db, request, pilgrim_with_group_leader_tracking_ids, agency_name
+):
+    await db.execute(
+        update(PilgrimDataModel)
+        .where(PilgrimDataModel.tracking_id.in_(pilgrim_with_group_leader_tracking_ids))
+        .values(
+            package_name=request.package_name,
+            package_duration=request.package_duration,
+            package_bed_types=request.package_bed_types,
+            add_ons_services=request.add_ons_services,
+            is_package_assigned=True,
+            updated_by=agency_name
+        )
+    )
 
-        # Bulk insert
-        stmt = insert(PaymentModel).values(payments_data)
-        await db.execute(stmt)
+async def update_group_leaders_finance(
+    db, group_leader_codes, case_total_payable, case_total_due, case_total_available,agency_name
+):
+    if group_leader_codes:
+        await db.execute(
+            update(AdminUserModel)
+            .where(AdminUserModel.code.in_(group_leader_codes))
+            .values(
+                total_payable=case_total_payable,
+                total_due=case_total_due,
+                total_available_amount=case_total_available,
+                updated_by=agency_name,
+            )
+        )
 
-        await db.commit()
-        return {"message" : "Package assigned and billing updated successfully"}
 
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Error in package assignment")
+async def insert_bulk_payments(db, pilgrim_payments_data, group_leader_payments_data):
+    if pilgrim_payments_data:
+        await db.execute(insert(PaymentModel).values(pilgrim_payments_data))
+    if group_leader_payments_data:
+        await db.execute(insert(PaymentModel).values(group_leader_payments_data))
 
-
-
-
+async def commit_transaction(db):
+    await db.commit()

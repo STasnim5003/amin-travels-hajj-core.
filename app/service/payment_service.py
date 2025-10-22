@@ -67,7 +67,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
 
 
 async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaymentBaseSchema, agency_name: str):
-    if request.amount < 0:
+    if request.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
     try:
@@ -132,7 +132,7 @@ async def get_group_leader_payments(
     ) = await payment_repository.get_payments_by_group_leader(db, group_leader, category, page, size)
 
     return PaginatedPaymentResponseForGroupLeader(
-        payments=payments,
+        grouped_payments=payments,
         page=page,
         size=size,
         total=total,
