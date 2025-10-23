@@ -12,10 +12,15 @@ class BankInfoBaseSchema(BaseModel):
 class BankInfoResponseSchema(BankInfoBaseSchema):
     id : int
     agency_name : Optional[str] = None
+    is_active: Optional[bool] = None
     created_at : Optional[datetime] = None
     updated_at : Optional[datetime] = None
     created_by : Optional[str] = None
     updated_by : Optional[str] = None
+
+
+    class Config:
+        from_attributes = True
 
 class BankInfoUpdateSchema(BaseModel):
     id : int

@@ -4,14 +4,19 @@ from datetime import datetime
 
 
 class RouteBaseSchema(BaseModel):
-    description: str
-    is_publish: Optional[bool] = False
-    is_active: Optional[bool] = True
     route_name: str
+    description: str
+    is_active: Optional[bool] = True
+    is_publish: Optional[bool] = False
 
 
-class RouteCreateSchema(RouteBaseSchema):
+
+class RouteCreateSchema(BaseModel):
+    route_name: str
+    description: str
     agency_name: Optional[str] = None
+    is_active: Optional[bool] = True
+    is_publish: Optional[bool] = False
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
 

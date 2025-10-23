@@ -12,13 +12,17 @@ class ZiaraCreateSchema(ZiaraBaseSchema):
     updated_by: Optional[str] = None
 
 
-class ZiaraUpdateSchema(ZiaraBaseSchema):
-    updated_by: Optional[str] = None
+class ZiaraUpdateSchema(BaseModel):
+    id:int
+    description: Optional[str] = None
+    is_active: Optional[bool] = True
 
 
-class ZiaraResponseSchema(ZiaraBaseSchema):
+class ZiaraResponseSchema(BaseModel):
     id: int
+    description: Optional[str] = None
     agency_name: Optional[str] = None
+    is_active: Optional[bool] = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
