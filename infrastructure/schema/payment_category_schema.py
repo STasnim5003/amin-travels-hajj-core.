@@ -13,3 +13,7 @@ class PaymentCategoryResponse(PaymentCategoryBase):
     created_by: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+class PaymentCategoryUpdateSchema(BaseModel):
+    id: int
+    name: Optional[str] = None
