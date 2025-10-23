@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.middleware.middleware import get_current_user
 from app.service import ziara_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.ziara_schema import ZiaraResponseSchema, ZiaraCreateSchema, ZiaraBaseSchema
+from infrastructure.schema.ziara_schema import ZiaraResponseSchema, ZiaraCreateSchema, ZiaraBaseSchema, \
+    ZiaraUpdateSchema
 
 ziara_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -42,3 +43,26 @@ async def get_all_ziaras(
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await ziara_service.get_all_ziaras_service(db, agency_name)
+
+@ziara_router.put("/ziara", response_model=ZiaraResponseSchema, tags=["Ziara"])
+async def update_ziara(
+        update_request: ZiaraUpdateSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user),
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=400, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await ziara_service.update_ziara(db, update_request, agency_name)
+
+@ziara_router.delete("/ziara/{ziara_id}", tags=["Ziara"])
+async def delete_ziara(
+        ziara_id:int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user),
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=400, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+
+    return await ziara_service.delete_ziara(db, ziara_id, agency_name)

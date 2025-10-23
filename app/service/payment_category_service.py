@@ -2,7 +2,8 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import payment_category_repository
-from infrastructure.schema.payment_category_schema import PaymentCategoryBase, PaymentCategoryUpdateSchema
+from infrastructure.schema.payment_category_schema import PaymentCategoryBase, PaymentCategoryUpdateSchema, \
+    PaymentCategoryResponse
 
 
 async def create_payment_category(
@@ -21,7 +22,8 @@ async def create_payment_category(
 
 async def get_payment_category(db:AsyncSession,agency_name:str):
     try:
-        return await payment_category_repository.get_payment_categories(db, agency_name)
+        payment_categories = await payment_category_repository.get_payment_categories(db, agency_name)
+        return [PaymentCategoryResponse.model_validate(category) for category in payment_categories]
     except Exception as e:
         raise e
 
@@ -41,7 +43,7 @@ async def update_payment_category(db:AsyncSession, update_request: PaymentCatego
             raise HTTPException(status_code=400, detail='Payment category not found')
 
         updated_payment_category = await payment_category_repository.update_payment_category(db=db, update_request=update_request, agency_name=agency_name)
-        return updated_payment_category
+        return PaymentCategoryResponse.model_validate(updated_payment_category)
     except Exception as e:
         raise e
 
@@ -52,6 +54,8 @@ async def delete_payment_category(db:AsyncSession, payment_category_id:int, agen
             raise HTTPException(status_code=400, detail='Payment category not found')
         await payment_category_repository.delete_payment_category(db=db, payment_category_id=payment_category_id)
 
-        return await payment_category_repository.get_payment_categories(db, agency_name)
+        payment_categories = await payment_category_repository.get_payment_categories(db, agency_name)
+        return [PaymentCategoryResponse.model_validate(category) for category in payment_categories]
+
     except Exception as e:
         raise e

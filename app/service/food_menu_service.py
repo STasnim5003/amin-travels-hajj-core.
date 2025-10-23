@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from data.repository import food_menu_repository
-from infrastructure.schema.food_menu_schema import FoodMenuCreateSchema, FoodMenuUpdateSchema
+from infrastructure.schema.food_menu_schema import FoodMenuCreateSchema, FoodMenuUpdateSchema, FoodMenuResponseSchema
 
 
 async def create_food_menu(db: AsyncSession, food_menu: FoodMenuCreateSchema):
@@ -13,11 +13,13 @@ async def create_food_menu(db: AsyncSession, food_menu: FoodMenuCreateSchema):
         raise
 
 async def get_food_menus(db: AsyncSession, agency_name : str):
-    return await food_menu_repository.get_all_food_menu(db, agency_name)
+    food_menus = await food_menu_repository.get_all_food_menu(db, agency_name)
+    return [FoodMenuResponseSchema.model_validate(food_menu) for food_menu in food_menus]
 
 async def get_food_menu_by_id(db: AsyncSession, food_menu_id : int, agency_name : str):
     try:
-        return await food_menu_repository.get_food_menu_by_id(db, food_menu_id, agency_name)
+        food_menu = await food_menu_repository.get_food_menu_by_id(db, food_menu_id, agency_name)
+        return FoodMenuResponseSchema.model_validate(food_menu)
     except Exception as e:
         raise
 
@@ -31,7 +33,7 @@ async def update_food_menu(db:AsyncSession, update_request: FoodMenuUpdateSchema
         updated_food_menu = await food_menu_repository.update_food_menu(db, update_request_dict)
         if not updated_food_menu:
             raise HTTPException(status_code=400, detail="Food Menu update failed")
-        return updated_food_menu
+        return FoodMenuResponseSchema.model_validate(updated_food_menu)
     except Exception as e:
         raise e
 
@@ -44,7 +46,7 @@ async def delete_food_menu(db:AsyncSession, food_menu_id:int, agency_name:str):
 
         await food_menu_repository.delete_food_menu(db, food_menu_id)
         result = await food_menu_repository.get_all_food_menu(db, agency_name)
-        return result
+        return [FoodMenuResponseSchema.model_validate(food) for food in result]
     except Exception as e:
         raise e
 

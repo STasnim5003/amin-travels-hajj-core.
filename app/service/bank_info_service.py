@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from data.repository import bank_info_repository
-from infrastructure.schema.bank_info_schema import BankInfoBaseSchema, BankInfoUpdateSchema
+from infrastructure.schema.bank_info_schema import BankInfoBaseSchema, BankInfoUpdateSchema, BankInfoResponseSchema
 
 
 async def create_bank_info(
@@ -25,7 +25,8 @@ async def get_bank_info(
         db:AsyncSession, agency_name : str
 ):
     try:
-        return await bank_info_repository.get_bank_info(db, agency_name)
+        banks = await bank_info_repository.get_bank_info(db, agency_name)
+        return [BankInfoResponseSchema.model_validate(result) for result in banks]
     except Exception as e:
         raise e
 
@@ -38,7 +39,7 @@ async def update_bank_info(
             raise HTTPException(status_code=400, detail="Bank Not Found")
 
         updated_bank = await bank_info_repository.update_bank_info(db, update_request)
-        return updated_bank
+        return BankInfoResponseSchema.model_validate(updated_bank)
     except Exception as e:
         raise e
 
@@ -51,7 +52,7 @@ async def delete_bank_info(db:AsyncSession, bank_id : int, agency_name : str):
         result = await bank_info_repository.delete_bank_info(db=db, bank_id=bank_id)
         if result:
             banks = await bank_info_repository.get_bank_info(db=db, agency_name=agency_name)
-            return banks
+            return [BankInfoResponseSchema.model_validate(bank) for bank in banks]
 
     except Exception as e:
         raise e
@@ -61,7 +62,7 @@ async def get_bank_info_by_id(db:AsyncSession, bank_id:int, agency_name : str):
         bank = await bank_info_repository.get_bank_info_by_id(db=db, bank_id=bank_id)
         if not bank or bank.agency_name != agency_name:
             raise HTTPException(status_code=400, detail="Bank Not Found")
-        return bank
+        return BankInfoResponseSchema.model_validate(bank)
 
     except Exception as e:
         raise e

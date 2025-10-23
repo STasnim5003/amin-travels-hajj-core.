@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -29,3 +30,32 @@ async def get_ziara_by_id(db: AsyncSession, ziara_id: int, agency_name : str) ->
 async def get_all_ziaras(db: AsyncSession, agency_name: str):
     result = await db.execute(select(ZiaraModel).where(ZiaraModel.agency_name == agency_name))
     return result.scalars().all()
+
+
+async def update_ziara(db:AsyncSession, update_request_dict:dict):
+    try:
+        result = await db.execute(
+            update(ZiaraModel)
+            .where(ZiaraModel.id == update_request_dict.get('id'))
+            .values(**update_request_dict)
+            .returning(ZiaraModel)
+        )
+
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+async def delete_ziara(db:AsyncSession, ziara_id:int):
+    try:
+        await db.execute(
+            delete(ZiaraModel).where(ZiaraModel.id == ziara_id)
+        )
+
+        await db.commit()
+        return True
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
