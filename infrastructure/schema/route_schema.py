@@ -25,3 +25,10 @@ class RouteResponseSchema(RouteBaseSchema):
 
     class Config:
         from_attributes = True
+
+class RouteUpdateSchema(BaseModel):
+    id :int
+    description: Optional[str] = None
+    is_publish: Optional[bool] = True
+    is_active: Optional[bool] = True
+    route_name: Optional[str] = None
