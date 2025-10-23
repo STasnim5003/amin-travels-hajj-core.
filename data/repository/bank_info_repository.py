@@ -1,7 +1,9 @@
-from sqlalchemy import insert, select
+from fastapi import HTTPException
+from sqlalchemy import insert, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.bank_info_model import BankInfoModel
+from infrastructure.schema.bank_info_schema import BankInfoUpdateSchema
 
 
 async def create_bank_info(db:AsyncSession, request: dict):
@@ -31,3 +33,42 @@ async def get_bank_info(
         return result.scalars().all()
     except Exception as e:
         raise e
+
+async def get_bank_info_by_id(db: AsyncSession, bank_id: int):
+    try:
+        result = await db.execute(
+            select(BankInfoModel).where(BankInfoModel.id == bank_id)
+        )
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise HTTPException(status_code = 400, detail= str(e))
+
+async def update_bank_info(db: AsyncSession, update_request:BankInfoUpdateSchema):
+    try:
+        update_request_dict = update_request.model_dump(exclude_unset=True)
+        stmt = (
+            update(BankInfoModel)
+            .where(BankInfoModel.id == update_request.id)
+            .values(**update_request_dict)
+            .returning(BankInfoModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one()
+    except Exception as e:
+        raise HTTPException(status_code = 400, detail= str(e))
+
+
+async def delete_bank_info(db:AsyncSession, bank_id:int):
+    try:
+        stmt = (
+            delete(BankInfoModel)
+            .where(BankInfoModel.id == bank_id)
+        )
+
+        await db.execute(stmt)
+        await db.commit()
+        return True
+    except Exception as e:
+        raise HTTPException(status_code = 400, detail= str(e))
