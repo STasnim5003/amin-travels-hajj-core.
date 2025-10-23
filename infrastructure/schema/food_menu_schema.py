@@ -16,8 +16,14 @@ class FoodMenuCreateSchema(FoodMenuBaseSchema):
     updated_by: Optional[str] = None
 
 
-class FoodMenuUpdateSchema(FoodMenuBaseSchema):
+class FoodMenuUpdateSchema(BaseModel):
+    id: int
     name: Optional[str] = None
+    items: Optional[Dict[str, Any]] = None
+    is_publish: Optional[bool] = True
+    area: Optional[str] = None
+    is_active: Optional[bool] = True
+
 
 
 class FoodMenuResponseSchema(FoodMenuBaseSchema):
@@ -29,3 +35,5 @@ class FoodMenuResponseSchema(FoodMenuBaseSchema):
 
     class Config:
         from_attributes = True
+
+

@@ -17,3 +17,4 @@ class PaymentCategoryResponse(PaymentCategoryBase):
 class PaymentCategoryUpdateSchema(BaseModel):
     id: int
     name: Optional[str] = None
+    is_active: Optional[bool] = True

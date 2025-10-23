@@ -22,3 +22,4 @@ class BankInfoUpdateSchema(BaseModel):
     name: Optional[str] = None
     account_no: Optional[str] = None
     branch : Optional[str] = None
+    is_active: Optional[bool] = True
