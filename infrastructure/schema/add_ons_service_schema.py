@@ -12,8 +12,10 @@ class AddOnsServiceCreate(AddOnsServiceBase):
     pass
 
 
-class AddOnsServiceResponse(AddOnsServiceBase):
+class AddOnsServiceResponse(BaseModel):
     id: int
+    name: Optional[str] = None
+    price: Optional[str] = None
     agency_name: Optional[str] = None
     is_active: bool
     created_at: Optional[datetime] = None
@@ -23,3 +25,9 @@ class AddOnsServiceResponse(AddOnsServiceBase):
 
     class Config:
         from_attributes = True
+
+class AddOnsServiceUpdateSchema(BaseModel):
+    id: int
+    name: Optional[str] = None
+    price: Optional[str] = None
+    is_active: Optional[bool] = True
