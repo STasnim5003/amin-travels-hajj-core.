@@ -1,7 +1,8 @@
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import payment_category_repository
-from infrastructure.schema.payment_category_schema import PaymentCategoryBase
+from infrastructure.schema.payment_category_schema import PaymentCategoryBase, PaymentCategoryUpdateSchema
 
 
 async def create_payment_category(
@@ -12,15 +13,45 @@ async def create_payment_category(
     try:
         request_dict = request.model_dump(exclude_unset=True)
         request_dict['agency_name'] = agency_name
+        request_dict['created_by'] = agency_name
+        request_dict['updated_by'] = agency_name
         return await payment_category_repository.create_payment_category(db, request_dict)
     except Exception as e:
         raise e
 
-async def get_payment_category(
-        db:AsyncSession,
-        agency_name:str
-):
+async def get_payment_category(db:AsyncSession,agency_name:str):
     try:
+        return await payment_category_repository.get_payment_categories(db, agency_name)
+    except Exception as e:
+        raise e
+
+async def get_payment_category_by_id(db: AsyncSession, payment_category_id: int, agency_name: str):
+    try:
+        result = await payment_category_repository.get_payment_category_by_id(db=db, payment_category_id=payment_category_id, agency_name=agency_name)
+        if not result:
+            raise HTTPException(status_code=404, detail='Payment category not found')
+        return result
+    except Exception as e:
+        raise e
+
+async def update_payment_category(db:AsyncSession, update_request: PaymentCategoryUpdateSchema, agency_name : str):
+    try:
+        result = await payment_category_repository.get_payment_category_by_id(db=db, payment_category_id=update_request.id, agency_name=agency_name)
+        if not result:
+            raise HTTPException(status_code=400, detail='Payment category not found')
+
+        updated_payment_category = await payment_category_repository.update_payment_category(db=db, update_request=update_request, agency_name=agency_name)
+        return updated_payment_category
+    except Exception as e:
+        raise e
+
+async def delete_payment_category(db:AsyncSession, payment_category_id:int, agency_name:str):
+    try:
+        payment_category = await payment_category_repository.get_payment_category_by_id(db=db, payment_category_id=payment_category_id, agency_name=agency_name)
+        if not payment_category:
+            raise HTTPException(status_code=400, detail='Payment category not found')
+        await payment_category_repository.delete_payment_category(db=db, payment_category_id=payment_category_id)
+
         return await payment_category_repository.get_payment_categories(db, agency_name)
     except Exception as e:
         raise e
