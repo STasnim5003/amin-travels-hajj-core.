@@ -16,3 +16,9 @@ class BankInfoResponseSchema(BankInfoBaseSchema):
     updated_at : Optional[datetime] = None
     created_by : Optional[str] = None
     updated_by : Optional[str] = None
+
+class BankInfoUpdateSchema(BaseModel):
+    id : int
+    name: Optional[str] = None
+    account_no: Optional[str] = None
+    branch : Optional[str] = None
