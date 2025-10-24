@@ -65,3 +65,7 @@ class AdminProfileUpdateResponseSchema(BaseModel):
 class AssignLeadAgencySchema(BaseModel):
     agency_name: Optional[str] = None
     lead_agency_name: str
+
+class CheckLeadAssignResponseSchema(BaseModel):
+    agency_name: Optional[str] = None
+    lead_agency_name: Optional[str] = None

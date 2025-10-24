@@ -249,3 +249,15 @@ async def get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name
 
     except Exception as e:
         raise e
+
+
+async def check_lead_agency_assignment(db, agency_name):
+    try:
+        result = await db.execute(
+            select(PilgrimDataModel.lead_agency)
+            .where(PilgrimDataModel.group_name == agency_name)
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise e
