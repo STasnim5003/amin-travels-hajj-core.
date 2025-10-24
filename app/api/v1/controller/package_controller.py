@@ -8,7 +8,7 @@ from app.core.middleware.middleware import get_current_user
 from app.service import package_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.package_schema import PackagesResponseSchema, PackageMasterDataForFilterListSchema, \
-    PackageResponseSchema, PackageBaseSchema, PackageUpdateSchema, PackageNameBaseSchema
+    PackageResponseSchema, PackageBaseSchema, PackageUpdateSchema, PackageNameBaseSchema, PackageNameUpdateSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -50,7 +50,7 @@ async def get_packages_endpoint(
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     response = await package_service.get_packages(name=name,
                                                   search=search,
@@ -79,7 +79,7 @@ async def create_package(
         current_user: dict = Depends(get_current_user)
 ) -> PackageResponseSchema:
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
 
     return await package_service.create_package(db, request_body, agency_name)
@@ -99,7 +99,7 @@ async def get_package_by_id_for_agency(
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await package_service.get_package_by_id_for_agency(db, package_id, agency_name)
 
@@ -111,7 +111,7 @@ async def update_package(
         current_user: dict = Depends(get_current_user)
 ) -> PackageResponseSchema:
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await package_service.update_package(db, package_id, request_body, agency_name)
 
@@ -122,7 +122,7 @@ async def create_package_name(
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await package_service.create_package_names(db, request, agency_name)
 
@@ -133,6 +133,39 @@ async def get_package_names(
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await package_service.get_package_names(db, agency_name)
+
+@private_router.get("/package-name/{package_name_id}", tags=["packages"])
+async def get_package_name_by_id(
+        package_name_id:int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+
+    return await package_service.get_package_name_by_id(db, package_name_id, agency_name)
+@private_router.delete("/package-name/{package_name_id}", tags=["packages"])
+async def delete_package_name(
+        package_name_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await package_service.delete_package_name(db, package_name_id, agency_name)
+
+@private_router.put("/package-name", tags=["packages"])
+async def update_package_name(
+        request: PackageNameUpdateSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await package_service.update_package_name(db, request, agency_name)

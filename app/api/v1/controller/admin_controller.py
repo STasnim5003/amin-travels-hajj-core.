@@ -159,7 +159,6 @@ async def assign_lead_agency(
         agency_name = current_user["agency_name"]
         if request.agency_name != agency_name:
             raise HTTPException(status_code=403, detail="Agency names do not match.")
-
     return await admin_service.assign_lead_agency(db, request)
 
 @private_router.get("/lead-agency/pilgrims", tags=["admin"])

@@ -1,5 +1,6 @@
-from http.client import HTTPException
 
+from alembic.util import status
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import package_repository
@@ -85,5 +86,42 @@ async def get_package_names(
 ):
     try:
         return await package_repository.get_package_names(db, agency_name)
+    except Exception as e:
+        raise e
+
+
+async def delete_package_name(db, package_name_id, agency_name):
+    try:
+        package_name = await package_repository.get_package_name_by_id(db, package_name_id)
+        if not package_name or package_name.agency_name != agency_name:
+            raise HTTPException(status_code=400, detail="Package Name not found")
+
+        await package_repository.delete_package_by_id(db, package_name_id)
+
+        return await package_repository.get_package_names(db, agency_name)
+
+    except Exception as e:
+        raise e
+
+
+async def update_package_name(db, request, agency_name):
+    try:
+        package_name = await package_repository.get_package_name_by_id(db, request.id)
+        if not package_name or package_name.agency_name != agency_name:
+            raise HTTPException(status_code=400, detail="Package Name not found")
+        request_dict = request.model_dump(exclude_unset=True)
+        request_dict['updated_by'] = agency_name
+
+        return await package_repository.update_package_name(db, request_dict)
+    except Exception as e:
+        raise e
+
+
+async def get_package_name_by_id(db, package_name_id, agency_name):
+    try:
+        result = await package_repository.get_package_name_by_id(db, package_name_id)
+        if not result or result.agency_name != agency_name:
+            raise HTTPException(status_code=400, detail="Package Name not found")
+        return result
     except Exception as e:
         raise e
