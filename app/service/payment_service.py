@@ -2,13 +2,13 @@ import json
 import random
 import string
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils import num_to_words
 from app.core.utils.num_to_words import amount_to_words
 from data.repository import payment_repository, admin_user_repository, pilgrim_payment_repository, \
-    pilgrim_repository, payment_repository_multiple_pilgrims
+    pilgrim_repository, payment_repository_multiple_pilgrims, file_repository
 from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
     PayableInfoUpdateSchema, \
     GroupLeaderPayableBaseSchema, GroupLeaderPaymentBaseSchema, OverallSummarySchema, \
@@ -66,7 +66,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
         raise e
 
 
-async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaymentBaseSchema, agency_name: str):
+async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaymentBaseSchema, agency_name: str, receipt: UploadFile):
     if request.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
@@ -78,6 +78,14 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
     except Exception as e:
         raise e
 
+    receipt_data = []
+    if receipt:
+        try:
+            receipt_resp = await file_repository.upload_file(file=receipt, name="receipt")
+            receipt_data.append(receipt_resp.model_dump())
+        except Exception as e:
+            raise e
+
     transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
     payment_data = request.model_dump(exclude_unset=True)
@@ -85,7 +93,8 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
         "transaction_id": transaction_id,
         "created_by": agency_name,
         "updated_by": agency_name,
-        "no_of_hajji": len(request.pilgrims_tracking_id)
+        "no_of_hajji": len(request.pilgrims_tracking_id),
+        "receipt" : receipt_data
     })
 
     prev_total_payable = existing_group_leader.total_payable or 0
