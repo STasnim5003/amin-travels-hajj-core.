@@ -123,3 +123,7 @@ class PackageNameResponseSchema(PackageNameBaseSchema):
     updated_by : Optional[str] = None
     created_at : Optional[datetime] = None
     updated_at : Optional[datetime] = None
+
+class PackageNameUpdateSchema(BaseModel):
+    id: int
+    name: Optional[str] = None

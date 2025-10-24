@@ -1,13 +1,11 @@
-from attr import attributes
 from fastapi import HTTPException
-from sqlalchemy import select, update, insert
+from sqlalchemy import select, update, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from data.filter.query_filter import filter_query
 from data.model.package_model import PackageModel, PackageNameModel
 from infrastructure.schema.package_schema import PackageResponseSchema, PackageMasterDataForFilterSchema, \
-    PackageMasterDataForFilterListSchema, PackageBaseSchema, PackageCreateSchema
+    PackageCreateSchema
 
 
 async def get_packages(db: AsyncSession,
@@ -18,7 +16,7 @@ async def get_packages(db: AsyncSession,
                        duration: int = None,
                        description_type: str = None,
                        hajj_month: str = None,
-                       agency_name:str= None):
+                       agency_name: str = None):
     try:
         # Start query
         query = (select(PackageModel)
@@ -105,7 +103,8 @@ async def get_package_master_data_for_filtering(
         master_data.append(PackageMasterDataForFilterSchema.model_validate(row).model_dump())
     return master_data
 
-async def get_package_by_id(db:AsyncSession, package_id : int):
+
+async def get_package_by_id(db: AsyncSession, package_id: int):
     query = (
         select(PackageModel)
         .options(joinedload(PackageModel.route))
@@ -118,13 +117,12 @@ async def get_package_by_id(db:AsyncSession, package_id : int):
     return PackageResponseSchema.model_validate(package).model_dump()
 
 
-
 async def create_package(db: AsyncSession, payload: PackageCreateSchema) -> PackageModel:
     package = PackageModel(**payload.model_dump())
     try:
         db.add(package)
         await db.commit()
-        await db.refresh(package, attribute_names=["route", "ziara", "food_menu"],)
+        await db.refresh(package, attribute_names=["route", "ziara", "food_menu"], )
         return package
     except Exception as e:
         await db.rollback()
@@ -133,7 +131,8 @@ async def create_package(db: AsyncSession, payload: PackageCreateSchema) -> Pack
             detail=f"Error: {str(e)}"
         )
 
-async def get_package_by_id_for_agency(db: AsyncSession, package_id:int, agency_name : str):
+
+async def get_package_by_id_for_agency(db: AsyncSession, package_id: int, agency_name: str):
     try:
         query = (
             select(PackageModel)
@@ -148,16 +147,17 @@ async def get_package_by_id_for_agency(db: AsyncSession, package_id:int, agency_
     except Exception as e:
         raise e
 
+
 async def update_package(db: AsyncSession, package_id: int, agency_name: str, update_data: dict):
     stmt = (
-            update(PackageModel)
-            .where(
-                PackageModel.id == package_id,
-                PackageModel.agency_name == agency_name
-            )
-            .values(**update_data)
-            .returning(PackageModel)
+        update(PackageModel)
+        .where(
+            PackageModel.id == package_id,
+            PackageModel.agency_name == agency_name
         )
+        .values(**update_data)
+        .returning(PackageModel)
+    )
     result = await db.execute(stmt)
     updated_package = result.scalar_one_or_none()
     await db.commit()
@@ -169,8 +169,9 @@ async def update_package(db: AsyncSession, package_id: int, agency_name: str, up
 
     return updated_package
 
+
 async def create_package_name(
-        db: AsyncSession, request : dict
+        db: AsyncSession, request: dict
 ):
     try:
         stmt = (
@@ -198,4 +199,42 @@ async def get_package_names(
         result = await db.execute(stmt)
         return result.scalars().all()
     except Exception as e:
+        raise e
+
+
+async def get_package_name_by_id(db, package_name_id):
+    result = await db.execute(
+        select(PackageNameModel)
+        .where(PackageNameModel.id == package_name_id)
+    )
+
+    return result.scalar_one_or_none()
+
+
+async def delete_package_by_id(db, package_name_id):
+    try:
+        await db.execute(
+            delete(PackageNameModel).where(PackageNameModel.id == package_name_id)
+        )
+
+        await db.commit()
+        return True
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def update_package_name(db, request_dict):
+    try:
+        result = await db.execute(
+            update(PackageNameModel)
+            .where(PackageNameModel.id == request_dict['id'])
+            .values(**request_dict)
+            .returning(PackageNameModel)
+        )
+
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
         raise e
