@@ -32,6 +32,8 @@ class PilgrimDataBaseSchema(BaseModel):
     allocation_status: Optional[str] = None
     vaccination_center: Optional[str] = None
     passport_copy: Optional[List[Dict[str, Any]]] = None
+    lead_agency: Optional[str] = None
+    sub_reference : Optional[str] = None
 
     class Config:
         from_attributes = True

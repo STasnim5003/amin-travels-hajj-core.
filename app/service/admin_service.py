@@ -9,7 +9,7 @@ from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
 from data.repository import admin_repository, file_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema, \
-    AdminProfileUpdateResponseSchema
+    AdminProfileUpdateResponseSchema, AssignLeadAgencySchema
 
 
 async def create_admin(db: AsyncSession,
@@ -162,3 +162,32 @@ async def update_admin_profile(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+async def assign_lead_agency(db:AsyncSession, request:AssignLeadAgencySchema):
+    try:
+        fetched_agency = await admin_repository.get_agency_by_agency_name(db, request.agency_name)
+        lead_agency = await admin_repository.get_agency_by_agency_name(db, request.lead_agency_name)
+
+        if not fetched_agency or not lead_agency:
+            raise HTTPException(status_code=400, detail="Agency Not found")
+
+        result = await admin_repository.assign_lead_agency(db, request)
+        if result:
+            return {"message" : "Lead agency assigned successfully"}
+    except Exception as e:
+        raise e
+
+
+async def get_lead_agency_pilgrims(db:AsyncSession, page:int, size:int, agency_name:str, lead_agency_name: str):
+    try:
+        pilgrims, total = await admin_repository.get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name)
+
+        # Build a response payload (paginated)
+        return {
+            "total": total,
+            "page": page,
+            "size": size,
+            "pilgrims": pilgrims
+        }
+    except Exception as e:
+        raise e

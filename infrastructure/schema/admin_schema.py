@@ -61,3 +61,7 @@ class AdminProfileUpdateSchema(BaseModel):
 class AdminProfileUpdateResponseSchema(BaseModel):
     message : str
     status: int
+
+class AssignLeadAgencySchema(BaseModel):
+    agency_name: Optional[str] = None
+    lead_agency_name: str

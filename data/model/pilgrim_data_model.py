@@ -51,4 +51,5 @@ class PilgrimDataModel(Base, BaseMixinModel):
     total_available_amount = Column(Integer, nullable=True)
     actual_payable = Column(Integer, nullable=True)
     package_price_discount = Column(Integer, nullable=True)
-
+    lead_agency = Column(String, nullable=True)
+    sub_reference = Column(String, nullable=True)
