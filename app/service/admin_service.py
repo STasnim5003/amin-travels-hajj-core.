@@ -191,3 +191,14 @@ async def get_lead_agency_pilgrims(db:AsyncSession, page:int, size:int, agency_n
         }
     except Exception as e:
         raise e
+
+
+async def check_lead_agency_assignment(db, agency_name):
+    try:
+        result = await admin_repository.check_lead_agency_assignment(db, agency_name)
+        return {
+            "agency_name" : agency_name,
+            "lead_agency_name" : result
+        }
+    except Exception as e:
+        raise e

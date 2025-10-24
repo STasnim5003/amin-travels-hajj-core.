@@ -11,7 +11,7 @@ from app.core.middleware.middleware import get_current_user
 from app.service import admin_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_schema import AdminResponseSchema, TokenSchema, AdminListResponseSchema, \
-    AdminProfileUpdateResponseSchema, AssignLeadAgencySchema
+    AdminProfileUpdateResponseSchema, AssignLeadAgencySchema, CheckLeadAssignResponseSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -176,3 +176,14 @@ async def get_lead_agency_pilgrims(
     if user_role == "AGENCY":
         lead_agency_name = current_user["agency_name"]
         return await admin_service.get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name)
+
+@private_router.get("/lead-agency-assignment-check", tags=["admin"])
+async def get_lead_agency_assignment_check(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    result = await admin_service.check_lead_agency_assignment(db, agency_name)
+    return CheckLeadAssignResponseSchema.model_validate(result)
