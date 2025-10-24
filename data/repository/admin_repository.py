@@ -207,12 +207,12 @@ async def get_agency_by_agency_name(db: AsyncSession, agency_name: str):
         raise e
 
 
-async def assign_lead_agency(db: AsyncSession, request: AssignLeadAgencySchema):
+async def assign_lead_agency(db: AsyncSession, request: dict):
     try:
         await db.execute(
             update(PilgrimDataModel)
-            .where(PilgrimDataModel.group_name == request.agency_name)
-            .values(lead_agency = request.lead_agency_name)
+            .where(PilgrimDataModel.group_name == request['agency_name'])
+            .values(lead_agency = request['lead_agency_name'])
         )
 
         await db.commit()

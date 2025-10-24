@@ -155,11 +155,11 @@ async def assign_lead_agency(
     if user_role not in ["SUPER_ADMIN", "AGENCY"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
+    request_dict = request.model_dump()
     if user_role == "AGENCY":
         agency_name = current_user["agency_name"]
-        if request.agency_name != agency_name:
-            raise HTTPException(status_code=403, detail="Agency names do not match.")
-    return await admin_service.assign_lead_agency(db, request)
+        request_dict["agency_name"] = agency_name
+    return await admin_service.assign_lead_agency(db, request_dict)
 
 @private_router.get("/lead-agency/pilgrims", tags=["admin"])
 async def get_lead_agency_pilgrims(
