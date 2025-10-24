@@ -1,10 +1,10 @@
 import random
 import string
 
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.repository import pilgrim_payment_repository, pilgrim_repository
+from data.repository import pilgrim_payment_repository, pilgrim_repository, file_repository
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema
 
@@ -58,7 +58,7 @@ async def create_payable_for_pilgrim(
 
 
 async def create_payment_for_pilgrim(
-        db: AsyncSession, payment_data: PilgrimPaymentBaseSchema, agency_name: str
+        db: AsyncSession, payment_data: PilgrimPaymentBaseSchema, agency_name: str, receipt: UploadFile
 ):
     if payment_data.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than 0")
@@ -70,6 +70,14 @@ async def create_payment_for_pilgrim(
 
     except Exception as e:
         raise e
+
+    receipt_data = []
+    if receipt:
+        try:
+            receipt_resp = await file_repository.upload_file(file=receipt, name="receipt")
+            receipt_data.append(receipt_resp.model_dump())
+        except Exception as e:
+            raise e
 
     prev_total_payable = pilgrim.total_payable or 0
     prev_total_payment = pilgrim.total_payment or 0
@@ -90,7 +98,8 @@ async def create_payment_for_pilgrim(
     payment_request_dict.update({
         "transaction_id": transaction_id,
         "created_by": agency_name,
-        "updated_by": agency_name
+        "updated_by": agency_name,
+        "receipt": receipt_data
     })
 
     try:

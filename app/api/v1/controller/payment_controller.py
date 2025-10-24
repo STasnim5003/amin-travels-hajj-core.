@@ -1,5 +1,8 @@
+import json
+from typing import Optional, List
+
 import fastapi
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Query, Form, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.controller.pilgrim_controller import public_router
@@ -29,7 +32,16 @@ async def create_payable_for_group_leader(
 
 @private_router.post("/group-leader/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payment_of_group_leader(
-        request_schema: GroupLeaderPaymentBaseSchema,
+        group_leader: str = Form(...),
+        pilgrims_tracking_id: Optional[str] = Form(None),
+        bank_info_id: Optional[int] = Form(None),
+        way_of_payment: Optional[str] = Form(None),
+        transfer_no: Optional[str] = Form(None),
+        description: Optional[str] = Form(None),
+        date: Optional[str] = Form(None),
+        amount: int = Form(...),
+        payment_category: Optional[str] = Form(None),
+        receipt: Optional[UploadFile] = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
@@ -37,7 +49,27 @@ async def create_payment_of_group_leader(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user['agency_name']
 
-    return await payment_service.create_group_leader_payment(db, request_schema, agency_name)
+    tracking_ids = []
+    if pilgrims_tracking_id:
+        try:
+            tracking_ids = json.loads(pilgrims_tracking_id)
+        except json.JSONDecodeError:
+            tracking_ids = [pilgrims_tracking_id]
+
+
+    request_schema = GroupLeaderPaymentBaseSchema(
+        group_leader=group_leader,
+        pilgrims_tracking_id=tracking_ids,
+        bank_info_id=bank_info_id,
+        way_of_payment=way_of_payment,
+        transfer_no=transfer_no,
+        description=description,
+        date=date,
+        amount=amount,
+        category="Payment",
+        payment_category=payment_category
+    )
+    return await payment_service.create_group_leader_payment(db, request_schema, agency_name, receipt)
 
 
 @private_router.get("/group-leader/payment-info", response_model=PaginatedPaymentResponseForGroupLeader,
@@ -114,7 +146,15 @@ async def create_payable_for_pilgrim(
 
 @private_router.post("/pilgrim/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payment_for_pilgrim(
-        request: PilgrimPaymentBaseSchema,
+        amount: int = Form(...),
+        tracking_id: str = Form(...),
+        description: Optional[str] = Form(None),
+        date: Optional[str] = Form(None),
+        payment_category: Optional[str] = Form(None),
+        bank_info_id: Optional[int] = Form(None),
+        way_of_payment: Optional[str] = Form(None),
+        transfer_no: Optional[str] = Form(None),
+        receipt: Optional[UploadFile] = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
@@ -122,7 +162,19 @@ async def create_payment_for_pilgrim(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
 
-    return await pilgrim_payment_service.create_payment_for_pilgrim(db, request, agency_name)
+    request = PilgrimPaymentBaseSchema(
+        amount=amount,
+        tracking_id=tracking_id,
+        description=description,
+        date=date,
+        payment_category=payment_category,
+        bank_info_id=bank_info_id,
+        way_of_payment=way_of_payment,
+        transfer_no=transfer_no,
+        category="Payment"
+    )
+
+    return await pilgrim_payment_service.create_payment_for_pilgrim(db, request, agency_name, receipt)
 
 
 @private_router.get("/payment-info/pilgrim", response_model=PaginatedPaymentResponseForGroupLeader, tags=["payment"])
