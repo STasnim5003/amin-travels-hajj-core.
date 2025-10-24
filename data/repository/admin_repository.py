@@ -6,7 +6,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_model import AdminModel
-from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminProfileUpdateResponseSchema
+from data.model.pilgrim_data_model import PilgrimDataModel
+from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AssignLeadAgencySchema
 
 
 async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminResponseSchema:
@@ -119,7 +120,7 @@ async def get_admin_by_username(db: AsyncSession, username: str):
 
         return admin
     except HTTPException as e:
-         raise e
+        raise e
 
     except SQLAlchemyError as e:
         raise e
@@ -159,12 +160,12 @@ async def delete_admin_by_id(db: AsyncSession, admin_id: int):
 
 
 async def update_admin_profile(
-        db:AsyncSession,
+        db: AsyncSession,
         location: str,
-        google_map_location : str,
+        google_map_location: str,
         logo: List[Dict[str, Any]],
-        passport_copy : List[Dict[str, Any]],
-        agency_name : str
+        passport_copy: List[Dict[str, Any]],
+        agency_name: str
 ):
     stmt = select(AdminModel).where(AdminModel.agency_name == agency_name)
     result = await db.execute(stmt)
@@ -193,3 +194,58 @@ async def update_admin_profile(
         raise HTTPException(status_code=400, detail="Update failed")
 
     return AdminResponseSchema.model_validate(updated_admin)
+
+
+async def get_agency_by_agency_name(db: AsyncSession, agency_name: str):
+    try:
+        result = await db.execute(
+            select(AdminModel).where(AdminModel.agency_name == agency_name)
+        )
+
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise e
+
+
+async def assign_lead_agency(db: AsyncSession, request: AssignLeadAgencySchema):
+    try:
+        await db.execute(
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.group_name == request.agency_name)
+            .values(lead_agency = request.lead_agency_name)
+        )
+
+        await db.commit()
+
+        return True
+    except Exception as e:
+        raise e
+
+
+async def get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name):
+    try:
+        # Base query — all pilgrims under the given lead agency
+        base_query = select(PilgrimDataModel).where(
+            PilgrimDataModel.lead_agency == lead_agency_name
+        )
+
+        # If a specific sub-agency is provided, add an extra filter
+        if agency_name:
+            base_query = base_query.where(PilgrimDataModel.group_name == agency_name)
+
+        # Count total results
+        total_stmt = select(func.count()).select_from(base_query.subquery())
+        total_result = await db.execute(total_stmt)
+        total = total_result.scalar_one()
+
+        # Apply pagination
+        offset = (page - 1) * size
+        paginated_stmt = base_query.offset(offset).limit(size)
+
+        result = await db.execute(paginated_stmt)
+        pilgrims = result.scalars().all()
+
+        return pilgrims, total
+
+    except Exception as e:
+        raise e

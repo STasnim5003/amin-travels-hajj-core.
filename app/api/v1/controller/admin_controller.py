@@ -11,7 +11,7 @@ from app.core.middleware.middleware import get_current_user
 from app.service import admin_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_schema import AdminResponseSchema, TokenSchema, AdminListResponseSchema, \
-    AdminProfileUpdateResponseSchema
+    AdminProfileUpdateResponseSchema, AssignLeadAgencySchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -66,7 +66,7 @@ async def get_all_admins(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "SUPER_ADMIN":
+    if current_user["role"] not in ["SUPER_ADMIN", "AGENCY"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     try:
@@ -145,4 +145,35 @@ async def update_admin_profile(
     except Exception as e:
         raise
 
+@private_router.put("/admin/assign-lead-agency", tags=["admin"])
+async def assign_lead_agency(
+        request: AssignLeadAgencySchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    user_role = current_user["role"]
+    if user_role not in ["SUPER_ADMIN", "AGENCY"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
+    if user_role == "AGENCY":
+        agency_name = current_user["agency_name"]
+        if request.agency_name != agency_name:
+            raise HTTPException(status_code=403, detail="Agency names do not match.")
+
+    return await admin_service.assign_lead_agency(db, request)
+
+@private_router.get("/lead-agency/pilgrims", tags=["admin"])
+async def get_lead_agency_pilgrims(
+        page: int = Query(1, ge=1),
+        size: int = Query(10, ge=1),
+        agency_name: Optional[str] = Query(None),
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    user_role = current_user["role"]
+    if user_role not in ["SUPER_ADMIN", "AGENCY"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    if user_role == "AGENCY":
+        lead_agency_name = current_user["agency_name"]
+        return await admin_service.get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name)
