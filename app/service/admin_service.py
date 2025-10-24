@@ -163,10 +163,11 @@ async def update_admin_profile(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def assign_lead_agency(db:AsyncSession, request:AssignLeadAgencySchema):
+async def assign_lead_agency(db:AsyncSession, request:dict):
     try:
-        fetched_agency = await admin_repository.get_agency_by_agency_name(db, request.agency_name)
-        lead_agency = await admin_repository.get_agency_by_agency_name(db, request.lead_agency_name)
+
+        fetched_agency = await admin_repository.get_agency_by_agency_name(db, request['agency_name'])
+        lead_agency = await admin_repository.get_agency_by_agency_name(db, request['lead_agency_name'])
 
         if not fetched_agency or not lead_agency:
             raise HTTPException(status_code=400, detail="Agency Not found")
