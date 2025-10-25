@@ -155,35 +155,35 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
             else_=AdminUserModel.total_available_amount
         )
 
-        case_total_payable = case(
+        case_total_payable_for_pilgrims = case(
             *((
                 PilgrimDataModel.tracking_id == pilgrim.tracking_id,
                 pilgrim.total_payable + (request.total_payable or 0)
-            ) for pilgrim in pilgrim_without_group_leader),
+            ) for pilgrim in pilgrims),
             else_=PilgrimDataModel.total_payable
         )
 
-        case_total_due = case(
+        case_total_due_for_pilgrims = case(
             *((
                 PilgrimDataModel.tracking_id == pilgrim.tracking_id,
                 max(0, (pilgrim.total_payable + (request.total_payable or 0)) - (pilgrim.total_payment or 0))
-            ) for pilgrim in pilgrim_without_group_leader),
+            ) for pilgrim in pilgrims),
             else_=PilgrimDataModel.total_due
         )
 
-        case_total_available = case(
+        case_total_available_for_pilgrims = case(
             *((
                 PilgrimDataModel.tracking_id == pilgrim.tracking_id,
                 max(0, (pilgrim.total_payment or 0) - (pilgrim.total_payable + (request.total_payable or 0)))
-            ) for pilgrim in pilgrim_without_group_leader),
+            ) for pilgrim in pilgrims),
             else_=PilgrimDataModel.total_available_amount
         )
 
-        case_actual_payable = case(
+        case_actual_payable_for_pilgrims = case(
             *((
                 PilgrimDataModel.tracking_id == pilgrim.tracking_id,
                 (pilgrim.total_payable + (request.total_payable or 0) - request.package_price_discount)
-            ) for pilgrim in pilgrim_without_group_leader),
+            ) for pilgrim in pilgrims),
             else_=PilgrimDataModel.total_payable
         )
 
@@ -223,8 +223,8 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
 
         await package_assign_repository.save_pilgrims_package_finance_info(
             db, pilgrim_without_group_leader_tracking_ids,
-            case_total_payable, case_total_due, case_total_available,
-            case_actual_payable, request, agency_name
+            case_total_payable_for_pilgrims, case_total_due_for_pilgrims, case_total_available_for_pilgrims,
+            case_actual_payable_for_pilgrims, request, agency_name
         )
 
         await package_assign_repository.update_group_leaders_finance(
