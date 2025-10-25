@@ -168,11 +168,8 @@ async def assign_lead_agency(
         request_dict["agency_name"] = agency_name
     return await admin_service.assign_lead_agency(db, request_dict)
 
-@private_router.get("/lead-agency/pilgrims", tags=["admin"])
+@private_router.get("/lead-agency/pilgrims",  tags=["admin"])
 async def get_lead_agency_pilgrims(
-        page: int = Query(1, ge=1),
-        size: int = Query(10, ge=1),
-        agency_name: Optional[str] = Query(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
@@ -180,9 +177,8 @@ async def get_lead_agency_pilgrims(
     if user_role not in ["SUPER_ADMIN", "AGENCY"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    if user_role == "AGENCY":
-        lead_agency_name = current_user["agency_name"]
-        return await admin_service.get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name)
+    lead_agency_name = current_user["agency_name"]
+    return await admin_service.get_lead_agency_pilgrims(db, lead_agency_name)
 
 @private_router.get("/lead-agency-assignment-check", tags=["admin"])
 async def get_lead_agency_assignment_check(

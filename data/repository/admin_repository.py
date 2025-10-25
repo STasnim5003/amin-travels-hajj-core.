@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 
 from fastapi import HTTPException
-from sqlalchemy import insert, select, or_, func, update
+from sqlalchemy import insert, select, or_, func, update, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -222,30 +222,43 @@ async def assign_lead_agency(db: AsyncSession, request: dict):
         raise e
 
 
-async def get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name):
+async def get_lead_agency_pilgrims(db, lead_agency_name):
     try:
-        # Base query — all pilgrims under the given lead agency
-        base_query = select(PilgrimDataModel).where(
-            PilgrimDataModel.lead_agency == lead_agency_name
-        )
-
-        # If a specific sub-agency is provided, add an extra filter
-        if agency_name:
-            base_query = base_query.where(PilgrimDataModel.group_name == agency_name)
-
-        # Count total results
-        total_stmt = select(func.count()).select_from(base_query.subquery())
-        total_result = await db.execute(total_stmt)
-        total = total_result.scalar_one()
-
-        # Apply pagination
-        offset = (page - 1) * size
-        paginated_stmt = base_query.offset(offset).limit(size)
-
-        result = await db.execute(paginated_stmt)
-        pilgrims = result.scalars().all()
-
-        return pilgrims, total
+        query = text("""
+            WITH agencies AS (
+                SELECT agency_name
+                FROM core.admin
+                WHERE lead_agency = :lead_agency_name
+            )
+            SELECT 
+                a.agency_name,
+                COALESCE(COUNT(pd.tracking_id), 0) AS total_pilgrims,
+                COALESCE(
+                    JSON_AGG(
+                        JSON_BUILD_OBJECT(
+                            'name_en', pd.name_en,
+                            'tracking_id', pd.tracking_id,
+                            'serial_no', pd.serial_no,
+                            'voucher', pd.voucher,
+                            'mobile_no', pd.mobile_no,
+                            'passport_no', pd.passport_no,
+                            'passport_expiry_date', pd.passport_expiry_date,
+                            'date_of_birth', pd.date_of_birth,
+                            'nid', pd.nid,
+                            'gender', pd.gender,
+                            'agency_name', pd.group_name
+                        )
+                    ) FILTER (WHERE pd.tracking_id IS NOT NULL),
+                    '[]'
+                ) AS pilgrims
+            FROM agencies a
+            LEFT JOIN core.pilgrim_data pd 
+                ON a.agency_name = pd.group_name
+            GROUP BY a.agency_name
+            ORDER BY a.agency_name;
+        """)
+        result = await db.execute(query, {"lead_agency_name": lead_agency_name})
+        return result.mappings().all()
 
     except Exception as e:
         raise e

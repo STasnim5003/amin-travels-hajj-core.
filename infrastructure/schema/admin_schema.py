@@ -70,3 +70,31 @@ class AssignLeadAgencySchema(BaseModel):
 class CheckLeadAssignResponseSchema(BaseModel):
     agency_name: Optional[str] = None
     lead_agency_name: Optional[str] = None
+
+class PilgrimInfoSchemaForLeadAgency(BaseModel):
+    name_en: Optional[str] = None
+    name_bn: Optional[str] = None
+    gender: Optional[str] = None
+    tracking_id: Optional[str] = None
+    serial_no: Optional[str] = None
+    mobile_no: Optional[str] = None
+    nid: Optional[str] = None
+    passport_dob: Optional[str] = None
+    passport_no: Optional[str] = None
+    passport_expiry_date: Optional[str] = None
+    passport_type: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    pre_reg_voucher: Optional[str] = None
+    reg_voucher: Optional[str] = None
+    agency_name: Optional[str] = None
+
+
+class AgencyPilgrimSummarySchemaForLeadAgency(BaseModel):
+    agency_name: str
+    total_pilgrims: int
+    pilgrims: List[PilgrimInfoSchemaForLeadAgency]
+
+
+class LeadAgencyPilgrimsResponseSchema(BaseModel):
+    lead_agency_name: str
+    agencies: List[AgencyPilgrimSummarySchemaForLeadAgency]
