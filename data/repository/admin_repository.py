@@ -221,7 +221,7 @@ async def assign_lead_agency(db: AsyncSession, request: dict):
     except Exception as e:
         raise e
 
-
+# TODO: more fields will be added in pilgrim data and also change here
 async def get_lead_agency_pilgrims(db, lead_agency_name):
     try:
         query = text("""
