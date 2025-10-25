@@ -188,6 +188,16 @@ async def get_lead_agency_pilgrims(db:AsyncSession, lead_agency_name: str):
             agencies.append({
                 "agency_name": row["agency_name"],
                 "total_pilgrims": row["total_pilgrims"],
+                "name_en": None,
+                "tracking_id": None,
+                "serial_no": None,
+                "voucher": None,
+                "mobile_no": None,
+                "passport_no": None,
+                "passport_expiry_date": None,
+                "date_of_birth": None,
+                "nid": None,
+                "gender": None,
                 "pilgrims": row["pilgrims"]
             })
 
