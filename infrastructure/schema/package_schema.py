@@ -128,3 +128,4 @@ class PackageNameResponseSchema(PackageNameBaseSchema):
 class PackageNameUpdateSchema(BaseModel):
     id: int
     name: Optional[str] = None
+    is_active : Optional[bool] = True
