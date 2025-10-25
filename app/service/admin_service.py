@@ -179,16 +179,21 @@ async def assign_lead_agency(db:AsyncSession, request:dict):
         raise e
 
 
-async def get_lead_agency_pilgrims(db:AsyncSession, page:int, size:int, agency_name:str, lead_agency_name: str):
+async def get_lead_agency_pilgrims(db:AsyncSession, lead_agency_name: str):
     try:
-        pilgrims, total = await admin_repository.get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name)
+        records = await admin_repository.get_lead_agency_pilgrims(db, lead_agency_name)
 
-        # Build a response payload (paginated)
+        agencies = []
+        for row in records:
+            agencies.append({
+                "agency_name": row["agency_name"],
+                "total_pilgrims": row["total_pilgrims"],
+                "pilgrims": row["pilgrims"]
+            })
+
         return {
-            "total": total,
-            "page": page,
-            "size": size,
-            "pilgrims": pilgrims
+            "lead_agency_name": lead_agency_name,
+            "agencies": agencies
         }
     except Exception as e:
         raise e
