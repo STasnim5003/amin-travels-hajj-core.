@@ -112,6 +112,7 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
             group_leader_payment[pilgrim.group_leader] = (
                     group_leader_payment.get(pilgrim.group_leader, 0) + request.total_payable - request.package_price_discount
             )
+
             pilgrim_without_group_leader.append(pilgrim)
             group_leader_codes.append(pilgrim.group_leader)
             pilgrim_with_group_leader_tracking_ids.append(pilgrim.tracking_id)
@@ -218,11 +219,11 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
         ]
 
         # It will update the package info of pilgrim only not finance
-        if pilgrim_with_group_leader_tracking_ids:
-            await package_assign_repository.save_pilgrim_package_info(db, request, pilgrim_with_group_leader_tracking_ids, agency_name)
+        # if pilgrim_with_group_leader_tracking_ids:
+        #     await package_assign_repository.save_pilgrim_package_info(db, request, pilgrim_with_group_leader_tracking_ids, agency_name)
 
         await package_assign_repository.save_pilgrims_package_finance_info(
-            db, pilgrim_without_group_leader_tracking_ids,
+            db, request.tracking_ids,
             case_total_payable_for_pilgrims, case_total_due_for_pilgrims, case_total_available_for_pilgrims,
             case_actual_payable_for_pilgrims, request, agency_name
         )
