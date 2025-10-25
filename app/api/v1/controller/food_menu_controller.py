@@ -29,7 +29,8 @@ async def create_food_menu(
         is_publish=food_menu.is_publish,
         area = food_menu.area,
         created_by=agency_name,
-        updated_by=agency_name
+        updated_by=agency_name,
+        is_active=food_menu.is_active
     )
 
     return await food_menu_service.create_food_menu(db, food_menu_schema)

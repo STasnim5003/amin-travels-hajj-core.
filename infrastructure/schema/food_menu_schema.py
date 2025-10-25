@@ -7,6 +7,7 @@ class FoodMenuBaseSchema(BaseModel):
     items: Optional[Dict[str, Any]] = None
     is_publish: Optional[bool] = True
     area: str
+    is_active: Optional[bool] = True
 
 
 

@@ -210,8 +210,8 @@ async def get_agency_by_agency_name(db: AsyncSession, agency_name: str):
 async def assign_lead_agency(db: AsyncSession, request: dict):
     try:
         await db.execute(
-            update(PilgrimDataModel)
-            .where(PilgrimDataModel.group_name == request['agency_name'])
+            update(AdminModel)
+            .where(AdminModel.agency_name == request['agency_name'])
             .values(lead_agency = request['lead_agency_name'])
         )
 
@@ -254,8 +254,8 @@ async def get_lead_agency_pilgrims(db, page, size, agency_name, lead_agency_name
 async def check_lead_agency_assignment(db, agency_name):
     try:
         result = await db.execute(
-            select(PilgrimDataModel.lead_agency)
-            .where(PilgrimDataModel.group_name == agency_name)
+            select(AdminModel.lead_agency)
+            .where(AdminModel.agency_name == agency_name)
             .limit(1)
         )
         return result.scalar_one_or_none()

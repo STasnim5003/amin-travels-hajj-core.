@@ -15,3 +15,4 @@ class FoodMenuModel(Base, BaseMixinModel):
     area = Column(String, nullable=True)
     items = Column(JSONB, nullable=True)
     is_publish = Column(Boolean, server_default=text("true"), nullable=False)
+    is_active = Column(Boolean, server_default=text("true"), nullable=False)

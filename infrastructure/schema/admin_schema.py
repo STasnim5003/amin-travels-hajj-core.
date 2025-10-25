@@ -18,6 +18,7 @@ class AdminBaseSchema(BaseModel):
     is_active: bool
     google_map_location : Optional[str] = None
     saudi_representatives : Optional[Dict[str, Any]] = None
+    lead_agency : Optional[str] = None
 
     class Config:
         from_attributes = True

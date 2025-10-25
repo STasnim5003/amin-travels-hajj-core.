@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class ZiaraBaseSchema(BaseModel):
     description: str
+    is_active: Optional[bool] = True
 
 class ZiaraCreateSchema(ZiaraBaseSchema):
     agency_name: Optional[str] = None

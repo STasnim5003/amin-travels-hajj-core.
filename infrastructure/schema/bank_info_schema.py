@@ -8,6 +8,7 @@ class BankInfoBaseSchema(BaseModel):
     name : str
     account_no : Optional[str] = None
     branch : Optional[str] = None
+    is_active: Optional[bool] = True
 
 class BankInfoResponseSchema(BankInfoBaseSchema):
     id : int
