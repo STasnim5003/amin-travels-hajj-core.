@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class AddOnsServiceBase(BaseModel):
     name: str
     price: str
-
+    is_active: Optional[bool] = True
 
 class AddOnsServiceCreate(AddOnsServiceBase):
     pass

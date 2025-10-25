@@ -156,8 +156,15 @@ async def assign_lead_agency(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     request_dict = request.model_dump()
+    if user_role == "SUPER_ADMIN":
+        if not request_dict['agency_name'] or not request_dict['lead_agency_name']:
+            raise HTTPException(status_code=400, detail="Give Agency Names")
+
     if user_role == "AGENCY":
         agency_name = current_user["agency_name"]
+        if request_dict['agency_name'] and request_dict['agency_name'] != agency_name:
+            raise HTTPException(status_code=400, detail="Agency name mismatched")
+
         request_dict["agency_name"] = agency_name
     return await admin_service.assign_lead_agency(db, request_dict)
 

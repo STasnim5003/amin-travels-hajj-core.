@@ -22,3 +22,4 @@ class AdminModel(Base, BaseMixinModel):
     is_active = Column(Boolean, nullable=False, default=True)
     google_map_location = Column(String, nullable=True)
     saudi_representatives = Column(JSONB, nullable=True)
+    lead_agency = Column(String, nullable=True)

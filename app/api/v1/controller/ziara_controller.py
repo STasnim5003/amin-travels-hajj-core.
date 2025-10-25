@@ -10,7 +10,6 @@ from infrastructure.schema.ziara_schema import ZiaraResponseSchema, ZiaraCreateS
 
 ziara_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
-# TODO : pic insertion
 @ziara_router.post("/ziara", response_model=ZiaraResponseSchema, tags=["Ziara"])
 async def create_ziara(
         ziara: ZiaraBaseSchema,

@@ -115,6 +115,7 @@ class PackageUpdateSchema(BaseModel):
 
 class PackageNameBaseSchema(BaseModel):
     name: str
+    is_active: Optional[bool] = True
 
 class PackageNameResponseSchema(PackageNameBaseSchema):
     id: int
