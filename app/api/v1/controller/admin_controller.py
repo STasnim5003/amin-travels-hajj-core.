@@ -185,7 +185,7 @@ async def get_lead_agency_assignment_check(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "SUPER_ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     result = await admin_service.check_lead_agency_assignment(db, agency_name)
