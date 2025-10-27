@@ -8,7 +8,8 @@ def get_cors_middleware(app: FastAPI):
         "http://localhost:3000",
         "https://devusion.io",
         "https://amintravels.com.bd",
-        "https://www.amintravels.com.bd"
+        "https://www.amintravels.com.bd",
+        "http://192.168.1.40:3000"
     ]
 
     app.add_middleware(
