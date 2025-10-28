@@ -34,6 +34,11 @@ class PilgrimDataBaseSchema(BaseModel):
     passport_copy: Optional[List[Dict[str, Any]]] = None
     lead_agency: Optional[str] = None
     sub_reference : Optional[str] = None
+    passport_dob : Optional[str] = None
+    passport_expiry_date: Optional[str] = None
+    pre_reg_voucher : Optional[str] = None
+    reg_voucher : Optional[str] = None
+    passport_type : Optional[str] = None
 
     class Config:
         from_attributes = True

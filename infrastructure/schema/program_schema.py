@@ -34,7 +34,7 @@ class ProgramUpdateSchema(BaseModel):
     program_type: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ProgramResponseSchema(ProgramBaseSchema):
     id: int
@@ -46,7 +46,6 @@ class ProgramResponseSchema(ProgramBaseSchema):
 
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 
@@ -73,7 +72,6 @@ class ProgramRegistrationResponse(ProgramRegistrationBaseSchema):
     program: Optional[ProgramResponseSchema]
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 class PaginatedProgramParticipantsResponseSchema(BaseModel):

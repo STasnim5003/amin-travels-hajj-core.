@@ -53,3 +53,8 @@ class PilgrimDataModel(Base, BaseMixinModel):
     package_price_discount = Column(Integer, nullable=True)
     lead_agency = Column(String, nullable=True)
     sub_reference = Column(String, nullable=True)
+    pre_reg_voucher = Column(String, nullable=True)
+    reg_voucher = Column(String, nullable=True)
+    passport_dob = Column(String, nullable=True)
+    passport_expiry_date = Column(String, nullable=True)
+    passport_type = Column(String, nullable=True)

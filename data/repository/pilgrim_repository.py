@@ -105,7 +105,8 @@ async def fetch_pilgrim_data_json(
                         p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
                         p.vaccination_center, p.passport_copy, p.package_id, p.group_leader,
                         p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment,
-                        p.is_package_assigned, COUNT(*) OVER() AS total_count
+                        p.is_package_assigned, p.pre_reg_voucher, p.reg_voucher, p.passport_no, p.passport_dob,p.passport_expiry_date,
+                         p.passport_type, COUNT(*) OVER() AS total_count
                     FROM core.pilgrim_data p
                     {where_clause}
                     ORDER BY p.created_at DESC, p.id DESC
@@ -152,7 +153,13 @@ async def fetch_pilgrim_data_json(
                             'package_bed_types', package_bed_types,
                             'total_payable', total_payable,
                             'total_payment', total_payment,
-                            'is_package_assigned', is_package_assigned
+                            'is_package_assigned', is_package_assigned,
+                            'pre_reg_voucher', pre_reg_voucher,
+                            'reg_voucher', reg_voucher,
+                            'passport_no', passport_no,
+                            'passport_dob', passport_dob,
+                            'passport_expiry_date', passport_expiry_date,
+                            'passport_type', passport_type
                         ) AS item,
                         total_count
                     FROM filtered_data
