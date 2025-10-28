@@ -115,6 +115,17 @@ async def update_package(
     agency_name = current_user["agency_name"]
     return await package_service.update_package(db, package_id, request_body, agency_name)
 
+@private_router.delete("/package/{package_id}", tags=["packages"])
+async def delete_package(
+        package_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await package_service.delete_package_by_id(db, package_id, agency_name)
+
 @private_router.post("/package-name", tags=["packages"])
 async def create_package_name(
         request : PackageNameBaseSchema,
@@ -169,3 +180,4 @@ async def update_package_name(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await package_service.update_package_name(db, request, agency_name)
+

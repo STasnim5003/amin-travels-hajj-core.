@@ -9,7 +9,7 @@ from app.core.middleware.middleware import get_current_user, get_current_pilgrim
 from app.service import pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
-    BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema
+    BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, PilgrimFamilyGroupAssign
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -118,3 +118,15 @@ async def get_pilgrim_by_id(
 ) -> PilgrimDataResponseSchema:
 
     return await pilgrim_service.get_pilgrim_by_id(db, pilgrim_id)
+
+@private_router.put("/pilgrim/assign-family-code", tags=["Pilgrim"])
+async def assign_family_code_to_pilgrim(
+        request_body: PilgrimFamilyGroupAssign,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    # agency_name = "Marvellous Air Travels Ltd"
+    return await pilgrim_service.assign_family_code(db, request_body, agency_name)

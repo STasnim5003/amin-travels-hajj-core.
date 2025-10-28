@@ -18,6 +18,8 @@ class PilgrimDataBaseSchema(BaseModel):
     father_name: Optional[str] = None
     mother_name: Optional[str] = None
     spouse_name: Optional[str] = None
+    family_code: Optional[str] = None
+    group_name: Optional[str] = None
     occupation: Optional[str] = None
     voucher: Optional[str] = None
     type: Optional[str] = None
@@ -26,7 +28,6 @@ class PilgrimDataBaseSchema(BaseModel):
     passport_address: Optional[str] = None
     present_address: Optional[str] = None
     permanent_address: Optional[str] = None
-    group_name: Optional[str] = None
     registration_status: Optional[str] = None
     is_assigned: Optional[bool] = None
     allocation_status: Optional[str] = None
@@ -40,6 +41,7 @@ class PilgrimDataBaseSchema(BaseModel):
     reg_voucher : Optional[str] = None
     passport_type : Optional[str] = None
 
+
     class Config:
         from_attributes = True
         populate_by_name = True
@@ -51,7 +53,6 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     package_name: Optional[str] = None
     comment_on_package: Optional[str] = None
     passport_no: Optional[str] = None
-    passport_expiry_date: Optional[str] = None
     payment_status: Optional[str] = None
     reference: Optional[str] = None
     group_leader: Optional[str] = None
@@ -129,3 +130,7 @@ class PilgrimResponseForAdminUser(BaseModel):
     total_payable : Optional[int] = None
     total_due : Optional[int] = None
     total_payment : Optional[int] = None
+
+class PilgrimFamilyGroupAssign(BaseModel):
+    tracking_ids : List[str]
+    family_code: str

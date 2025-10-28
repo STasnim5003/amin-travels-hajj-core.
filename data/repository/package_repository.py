@@ -211,7 +211,7 @@ async def get_package_name_by_id(db, package_name_id):
     return result.scalar_one_or_none()
 
 
-async def delete_package_by_id(db, package_name_id):
+async def delete_package_name_by_id(db, package_name_id):
     try:
         await db.execute(
             delete(PackageNameModel).where(PackageNameModel.id == package_name_id)
@@ -235,6 +235,20 @@ async def update_package_name(db, request_dict):
 
         await db.commit()
         return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def delete_package_by_id(db:AsyncSession, package_id:int):
+    try:
+        await db.execute(
+            delete(PackageModel)
+            .where(PackageModel.id == package_id)
+        )
+
+        await db.commit()
+        return True
     except Exception as e:
         await db.rollback()
         raise e

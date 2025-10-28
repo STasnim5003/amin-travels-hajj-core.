@@ -1,13 +1,13 @@
 import json
-from typing import Optional, List
+from typing import Optional
 
 from fastapi import HTTPException
-from sqlalchemy import text, case, update, func, select
+from sqlalchemy import text, case, update, func, select, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.model.package_model import PackageModel
 from data.model.pilgrim_data_model import PilgrimDataModel
-from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema, PilgrimRegistrationRequestSchema
+from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema, PilgrimRegistrationRequestSchema, \
+    PilgrimFamilyGroupAssign
 
 
 async def fetch_pilgrim_data_json(
@@ -19,7 +19,7 @@ async def fetch_pilgrim_data_json(
         group_name: Optional[str] = None,
         allocation_status: Optional[str] = None,
         registration_status: Optional[str] = None,
-        group_leader : Optional[str] = None,
+        group_leader: Optional[str] = None,
         skip: int = 0,
         limit: int = 10,
 ):
@@ -106,7 +106,7 @@ async def fetch_pilgrim_data_json(
                         p.vaccination_center, p.passport_copy, p.package_id, p.group_leader,
                         p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment,
                         p.is_package_assigned, p.pre_reg_voucher, p.reg_voucher, p.passport_no, p.passport_dob,p.passport_expiry_date,
-                         p.passport_type, COUNT(*) OVER() AS total_count
+                         p.passport_type, p.family_code, COUNT(*) OVER() AS total_count
                     FROM core.pilgrim_data p
                     {where_clause}
                     ORDER BY p.created_at DESC, p.id DESC
@@ -159,7 +159,8 @@ async def fetch_pilgrim_data_json(
                             'passport_no', passport_no,
                             'passport_dob', passport_dob,
                             'passport_expiry_date', passport_expiry_date,
-                            'passport_type', passport_type
+                            'passport_type', passport_type,
+                            'family_code', family_code
                         ) AS item,
                         total_count
                     FROM filtered_data
@@ -188,7 +189,6 @@ async def fetch_pilgrim_data_json(
     except Exception as e:
         print(f"Error fetching pilgrim data: {str(e)}")
         raise
-
 
 
 async def update_pilgrim_approval_status(
@@ -307,6 +307,7 @@ async def pilgrim_register(db: AsyncSession, request_schema: PilgrimRegistration
 
     return updated_pilgrim
 
+
 async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
     try:
         query = (
@@ -333,8 +334,35 @@ async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
             detail="Unexpected error occurred while fetching pilgrim by ID."
         )
 
+
 async def get_pilgrims_by_tracking_ids(db, tracking_ids: list[str]):
     result = await db.execute(
         select(PilgrimDataModel).where(PilgrimDataModel.tracking_id.in_(tracking_ids))
     )
     return result.scalars().all()
+
+
+async def assign_family_code(db: AsyncSession, request_body: PilgrimFamilyGroupAssign):
+    try:
+        result = await db.execute(
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.tracking_id.in_(request_body.tracking_ids))
+            .values(family_code = request_body.family_code)
+            .returning(PilgrimDataModel)
+        )
+
+        await db.commit()
+        return result.scalars().all()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+async def available_family_codes(db: AsyncSession):
+    try:
+        result = await db.execute(
+            select(distinct(PilgrimDataModel.family_code))
+            .where(PilgrimDataModel.family_code.isnot(None))
+        )
+        return result.scalars().all()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

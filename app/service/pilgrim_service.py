@@ -15,7 +15,7 @@ from data.repository import pilgrim_repository, file_repository
 from data.repository.pilgrim_repository import fetch_pilgrim_data_json
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
-    PilgrimRegistrationRequestSchema
+    PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign
 
 
 async def get_pilgrim_data(db: AsyncSession,
@@ -147,4 +147,23 @@ async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int) -> PilgrimDataRes
 
         return PilgrimDataResponseSchema.model_validate(pilgrim_dict)
     except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+async def assign_family_code(db:AsyncSession, request_body:PilgrimFamilyGroupAssign, agency_name:str):
+    pilgrims = await pilgrim_repository.get_pilgrims_by_tracking_ids(db, request_body.tracking_ids)
+    family_codes = await pilgrim_repository.available_family_codes(db)
+
+    if not pilgrims:
+        raise HTTPException(status_code=400, detail="No pilgrims found.")
+
+    if request_body.family_code in family_codes:
+        raise HTTPException(status_code=400, detail="Family code already exists.")
+
+    for pilgrim in pilgrims:
+        if pilgrim.group_name != agency_name:
+            raise HTTPException(status_code=400, detail="Pilgrim group name does not match.")
+
+
+    result = await pilgrim_repository.assign_family_code(db, request_body)
+    return [PilgrimDataResponseSchema.model_validate(r) for r in result]
