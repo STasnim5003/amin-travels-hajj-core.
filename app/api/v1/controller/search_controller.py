@@ -16,7 +16,7 @@ async def get_pilgrim_search(
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] not in ["SUPER_ADMIN", "ADMIN", "AGENCY"]:
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+        raise HTTPException(status_code=403, detail="Not enough permissions")
 
     agency_name = None
     if current_user["role"] == "AGENCY":
