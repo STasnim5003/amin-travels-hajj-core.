@@ -130,10 +130,10 @@ async def get_package_name_by_id(db, package_name_id, agency_name):
 async def delete_package_by_id(db: AsyncSession, package_id:int, agency_name:str):
     try:
         package = await package_repository.get_package_by_id(db, package_id)
-        if package and package.agency_name != agency_name:
+        if package and package['agency_name'] != agency_name:
             raise HTTPException(status_code=400, detail="Package Name not found")
         await package_repository.delete_package_by_id(db, package_id)
-        packages = await package_repository.get_packages(db, agency_name)
+        packages = await package_repository.get_packages(db, None, None, None, None,None,None,None, agency_name)
         return packages
     except Exception as e:
         raise e
