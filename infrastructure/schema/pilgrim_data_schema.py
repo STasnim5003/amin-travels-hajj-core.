@@ -8,7 +8,7 @@ from infrastructure.schema.view_field_schema import ViewFieldResponseSchema
 
 class PilgrimDataBaseSchema(BaseModel):
     name_en: Optional[str] = None
-    name_bn: str
+    name_bn: Optional[str] = None
     tracking_id: Optional[str] = None
     serial_no: Optional[str] = None
     mobile_no: Optional[str] = None

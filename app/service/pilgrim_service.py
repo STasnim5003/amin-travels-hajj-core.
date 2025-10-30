@@ -33,31 +33,34 @@ async def get_pilgrim_data(db: AsyncSession,
                            show_customers: bool
                            ) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
+    try:
 
-    pilgrims, total, registration_status_count, allocation_status_count = await fetch_pilgrim_data_json(db, name_en,
-                                                                                                        tracking_id,
-                                                                                                        serial_no,
-                                                                                                        mobile_no,
-                                                                                                        group_name,
-                                                                                                        allocation_status,
-                                                                                                        registration_status,
-                                                                                                        group_leader,
-                                                                                                        show_customers,
-                                                                                                        skip, limit)
-    views = []
-    if username:
-        views = await view_field_service.get_views(db, username)
+        pilgrims, total, registration_status_count, allocation_status_count = await fetch_pilgrim_data_json(db, name_en,
+                                                                                                            tracking_id,
+                                                                                                            serial_no,
+                                                                                                            mobile_no,
+                                                                                                            group_name,
+                                                                                                            allocation_status,
+                                                                                                            registration_status,
+                                                                                                            group_leader,
+                                                                                                            show_customers,
+                                                                                                            skip, limit)
+        views = []
+        if username:
+            views = await view_field_service.get_views(db, username)
 
-    counts = registration_status_count or allocation_status_count or {}
+        counts = registration_status_count or allocation_status_count or {}
 
-    return PaginatedPilgrimDataListResponseSchema(
-        data=pilgrims,
-        total=total,
-        page=page,
-        size=limit,
-        views=views,
-        counts=counts
-    )
+        return PaginatedPilgrimDataListResponseSchema(
+            data=pilgrims,
+            total=total,
+            page=page,
+            size=limit,
+            views=views,
+            counts=counts
+        )
+    except Exception as e:
+        raise e
 
 
 async def update_pilgrim_data_approval_status(db: AsyncSession, data: BulkUpdatePilgrimRequestSchema, username: str):
