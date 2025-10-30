@@ -30,6 +30,7 @@ async def get_pilgrim_data(db: AsyncSession,
                            table_name: Optional[str],
                            username: Optional[str],
                            group_leader: Optional[str],
+                           show_customers: bool
                            ) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
 
@@ -41,6 +42,7 @@ async def get_pilgrim_data(db: AsyncSession,
                                                                                                         allocation_status,
                                                                                                         registration_status,
                                                                                                         group_leader,
+                                                                                                        show_customers,
                                                                                                         skip, limit)
     views = []
     if username:

@@ -20,6 +20,7 @@ async def fetch_pilgrim_data_json(
         allocation_status: Optional[str] = None,
         registration_status: Optional[str] = None,
         group_leader: Optional[str] = None,
+        show_customers: bool = True,
         skip: int = 0,
         limit: int = 10,
 ):
@@ -64,6 +65,9 @@ async def fetch_pilgrim_data_json(
         if group_leader:
             where_conditions.append("group_leader = :group_leader")
             params['group_leader'] = group_leader
+
+        if not show_customers:
+            where_conditions.append("tracking_id IS NOT NULL")
 
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
