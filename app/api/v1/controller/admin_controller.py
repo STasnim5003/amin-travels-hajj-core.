@@ -62,7 +62,7 @@ async def create_admin_login_endpoint(
 @private_router.get("/admin", response_model=AdminListResponseSchema, tags=["admin"])
 async def get_all_admins(
         page: int = Query(1, ge=1),
-        limit: int = Query(10, ge=1, le=100),
+        limit: int = Query(100, ge=1),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
