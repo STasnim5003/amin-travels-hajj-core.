@@ -12,6 +12,7 @@ from data.repository import package_assign_repository, pilgrim_repository
 from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema, \
     PackageAssignForMultiplePilgrimSchema
 from infrastructure.schema.payment_schema import PaymentSchema
+from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, PilgrimDataResponseSchema
 
 
 async def get_all_package_names(db: AsyncSession, agency_name: str):
@@ -80,7 +81,15 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
 
 async def get_package_assigned_pilgrims(db: AsyncSession, agency_name: str):
     try:
-        return await package_assign_repository.get_package_assigned_pilgrims(db, agency_name)
+        result =  await package_assign_repository.get_package_assigned_pilgrims(db, agency_name)
+        response = PaginatedPilgrimDataListResponseSchema(
+            data=[PilgrimDataResponseSchema.model_validate(r) for r in result],
+            total=len(result),
+            size=len(result),
+            page=1
+        )
+
+        return response
     except Exception as e:
         raise e
 
