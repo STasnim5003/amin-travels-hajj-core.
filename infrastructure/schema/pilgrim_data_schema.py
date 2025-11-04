@@ -20,7 +20,6 @@ class PilgrimDataBaseSchema(BaseModel):
     spouse_name: Optional[str] = None
     family_code: Optional[str] = None
     group_name: Optional[str] = None
-    sub_group: Optional[str] = None
     occupation: Optional[str] = None
     voucher: Optional[str] = None
     type: Optional[str] = None
