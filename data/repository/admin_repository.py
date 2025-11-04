@@ -246,7 +246,9 @@ async def get_lead_agency_pilgrims(db, lead_agency_name):
                             'date_of_birth', pd.date_of_birth,
                             'nid', pd.nid,
                             'gender', pd.gender,
-                            'agency_name', pd.group_name
+                            'agency_name', pd.group_name,
+                            'passport_dob', pd.passport_dob,
+                            'passport_type', pd.passport_type
                         )
                     ) FILTER (WHERE pd.tracking_id IS NOT NULL),
                     '[]'

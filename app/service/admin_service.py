@@ -198,6 +198,8 @@ async def get_lead_agency_pilgrims(db:AsyncSession, lead_agency_name: str):
                 "date_of_birth": None,
                 "nid": None,
                 "gender": None,
+                "passport_dob": None,
+                "passport_type": None,
                 "pilgrims": row["pilgrims"]
             })
 
