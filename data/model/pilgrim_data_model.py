@@ -59,3 +59,4 @@ class PilgrimDataModel(Base, BaseMixinModel):
     passport_expiry_date = Column(String, nullable=True)
     passport_type = Column(String, nullable=True)
     family_code = Column(String, nullable=True)
+    sub_group = Column(String, nullable = True)
