@@ -6,7 +6,6 @@ class PackageAssignBaseSchema(BaseModel):
     package_name: str
     package_duration: int
     package_bed_types: str
-    add_ons_services : Dict[str, Any]
     total_payable: int
     add_ons_services: Optional[Dict[str, Any]] = None
     package_price_discount: Optional[int] = None

@@ -208,3 +208,23 @@ async def get_payments_by_tracking_id(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
+async def create_payable_for_package_change(db:AsyncSession, payable_info : dict):
+    try:
+        stmt = (
+            insert(PaymentModel)
+            .values(**payable_info)
+        )
+        await db.execute(stmt)
+    except Exception as e:
+        raise e
+
+async def update_group_leader_payment_info(db: AsyncSession, group_leader_finance_info: dict):
+    try:
+        await db.execute(
+            update(AdminUserModel)
+            .where(AdminUserModel.code == group_leader_finance_info.get("code"))
+            .values(**group_leader_finance_info)
+        )
+    except Exception as e:
+        raise e

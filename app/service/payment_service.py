@@ -53,15 +53,18 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
     )
 
     try:
-        if existing_group_leader.is_payment_distributed and len(payment_request.pilgrims_tracking_id) > 0:
-            result = await payment_repository_multiple_pilgrims.create_payable_for_multiple_pilgrims(db, payment_data,
-                                                                                                     agency_name,
-                                                                                                     payable_info)
-            return result
-        else:
-            result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info,
-                                                                              agency_name)
-            return result
+        # if existing_group_leader.is_payment_distributed and len(payment_request.pilgrims_tracking_id) > 0:
+        #     result = await payment_repository_multiple_pilgrims.create_payable_for_multiple_pilgrims(db, payment_data,
+        #                                                                                              agency_name,
+        #                                                                                              payable_info)
+        #     return result
+        # else:
+        #     result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info,
+        #                                                                       agency_name)
+        #     return result
+        result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info,
+                                                                          agency_name)
+        return result
     except Exception as e:
         raise e
 
@@ -110,16 +113,20 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
         group_leader_code=request.group_leader
     )
     try:
-        if existing_group_leader.is_payment_distributed and len(request.pilgrims_tracking_id) > 0:
-            result = await payment_repository_multiple_pilgrims.create_payment_for_multiple_pilgrims(db, payment_data,
-                                                                                                     agency_name,
-                                                                                                     payment_info)
-            return result
-        else:
-            result = await payment_repository.create_payment_for_group_leader(db, payment_data, agency_name,
-                                                                              payment_info)
+        # if existing_group_leader.is_payment_distributed and len(request.pilgrims_tracking_id) > 0:
+        #     result = await payment_repository_multiple_pilgrims.create_payment_for_multiple_pilgrims(db, payment_data,
+        #                                                                                              agency_name,
+        #                                                                                              payment_info)
+        #     return result
+        # else:
+        #     result = await payment_repository.create_payment_for_group_leader(db, payment_data, agency_name,
+        #                                                                       payment_info)
+        #
+        #     return result
+        result = await payment_repository.create_payment_for_group_leader(db, payment_data, agency_name,
+                                                                          payment_info)
 
-            return result
+        return result
     except Exception as e:
         raise e
 

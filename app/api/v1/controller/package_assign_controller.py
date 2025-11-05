@@ -85,3 +85,14 @@ async def assign_package_multiple_pilgrim(
         raise HTTPException(status_code=403, detail="Not Authorized")
     agency_name = current_user["agency_name"]
     return await package_assign_service.assign_package_for_multiple_pilgrims(db, request, agency_name)
+
+@private_router.put("/change-package", tags=['package-assign'])
+async def change_package(
+        request: PackageAssignSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Not Authorized")
+    agency_name = current_user["agency_name"]
+    return await package_assign_service.change_assigned_package(db=db, request=request, agency_name=agency_name)

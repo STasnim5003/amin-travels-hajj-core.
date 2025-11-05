@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, update, insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from urllib3 import request
 
 from data.model.admin_user_model import AdminUserModel
 from data.model.package_model import PackageModel
@@ -238,6 +239,16 @@ async def insert_bulk_payments(db, pilgrim_payments_data, group_leader_payments_
         await db.execute(insert(PaymentModel).values(pilgrim_payments_data))
     if group_leader_payments_data:
         await db.execute(insert(PaymentModel).values(group_leader_payments_data))
+
+async def individual_pilgrim_package_change(db: AsyncSession, pilgrim_package_and_finance_update : dict):
+    try:
+        await db.execute(
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.tracking_id == pilgrim_package_and_finance_update.get("tracking_id"))
+            .values(**pilgrim_package_and_finance_update)
+        )
+    except Exception as e:
+        raise e
 
 async def commit_transaction(db):
     await db.commit()

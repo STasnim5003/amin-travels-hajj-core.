@@ -252,3 +252,25 @@ async def delete_package_by_id(db:AsyncSession, package_id:int):
     except Exception as e:
         await db.rollback()
         raise e
+
+async def get_package_by_name_and_duration(db: AsyncSession, package_name: str, duration : int, agency_name: str ):
+    try:
+        stmt = (
+            select(PackageModel)
+            .where(
+                PackageModel.agency_name == agency_name,
+                PackageModel.name == package_name,
+                PackageModel.duration == duration
+            )
+        )
+
+        result = await db.execute(stmt)
+        package = result.scalars().one_or_none()
+
+        if not package:
+            raise HTTPException(status_code=400, detail="Package not found")
+
+        return package
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error fetching package: {str(e)}")
