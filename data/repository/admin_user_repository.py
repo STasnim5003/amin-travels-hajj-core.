@@ -197,6 +197,10 @@ async def get_group_leader_with_pilgrim_count(db: AsyncSession, agency_name: str
         query = (
             select(
                 AdminUserModel.code.label("group_leader_code"),
+                AdminUserModel.total_payable,
+                AdminUserModel.total_payment,
+                AdminUserModel.total_due,
+                AdminUserModel.total_available_amount,
                 func.coalesce(func.count(PilgrimDataModel.id), 0).label("no_of_pilgrims")
             )
             .outerjoin(
@@ -208,7 +212,7 @@ async def get_group_leader_with_pilgrim_count(db: AsyncSession, agency_name: str
                 AdminUserModel.agency_name == agency_name,
                 AdminUserModel.code.isnot(None)
             )
-            .group_by(AdminUserModel.code)
+            .group_by(AdminUserModel.code, AdminUserModel.total_payable, AdminUserModel.total_payment, AdminUserModel.total_due, AdminUserModel.total_available_amount)
             .order_by(func.coalesce(func.count(PilgrimDataModel.id), 0).desc())
         )
 
