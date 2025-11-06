@@ -1,0 +1,70 @@
+import fastapi
+from fastapi import Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.middleware.middleware import get_current_user
+from app.service import zone_request_service
+from data.db.db_config import get_async_db
+from infrastructure.schema.zone_request_schema import ZoneRequestResponseSchema, ZoneRequestCreateSchema, \
+    ZoneRequestUpdateSchema, ZoneRequestListResponseSchema
+
+private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private", tags=["Zone Request"])
+
+
+@private_router.post("/zone-request", response_model=ZoneRequestResponseSchema, tags=["Zone Request"])
+async def create_zone_request(
+    request: ZoneRequestCreateSchema,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: dict = Depends(get_current_user)
+) -> ZoneRequestResponseSchema:
+
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await zone_request_service.create_zone_request(db=db, request=request, agency_name=agency_name)
+
+
+@private_router.put("/zone-request", response_model=ZoneRequestResponseSchema, tags=["Zone Request"])
+async def update_zone_request(
+    request: ZoneRequestUpdateSchema,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: dict = Depends(get_current_user)
+) -> ZoneRequestResponseSchema:
+
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await zone_request_service.update_zone_request(db=db, request=request, agency_name=agency_name)
+
+
+@private_router.get("/zone-request", response_model=ZoneRequestListResponseSchema, tags=["Zone Request"])
+async def get_zone_requests(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: dict = Depends(get_current_user)
+) -> ZoneRequestListResponseSchema:
+
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await zone_request_service.get_zone_requests(db=db, agency_name=agency_name)
+
+
+@private_router.get("/zone-request/{zone_request_id}", response_model=ZoneRequestResponseSchema, tags=["Zone Request"])
+async def get_zone_request_by_id(
+    zone_request_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: dict = Depends(get_current_user)
+) -> ZoneRequestResponseSchema:
+
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await zone_request_service.get_zone_request_by_id(
+        db=db,
+        zone_request_id=zone_request_id,
+        agency_name=agency_name
+    )

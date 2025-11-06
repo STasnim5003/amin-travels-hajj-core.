@@ -43,6 +43,28 @@ def upgrade() -> None:
 
     )
 
+    op.create_table('zone_request',
+        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True, index=True),
+        sa.Column('agency_name', sa.String, nullable=False),
+        sa.Column('zone_wise_tent_in_mina', sa.String, nullable=True),
+        sa.Column('zone_wise_pilgrims', sa.Integer, nullable=True),
+        sa.Column('service_company_in_mina_arafat', sa.String, nullable=True),
+        sa.Column('package_in_mina_arafat', sa.String, nullable=True),
+        sa.Column('remarks', sa.String, nullable=True),
+        sa.Column('created_at', sa.DateTime(),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),
+                  nullable=False),
+        sa.Column('updated_at', sa.DateTime(),
+                  server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),
+                  nullable=False),
+        sa.Column('created_by', sa.String(), nullable=True),
+        sa.Column('updated_by', sa.String(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
+        sa.PrimaryKeyConstraint('id'),
+        schema='core'
+    )
+
 
 def downgrade() -> None:
     op.drop_table('flight_request', schema='core')
+    op.drop_table('zone_request', schema='core')
