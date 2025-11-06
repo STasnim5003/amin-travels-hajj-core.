@@ -1,4 +1,4 @@
-from sqlalchemy import update, select
+from sqlalchemy import update, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.flight_request_model import FlightRequestModel
@@ -49,4 +49,31 @@ async def get_all_flight_requests(db, agency_name):
         result = await db.execute(stmt)
         return result.scalars().all()
     except Exception as e:
+        raise e
+
+async def delete_flight_request(db: AsyncSession, flight_request_id: int, agency_name: str) -> bool:
+    try:
+        # Check if the flight request exists
+        result = await db.execute(
+            select(FlightRequestModel).where(
+                FlightRequestModel.id == flight_request_id,
+                FlightRequestModel.agency_name == agency_name
+            )
+        )
+        flight_request = result.scalar_one_or_none()
+        if not flight_request:
+            return False
+
+        # Delete the flight request
+        await db.execute(
+            delete(FlightRequestModel).where(
+                FlightRequestModel.id == flight_request_id,
+                FlightRequestModel.agency_name == agency_name
+            )
+        )
+        await db.commit()
+        return True
+
+    except Exception as e:
+        await db.rollback()
         raise e

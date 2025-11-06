@@ -58,3 +58,16 @@ async def get_flight_request_by_id(db:AsyncSession, flight_request_id:int, agenc
         return FlightRequestResponseSchema.model_validate(result)
     except Exception as e:
         raise e
+
+
+async def delete_flight_request(db: AsyncSession, flight_request_id: int, agency_name: str):
+    success = await flight_request_repository.delete_flight_request(
+        db=db,
+        flight_request_id=flight_request_id,
+        agency_name=agency_name
+    )
+
+    if not success:
+        raise HTTPException(status_code=400, detail="Flight request not found or could not be deleted")
+
+    return {"message" : "Flight Request Deleted Successfully"}

@@ -61,3 +61,15 @@ async def get_zone_request_by_id(db: AsyncSession, zone_request_id: int, agency_
 
     except Exception as e:
         raise e
+
+async def delete_zone_request(db: AsyncSession, zone_request_id: int, agency_name: str):
+    success = await zone_request_repository.delete_zone_request(
+        db=db,
+        zone_request_id=zone_request_id,
+        agency_name=agency_name
+    )
+
+    if not success:
+        raise HTTPException(status_code=400, detail="Zone request not found or could not be deleted")
+
+    return {"message" : "Zone Request deleted successfully"}

@@ -57,3 +57,20 @@ async def get_flight_request_by_id(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await flight_request_service.get_flight_request_by_id(db=db, flight_request_id=flight_request_id, agency_name=agency_name)
+
+@private_router.delete("/flight-request/{flight_request_id}", tags=['Flight Request'])
+async def delete_flight_request(
+        flight_request_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await flight_request_service.delete_flight_request(
+        db=db,
+        flight_request_id=flight_request_id,
+        agency_name=agency_name
+    )
