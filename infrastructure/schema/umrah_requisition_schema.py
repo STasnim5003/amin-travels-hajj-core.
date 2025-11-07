@@ -9,15 +9,14 @@ class UmrahRequisitionHotelSchema(BaseModel):
     hotel_name : str
     type : str
     distance : str
-    room_type : str
+    room_type : Any
     check_in : Any
     check_out : Any
     food: str
 
 class UmrahRequisitionTransportSchema(BaseModel):
     route_id : int
-    transport_id : int
-    number_of_transport : int
+    transport: Any
 
 
 class UmrahRequisitionBase(BaseModel):
