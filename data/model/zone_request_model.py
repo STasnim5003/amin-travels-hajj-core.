@@ -14,3 +14,4 @@ class ZoneRequestModel(Base, BaseMixinModel):
     service_company_in_mina_arafat = Column(String, nullable=True)
     package_in_mina_arafat = Column(String, nullable=True)
     remarks = Column(String, nullable=True)
+    total_pilgrims = Column(Integer, nullable=True)

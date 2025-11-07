@@ -8,6 +8,7 @@ class ZoneRequestBaseSchema(BaseModel):
     service_company_in_mina_arafat: Optional[str] = None
     package_in_mina_arafat: Optional[str] = None
     remarks: Optional[str] = None
+    total_pilgrims: Optional[int] = 0
 
 class ZoneRequestCreateSchema(ZoneRequestBaseSchema):
     pass
@@ -19,6 +20,7 @@ class ZoneRequestUpdateSchema(BaseModel):
     service_company_in_mina_arafat: Optional[str] = None
     package_in_mina_arafat: Optional[str] = None
     remarks: Optional[str] = None
+    total_pilgrims: Optional[int] = None
     is_active: Optional[bool] = None
 
 class ZoneRequestResponseSchema(ZoneRequestBaseSchema):
