@@ -7,12 +7,12 @@ from pydantic import BaseModel
 class FlightRequestBaseSchema(BaseModel):
     flight_name: str
     total_seat: int
-    arrival_route: int
-    arrival_date_option_1: Optional[Any] = None
-    arrival_date_option_2: Optional[Any] = None
     departure_route: int
     departure_date_option_1: Optional[Any] = None
     departure_date_option_2: Optional[Any] = None
+    arrival_route: int
+    arrival_date_option_1: Optional[Any] = None
+    arrival_date_option_2: Optional[Any] = None
 
 
 class FlightRequestCreateSchema(FlightRequestBaseSchema):
@@ -34,8 +34,8 @@ class FlightRequestUpdateSchema(BaseModel):
 
 class FlightRequestResponseSchema(FlightRequestBaseSchema):
     id: int
-    arrival_route_description :Optional[str] = None
     departure_route_description :Optional[str] = None
+    arrival_route_description: Optional[str] = None
     agency_name: Optional[str] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None

@@ -40,9 +40,6 @@ async def get_zone_requests(db: AsyncSession, agency_name: str):
     try:
         result = await zone_request_repository.get_all_zone_requests(db, agency_name)
 
-        if not result:
-            raise HTTPException(status_code=400, detail='No zone requests found')
-
         zone_requests = [ZoneRequestResponseSchema.model_validate(zr) for zr in result]
         return ZoneRequestListResponseSchema(zone_requests=zone_requests)
 

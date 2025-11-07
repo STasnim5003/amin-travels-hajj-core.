@@ -38,9 +38,6 @@ async def get_flight_requests(db:AsyncSession, agency_name:str):
     try:
         result = await flight_request_repository.get_all_flight_requests(db, agency_name)
 
-        if not result:
-            raise HTTPException(status_code=400, detail='Flight request not found')
-
         flight_requests = []
         for flight, arrival_desc, departure_desc in result:
             data = flight.__dict__.copy()
