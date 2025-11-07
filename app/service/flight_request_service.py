@@ -40,9 +40,14 @@ async def get_flight_requests(db:AsyncSession, agency_name:str):
 
         if not result:
             raise HTTPException(status_code=400, detail='Flight request not found')
+
         flight_requests = []
-        for flight_request in result:
-            flight_requests.append(FlightRequestResponseSchema.model_validate(flight_request))
+        for flight, arrival_desc, departure_desc in result:
+            data = flight.__dict__.copy()
+            data["arrival_route_description"] = arrival_desc
+            data["departure_route_description"] = departure_desc
+            flight_requests.append(data)
+
         return FlightRequestListResponseSchema(flight_requests = flight_requests)
     except Exception as e:
         raise e

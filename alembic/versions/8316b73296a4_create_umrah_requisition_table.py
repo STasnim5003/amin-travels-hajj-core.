@@ -47,6 +47,14 @@ def upgrade() -> None:
         schema='core'
     )
 
+    op.drop_column('flight_request', 'arrival_route',schema='core')
+    op.drop_column('flight_request', 'departure_route',schema='core')
+
+    op.add_column('flight_request', sa.Column('arrival_route', sa.Integer), schema='core')
+    op.add_column('flight_request', sa.Column('departure_route', sa.Integer), schema='core')
+
+
+
 
 def downgrade() -> None:
     op.drop_table('umrah_requisition', schema='core')
