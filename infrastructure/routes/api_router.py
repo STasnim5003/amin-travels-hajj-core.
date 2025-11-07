@@ -5,7 +5,7 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    ziara_controller, script_controller, admin_user_controller, payment_controller,
                                    add_ons_service_controller, package_assign_controller, search_controller,
                                    payment_category_controller, bank_info_controller, flight_request_controller,
-                                   zone_request_controller)
+                                   zone_request_controller, umrah_requisition_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
 from app.api.v1.controller.admin_user_controller import public_router
 
@@ -53,3 +53,4 @@ router.include_router(payment_category_controller.private_router)
 router.include_router(bank_info_controller.private_router)
 router.include_router(flight_request_controller.private_router)
 router.include_router(zone_request_controller.private_router)
+router.include_router(umrah_requisition_controller.private_router)
