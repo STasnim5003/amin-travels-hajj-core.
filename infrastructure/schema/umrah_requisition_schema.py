@@ -45,3 +45,6 @@ class UmrahRequisitionResponseSchema(UmrahRequisitionBase):
 
     class Config:
         from_attributes = True
+
+class UmrahRequisitionListResponseSchema(BaseModel):
+    umrah_requisitions: List[UmrahRequisitionResponseSchema]
