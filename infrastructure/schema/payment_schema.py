@@ -28,6 +28,9 @@ class PaymentResponseSchema(PaymentSchema):
     pilgrims_tracking_id: Optional[List[str]] = None
     way_of_payment: Optional[str] = None
     transfer_no: Optional[str] = None
+    cheque_no: Optional[str] = None
+    cheque_bank: Optional[str] = None
+    voucher_no : Optional[str] = None
     bank_info: Optional[Dict[str, Any]] = None
 
 
@@ -151,6 +154,9 @@ class PilgrimPaymentBaseSchema(PaymentPayableBaseSchema):
     bank_info_id: Optional[int] = None
     way_of_payment: Optional[str] = None
     transfer_no: Optional[str] = None
+    voucher_no: Optional[str] = None,
+    cheque_no: Optional[str] = None,
+    cheque_bank: Optional[str] = None,
 
 
 class GroupLeaderPaymentBaseSchema(PaymentPayableBaseSchema):
@@ -159,6 +165,10 @@ class GroupLeaderPaymentBaseSchema(PaymentPayableBaseSchema):
     bank_info_id: Optional[int] = None
     way_of_payment: Optional[str] = None
     transfer_no: Optional[str] = None
+    voucher_no: Optional[str] = None,
+    cheque_no: Optional[str] = None,
+    cheque_bank: Optional[str] = None,
+
 
 
 class ReceiptPrintSchema(BaseModel):

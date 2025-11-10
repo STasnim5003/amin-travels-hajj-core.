@@ -41,6 +41,9 @@ async def create_payment_of_group_leader(
         date: Optional[str] = Form(None),
         amount: int = Form(...),
         payment_category: Optional[str] = Form(None),
+        voucher_no: Optional[str] = Form(None),
+        cheque_no: Optional[str] = Form(None),
+        cheque_bank: Optional[str] = Form(None),
         receipt: Optional[UploadFile] = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
@@ -67,7 +70,10 @@ async def create_payment_of_group_leader(
         date=date,
         amount=amount,
         category="Payment",
-        payment_category=payment_category
+        payment_category=payment_category,
+        voucher_no = voucher_no,
+        cheque_no = cheque_no,
+        cheque_bank = cheque_bank
     )
     return await payment_service.create_group_leader_payment(db, request_schema, agency_name, receipt)
 
@@ -154,6 +160,9 @@ async def create_payment_for_pilgrim(
         bank_info_id: Optional[int] = Form(None),
         way_of_payment: Optional[str] = Form(None),
         transfer_no: Optional[str] = Form(None),
+        voucher_no: Optional[str] = Form(None),
+        cheque_no: Optional[str] = Form(None),
+        cheque_bank: Optional[str] = Form(None),
         receipt: Optional[UploadFile] = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
@@ -171,7 +180,10 @@ async def create_payment_for_pilgrim(
         bank_info_id=bank_info_id,
         way_of_payment=way_of_payment,
         transfer_no=transfer_no,
-        category="Payment"
+        category="Payment",
+        voucher_no=voucher_no,
+        cheque_no=cheque_no,
+        cheque_bank=cheque_bank
     )
 
     return await pilgrim_payment_service.create_payment_for_pilgrim(db, request, agency_name, receipt)
