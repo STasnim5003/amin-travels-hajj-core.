@@ -159,20 +159,21 @@ async def get_payment_summary_for_agency(
         offset = (page - 1) * size
 
         # Get current time in Bangladesh timezone
-        tz = pytz.timezone("Asia/Dhaka")
+        tz = pytz.timezone('Asia/Dhaka')  # or your timezone
         now = datetime.now(tz)
 
-        # Calculate time ranges (convert to naive datetime to match DB)
-        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0).replace(tzinfo=None)
-        today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999).replace(tzinfo=None)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(days=1)
 
+        # Yesterday's date range
         yesterday_start = today_start - timedelta(days=1)
         yesterday_end = today_start
 
-        seven_days_ago = (now - timedelta(days=7)).replace(tzinfo=None)
+        # Last 7 days
+        seven_days_ago = today_start - timedelta(days=7)
 
         query = text("""
-            WITH filtered AS (
+            WITH all_payments AS (
                 SELECT 
                     p.*,
                     b.name AS bank_name,
@@ -194,11 +195,15 @@ async def get_payment_summary_for_agency(
                 LEFT JOIN core.pilgrim_data pd 
                     ON p.tracking_id = pd.tracking_id
                 WHERE p.created_by = :agency_name
-                  AND (CAST(:group_leader AS TEXT) IS NULL OR p.group_leader = :group_leader)
-                  AND (CAST(:tracking_id AS TEXT) IS NULL OR p.tracking_id = :tracking_id)
+            ),
+            filtered AS (
+                SELECT *
+                FROM all_payments
+                WHERE (CAST(:group_leader AS TEXT) IS NULL OR group_leader = :group_leader)
+                  AND (CAST(:tracking_id AS TEXT) IS NULL OR tracking_id = :tracking_id)
                   AND (
-                        (:user_type = 'GROUP_LEADER' AND p.group_leader IS NOT NULL AND p.tracking_id IS NULL)
-                     OR (:user_type = 'PILGRIM' AND p.group_leader IS NULL AND p.tracking_id IS NOT NULL)
+                        (:user_type = 'GROUP_LEADER' AND group_leader IS NOT NULL)
+                     OR (:user_type = 'PILGRIM' AND group_leader IS NULL AND tracking_id IS NOT NULL)
                      OR :user_type IS NULL
                   )
             ),
@@ -228,14 +233,15 @@ async def get_payment_summary_for_agency(
                             )
                         ) ORDER BY f.created_at DESC
                     ) AS payments,
-                    CASE WHEN f.group_leader IS NOT NULL THEN 1 ELSE 2 END AS sort_order
+                    CASE WHEN f.group_leader IS NOT NULL THEN 1 ELSE 2 END AS sort_order,
+                    MAX(f.created_at) AS latest_payment_time
                 FROM filtered f
                 GROUP BY sort_order, COALESCE(f.group_leader, f.tracking_id)
             ),
             ordered AS (
                 SELECT key, payments
                 FROM grouped
-                ORDER BY sort_order, key
+                ORDER BY sort_order, latest_payment_time DESC, key
                 OFFSET :offset LIMIT :size
             ),
             bank_summary AS (
@@ -245,17 +251,19 @@ async def get_payment_summary_for_agency(
                     bank_branch,
                     bank_account,
                     SUM(amount) AS total_payment
-                FROM filtered
-                WHERE bank_info_id IS NOT NULL AND category = 'Payment'
+                FROM all_payments
+                WHERE bank_info_id IS NOT NULL
+                  AND category = 'Payment'
                 GROUP BY bank_info_id, bank_name, bank_branch, bank_account
             ),
             summary AS (
                 SELECT
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment'), 0) AS total_payment,
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :seven_days_ago), 0) AS last_7_days_payment,
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :today_start AND created_at < :today_end), 0) AS today_payment,
-                    COALESCE(SUM(amount) FILTER (WHERE category = 'Payment' AND created_at >= :yesterday_start AND created_at < :yesterday_end), 0) AS yesterday_payment
-                FROM filtered
+                    COALESCE(SUM(amount), 0) AS total_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE created_at >= :seven_days_ago), 0) AS last_7_days_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE DATE(created_at) = DATE(:today_start)), 0) AS today_payment,
+                    COALESCE(SUM(amount) FILTER (WHERE DATE(created_at) = DATE(:yesterday_start)), 0) AS yesterday_payment
+                FROM all_payments
+                WHERE category = 'Payment'
             )
             SELECT json_build_object(
                 'grouped_payments', COALESCE((SELECT json_object_agg(key, payments) FROM ordered), '{}'::json),
@@ -280,11 +288,11 @@ async def get_payment_summary_for_agency(
             "group_leader": group_leader or None,
             "tracking_id": tracking_id or None,
             "user_type": user_type,
-            "seven_days_ago": seven_days_ago,
-            "today_start": today_start,
-            "today_end": today_end,
-            "yesterday_start": yesterday_start,
-            "yesterday_end": yesterday_end,
+            "seven_days_ago": seven_days_ago.replace(tzinfo=None),
+            "today_start": today_start.replace(tzinfo=None),
+            "today_end": today_end.replace(tzinfo=None),
+            "yesterday_start": yesterday_start.replace(tzinfo=None),
+            "yesterday_end": yesterday_end.replace(tzinfo=None),
             "offset": offset,
             "size": size,
         }
