@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.service import admin_service
 from data.repository import flight_request_repository, admin_repository
 from infrastructure.schema.flight_request_schema import FlightRequestCreateSchema, FlightRequestResponseSchema, \
     FlightRequestUpdateSchema, FlightRequestListResponseSchema
@@ -36,7 +37,11 @@ async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSc
 
 async def get_flight_requests(db:AsyncSession, agency_name:str):
     try:
-        result = await flight_request_repository.get_all_flight_requests(db, agency_name)
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
+
+        result = await flight_request_repository.get_all_flight_requests(db, child_agencies)
 
         flight_requests = []
         for flight, arrival_desc, departure_desc in result:

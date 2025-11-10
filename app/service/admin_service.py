@@ -220,3 +220,10 @@ async def check_lead_agency_assignment(db, agency_name):
         }
     except Exception as e:
         raise e
+
+async def get_child_agencies(db:AsyncSession, lead_agency_name: str):
+    try:
+        agencies = await admin_repository.get_child_agencies(db, lead_agency_name)
+        return agencies
+    except Exception as e:
+        raise e

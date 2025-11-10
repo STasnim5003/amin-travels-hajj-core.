@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.service import admin_service
 from data.repository import zone_request_repository
 from infrastructure.schema.zone_request_schema import ZoneRequestCreateSchema, ZoneRequestResponseSchema, \
     ZoneRequestUpdateSchema, ZoneRequestListResponseSchema
@@ -38,7 +39,12 @@ async def update_zone_request(db: AsyncSession, request: ZoneRequestUpdateSchema
 
 async def get_zone_requests(db: AsyncSession, agency_name: str):
     try:
-        result = await zone_request_repository.get_all_zone_requests(db, agency_name)
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
+
+        result = await zone_request_repository.get_all_zone_requests(db, child_agencies)
+
 
         zone_requests = [ZoneRequestResponseSchema.model_validate(zr) for zr in result]
         return ZoneRequestListResponseSchema(zone_requests=zone_requests)

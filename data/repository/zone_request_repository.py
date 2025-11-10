@@ -45,9 +45,9 @@ async def update_zone_request(db: AsyncSession, zone_request_id: int, data: dict
         raise e
 
 
-async def get_all_zone_requests(db: AsyncSession, agency_name: str):
+async def get_all_zone_requests(db: AsyncSession, agency_names: list):
     try:
-        stmt = select(ZoneRequestModel).where(ZoneRequestModel.agency_name == agency_name)
+        stmt = select(ZoneRequestModel).where(ZoneRequestModel.agency_name.in_(agency_names))
         result = await db.execute(stmt)
         return result.scalars().all()
     except Exception as e:

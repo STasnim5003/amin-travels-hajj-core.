@@ -276,3 +276,15 @@ async def check_lead_agency_assignment(db, agency_name):
         return result.scalar_one_or_none()
     except Exception as e:
         raise e
+
+
+async def get_child_agencies(db, lead_agency_name):
+    try:
+        result = await db.execute(
+            select(AdminModel.agency_name)
+            .where(AdminModel.lead_agency == lead_agency_name)
+        )
+
+        return result.scalars().all()
+    except Exception as e:
+        raise e

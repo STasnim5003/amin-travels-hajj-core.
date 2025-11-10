@@ -61,7 +61,7 @@ async def update_flight_request(db: AsyncSession, flight_request_id: int, data: 
         raise e
 
 
-async def get_all_flight_requests(db, agency_name):
+async def get_all_flight_requests(db, agency_names):
     try:
         ArrivalRoute = aliased(RouteModel)
         DepartureRoute = aliased(RouteModel)
@@ -74,7 +74,7 @@ async def get_all_flight_requests(db, agency_name):
             )
             .join(ArrivalRoute, FlightRequestModel.arrival_route == ArrivalRoute.id, isouter=True)
             .join(DepartureRoute, FlightRequestModel.departure_route == DepartureRoute.id, isouter=True)
-            .where(FlightRequestModel.agency_name==agency_name)
+            .where(FlightRequestModel.agency_name.in_(agency_names))
         )
         result = await db.execute(stmt)
         return result.all()
