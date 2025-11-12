@@ -6,7 +6,7 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    add_ons_service_controller, package_assign_controller, search_controller,
                                    payment_category_controller, bank_info_controller, flight_request_controller,
                                    zone_request_controller, umrah_requisition_controller, city_name_controller,
-                                   transport_controller)
+                                   transport_controller, vendor_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
 from app.api.v1.controller.admin_user_controller import public_router
 
@@ -58,3 +58,4 @@ router.include_router(umrah_requisition_controller.private_router)
 
 router.include_router(city_name_controller.private_router)
 router.include_router(transport_controller.private_router)
+router.include_router(vendor_controller.private_router)
