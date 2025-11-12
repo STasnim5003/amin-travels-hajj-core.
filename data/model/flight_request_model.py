@@ -18,3 +18,4 @@ class FlightRequestModel(Base, BaseMixinModel):
     departure_date_option_1 = Column(JSONB, nullable=True)
     departure_date_option_2 = Column(JSONB, nullable=True)
     agency_name = Column(String, nullable=True)
+    duration = Column(String, nullable=True)

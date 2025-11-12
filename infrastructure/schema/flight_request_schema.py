@@ -13,6 +13,7 @@ class FlightRequestBaseSchema(BaseModel):
     arrival_route: int
     arrival_date_option_1: Optional[Any] = None
     arrival_date_option_2: Optional[Any] = None
+    duration: Optional[str] = None
 
 
 class FlightRequestCreateSchema(FlightRequestBaseSchema):
@@ -30,6 +31,7 @@ class FlightRequestUpdateSchema(BaseModel):
     departure_date_option_1: Optional[Any] = None
     departure_date_option_2: Optional[Any] = None
     is_active: Optional[bool] = None
+    duration : Optional[str] = None
 
 
 class FlightRequestResponseSchema(FlightRequestBaseSchema):
