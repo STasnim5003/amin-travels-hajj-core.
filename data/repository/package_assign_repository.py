@@ -20,8 +20,6 @@ async def get_all_package_names(db: AsyncSession, agency_name: str):
     stmt = (
         select(PackageModel.name)
         .where(
-            PackageModel.hajj_year == 2026,
-            PackageModel.description_type == "DETAILS",
             PackageModel.package_type == "HAJJ",
             PackageModel.agency_name == agency_name
         )
@@ -37,8 +35,6 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
         select(PackageModel.duration)
         .where(
             PackageModel.name == package_name,
-            PackageModel.hajj_year == 2026,
-            PackageModel.description_type == "DETAILS",
             PackageModel.package_type == "HAJJ",
             PackageModel.agency_name == agency_name
         )
@@ -56,11 +52,10 @@ async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, age
         select(PackageModel.bed_type)
         .where(
             PackageModel.name == package_name,
-            PackageModel.hajj_year == 2026,
-            PackageModel.description_type == "DETAILS",
             PackageModel.package_type == "HAJJ",
             PackageModel.agency_name == agency_name
         )
+        .distinct()
     )
     result = await db.execute(stmt)
     bed_type_json = result.scalars().first()
