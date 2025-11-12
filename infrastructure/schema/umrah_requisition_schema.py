@@ -33,6 +33,12 @@ class UmrahRequisitionBase(BaseModel):
     hotel_info: List[UmrahRequisitionHotelSchema]
     transport: List[UmrahRequisitionTransportSchema]
     remarks: Optional[str] = None
+    food : Optional[bool] = None
+    mobile_no : Optional[str] = None
+    flight_date_option_1 : Optional[Any] = None
+    flight_date_option_2 : Optional[Any] = None
+    flight_date_final : Optional[Any] = None
+    passport_info : Optional[Any] = None
 
 class UmrahRequisitionResponseSchema(UmrahRequisitionBase):
     id : int

@@ -23,6 +23,8 @@ def upgrade() -> None:
     op.add_column('umrah_requisition', sa.Column('food', sa.Boolean(), nullable=True), schema='core')
     op.add_column('umrah_requisition', sa.Column('flight_date_option_1', postgresql.JSONB(astext_type=sa.Text()), nullable=True), schema='core')
     op.add_column('umrah_requisition', sa.Column('flight_date_option_2', postgresql.JSONB(astext_type=sa.Text()), nullable=True), schema='core')
+    op.add_column('umrah_requisition', sa.Column('flight_date_final', postgresql.JSONB(astext_type=sa.Text()), nullable=True), schema='core')
+    op.add_column('umrah_requisition', sa.Column('passport_info', postgresql.JSONB(astext_type=sa.Text()), nullable=True), schema='core')
 
     op.add_column('flight_request', sa.Column('duration', sa.String(), nullable=True), schema='core')
 
@@ -32,3 +34,5 @@ def downgrade() -> None:
     op.drop_column('umrah_requisition', 'food', schema='core')
     op.drop_column('umrah_requisition', 'mobile_no', schema='core')
     op.drop_column('umrah_requisition', 'flight_date_option_1', schema='core')
+    op.drop_column('umrah_requisition', 'flight_date_final', schema='core')
+    op.drop_column('umrah_requisition', 'passport_info', schema='core')

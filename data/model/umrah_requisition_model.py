@@ -23,4 +23,10 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     transport = Column(JSONB, nullable=False)
     remarks = Column(String, nullable=False)
     agency_name = Column(String, nullable=False)
+    food = Column(Boolean, nullable=False)
+    mobile_no = Column(String, nullable=False)
+    flight_date_option_1 = Column(JSONB, nullable=True)
+    flight_date_option_2 = Column(JSONB, nullable=True)
+    flight_date_final = Column(JSONB, nullable=True)
+    passport_info = Column(JSONB, nullable=True)
 
