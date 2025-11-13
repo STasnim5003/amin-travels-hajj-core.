@@ -55,7 +55,6 @@ async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, age
             PackageModel.package_type == "HAJJ",
             PackageModel.agency_name == agency_name
         )
-        .distinct()
     )
     result = await db.execute(stmt)
     bed_type_json = result.scalars().first()

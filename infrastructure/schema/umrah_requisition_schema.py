@@ -3,6 +3,14 @@ from typing import Optional, Any, List
 
 from pydantic import BaseModel
 
+class UmrahRequisitionVendorPrice(BaseModel):
+    vendor_name : Optional[str] = None
+    vendor_price: Optional[float] = None
+    service_charge: Optional[float] = None
+    total_price: Optional[float] = None
+    per_head_price_adult: Optional[float] = None
+    per_head_price_child: Optional[float] = None
+    per_head_price_infant: Optional[float] = None
 
 class UmrahRequisitionHotelSchema(BaseModel):
     city: str
@@ -13,11 +21,18 @@ class UmrahRequisitionHotelSchema(BaseModel):
     check_in : Any
     check_out : Any
     food: str
+    price : Optional[UmrahRequisitionVendorPrice] = None
 
 class UmrahRequisitionTransportSchema(BaseModel):
     route_id : int
     transport: Any
+    price : Optional[UmrahRequisitionVendorPrice] = None
 
+class UmrahRequisitionTravellerPassportInfo(BaseModel):
+    passport_name : str
+    passport_no : str
+    passport_expiry_date : str
+    passport_type : str
 
 class UmrahRequisitionBase(BaseModel):
     name: str
@@ -39,15 +54,58 @@ class UmrahRequisitionBase(BaseModel):
     flight_date_option_2 : Optional[Any] = None
     flight_date_final : Optional[Any] = None
     passport_info : Optional[Any] = None
+    ziara: Optional[bool] = None
 
-class UmrahRequisitionResponseSchema(UmrahRequisitionBase):
+
+class UmrahRequisitionAssignedService(BaseModel):
     id : int
+    name: Optional[str] = None
+    number_of_traveller: Optional[int] = None
+    adult_traveller: Optional[int] = None
+    other_traveller: Optional[Any] = None
+    is_visa: Optional[bool] = None
+    with_hotel_brn: Optional[bool] = None
+    air_ticket: Optional[bool] = None
+    air_ticket_category: Optional[str] = None
+    airline_preference: Optional[str] = None
+    flight_data: Optional[Any] = None
+    remarks: Optional[str] = None
+    food: Optional[bool] = None
+    mobile_no: Optional[str] = None
+    flight_date_option_1: Optional[Any] = None
+    flight_date_option_2: Optional[Any] = None
+    flight_date_final: Optional[Any] = None
+    passport_info: Optional[Any] = None
+    ziara: Optional[bool] = None
+    hotel_info: Optional[List[UmrahRequisitionHotelSchema]] = None
+    transport: Optional[List[UmrahRequisitionTransportSchema]] = None
+    visa_price: Optional[UmrahRequisitionVendorPrice] = None
+    air_ticket_price: Optional[UmrahRequisitionVendorPrice] = None
+    train_price: Optional[UmrahRequisitionVendorPrice] = None
+    ziara_price: Optional[UmrahRequisitionVendorPrice] = None
+    guide_price: Optional[UmrahRequisitionVendorPrice] = None
+    food_price: Optional[UmrahRequisitionVendorPrice] = None
+    others_price: Optional[UmrahRequisitionVendorPrice] = None
+    total_vendor_price: Optional[float] = None
+    total_service_charge: Optional[float] = None
+    total_price: Optional[float] = None
+    per_head_price_adult: Optional[float] = None
+    per_head_price_child: Optional[float] = None
+    per_head_price_infant: Optional[float] = None
+    is_active : Optional[bool] = None
+
+class UmrahRequisitionConfirmationSchema(BaseModel):
+    id : int
+    is_confirmed: bool
+    passport_info: List[UmrahRequisitionTravellerPassportInfo]
+
+class UmrahRequisitionResponseSchema(UmrahRequisitionAssignedService):
+    is_confirmed: Optional[bool] = None
     agency_name : Optional[str] = None
     created_by : Optional[str] = None
     updated_by : Optional[str] = None
     created_at : Optional[datetime] = None
     updated_at : Optional[datetime] = None
-    is_active : Optional[bool] = None
 
     class Config:
         from_attributes = True

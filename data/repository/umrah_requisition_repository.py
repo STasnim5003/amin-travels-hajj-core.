@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,4 +42,35 @@ async def get_requisition_by_id(db, requisition_id, agency_name):
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     except Exception as e:
+        raise e
+
+
+async def umrah_requisition_assign_service(db:AsyncSession, request_dict:dict):
+    try:
+        stmt = (update(UmrahRequisitionModel)
+                .where(UmrahRequisitionModel.id == request_dict.get('id'))
+                .values(**request_dict)
+                .returning(UmrahRequisitionModel))
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def umrah_requisition_confirmation(db:AsyncSession, request_dict:dict):
+    try:
+        stmt = (
+            update(UmrahRequisitionModel)
+            .where(UmrahRequisitionModel.id == request_dict.get('id'))
+            .values(**request_dict)
+            .returning(UmrahRequisitionModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
         raise e

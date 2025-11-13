@@ -1,8 +1,11 @@
+from datetime import datetime, timedelta
+
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import umrah_requisition_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
-    UmrahRequisitionListResponseSchema
+    UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema
 
 
 async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, agency_name: str):
@@ -32,5 +35,39 @@ async def get_umrah_requisition_by_id(db, requisition_id, agency_name):
     try:
         result = await umrah_requisition_repository.get_requisition_by_id(db, requisition_id, agency_name)
         return UmrahRequisitionResponseSchema.model_validate(result)
+    except Exception as e:
+        raise e
+
+
+async def umrah_requisition_assign_service(db:AsyncSession, request:UmrahRequisitionAssignedService, agency_name:str):
+    try:
+        requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
+        if not requisition:
+            raise HTTPException(status_code=400, detail='Umrah Requisition not found')
+
+        request_dict = request.model_dump(exclude_none=True)
+        request_dict['updated_by'] = agency_name
+        request_dict['updated_at'] = datetime.now() + timedelta(hours=6)
+
+        result = await umrah_requisition_repository.umrah_requisition_assign_service(db, request_dict)
+        return UmrahRequisitionResponseSchema.model_validate(result)
+    except Exception as e:
+        raise e
+
+
+async def umrah_requisition_confirmation(db:AsyncSession, request:UmrahRequisitionConfirmationSchema, agency_name:str):
+    try:
+        requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
+
+        if not requisition:
+            raise HTTPException(status_code=400, detail='Umrah Requisition not found')
+
+        request_dict = request.model_dump(exclude_none=True)
+        request_dict['updated_by'] = agency_name
+        request_dict['updated_at'] = datetime.now() + timedelta(hours=6)
+
+        result = await umrah_requisition_repository.umrah_requisition_confirmation(db, request_dict)
+        return UmrahRequisitionResponseSchema.model_validate(result)
+
     except Exception as e:
         raise e
