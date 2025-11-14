@@ -190,3 +190,6 @@ class ReceiptPrintSchema(BaseModel):
     bank_branch: Optional[str] = None
     bank_account_no: Optional[str] = None
     amount_in_words: Optional[str] = None
+    voucher_no : Optional[str] = None
+    cheque_no : Optional[str] = None
+    cheque_bank : Optional[str] = None
