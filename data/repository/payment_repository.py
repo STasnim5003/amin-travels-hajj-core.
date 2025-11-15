@@ -225,6 +225,9 @@ async def get_payment_summary_for_agency(
                             'created_at', f.created_at,
                             'username', f.name,
                             'mobile_no', f.mobile_no,
+                            'voucher_no', f.voucher_no,
+                            'cheque_no', f.cheque_no,
+                            'cheque_bank', f.cheque_bank,
                             'bank_info', json_build_object(
                                 'bank_info_id', f.bank_info_id,
                                 'bank_name', f.bank_name,
