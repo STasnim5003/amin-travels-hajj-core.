@@ -185,7 +185,6 @@ class ReceiptPrintSchema(BaseModel):
     payment_category: Optional[str] = None
     way_of_payment: Optional[str] = None
     bank_info_id: Optional[int] = None
-    transfer_no: Optional[str] = None
     bank_name: Optional[str] = None
     bank_branch: Optional[str] = None
     bank_account_no: Optional[str] = None

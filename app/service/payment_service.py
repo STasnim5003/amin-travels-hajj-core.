@@ -340,11 +340,13 @@ async def get_payment_by_id(db:AsyncSession, payment_id:int):
             payment_category=getattr(payment, "payment_category", None),
             way_of_payment=getattr(payment, "way_of_payment", None),
             bank_info_id=payment.bank_info_id,
-            transfer_no=getattr(payment, "transfer_no", None),
             bank_name=bank_info.name if bank_info else None,
             bank_branch=bank_info.branch if bank_info else None,
             bank_account_no=bank_info.account_no if bank_info else None,
-            amount_in_words=amount_to_words
+            amount_in_words=amount_to_words,
+            cheque_no = payment.cheque_no,
+            cheque_bank = payment.cheque_bank,
+            voucher_no = payment.voucher_no
         )
 
         return receipt
