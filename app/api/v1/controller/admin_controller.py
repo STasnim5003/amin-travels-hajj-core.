@@ -139,7 +139,7 @@ async def update_admin_profile(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    # agency_name = "stringz"
+
     try:
         return await admin_service.update_admin_profile(db, location, google_map_location, logo, passport_copy, agency_name)
     except Exception as e:
