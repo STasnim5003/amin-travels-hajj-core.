@@ -134,19 +134,21 @@ async def update_admin_profile(
         agency_name: str
 ):
     logo_data = []
-    try:
-        logo_resp = await file_repository.upload_file(file=logo, name="logo")
-        logo_data.append(logo_resp.model_dump())
+    if logo:
+        try:
+            logo_resp = await file_repository.upload_file(file=logo, name="logo")
+            logo_data.append(logo_resp.model_dump())
 
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     passport_data = []
-    try:
-        passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
-        passport_data.append(passport_resp.model_dump())
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if passport_copy:
+        try:
+            passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
+            passport_data.append(passport_resp.model_dump())
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
 
     try:

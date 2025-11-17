@@ -129,10 +129,10 @@ async def delete_admin_by_id(
 
 @private_router.put("/admin/profile", response_model=AdminResponseSchema, tags=["admin"])
 async def update_admin_profile(
-        location : str = Form(...),
-        google_map_location: str = Form(...),
-        logo: UploadFile = File(...),
-        passport_copy: UploadFile = File(...),
+        location : str = Form(None),
+        google_map_location: str = Form(None),
+        logo: UploadFile = File(None),
+        passport_copy: UploadFile = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> AdminResponseSchema:
