@@ -56,6 +56,17 @@ async def confirm_umrah_requisition(
     agency_name = current_user['agency_name']
     return await umrah_requisition_service.umrah_requisition_confirmation(db=db, request=request, agency_name=agency_name)
 
+@private_router.put("/umrah-requisition", response_model=UmrahRequisitionResponseSchema, tags=['Umrah Requisition'])
+async def update_umrah_requisition(
+        request: UmrahRequisitionAssignedService,
+        db: AsyncSession = Depends(get_async_db),
+        current_user : dict = Depends(get_current_user)
+) -> UmrahRequisitionResponseSchema:
+    if current_user['role'] != 'AGENCY':
+        raise HTTPException(status_code=403, detail='Unauthorized')
+    agency_name = current_user['agency_name']
+    return await umrah_requisition_service.UmrahRequisitionAssignedService(db=db, request=request, agency_name=agency_name)
+
 @private_router.get("/umrah-requisition/{requisition_id}", response_model=UmrahRequisitionResponseSchema, tags=['Umrah Requisition'])
 async def get_umrah_requisition_by_id(
         requisition_id : int,

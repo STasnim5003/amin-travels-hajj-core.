@@ -53,6 +53,9 @@ class UmrahRequisitionBase(BaseModel):
     flight_date_option_1 : Optional[Any] = None
     flight_date_option_2 : Optional[Any] = None
     flight_date_final : Optional[Any] = None
+    return_date_option_1: Optional[Any] = None
+    return_date_option_2: Optional[Any] = None
+    return_date_final: Optional[Any] = None
     passport_info : Optional[Any] = None
     ziara: Optional[bool] = None
 
@@ -93,6 +96,10 @@ class UmrahRequisitionAssignedService(BaseModel):
     per_head_price_child: Optional[float] = None
     per_head_price_infant: Optional[float] = None
     is_active : Optional[bool] = None
+    return_date_option_1: Optional[Any] = None
+    return_date_option_2: Optional[Any] = None
+    return_date_final: Optional[Any] = None
+    exchange_rate: Optional[float] = None
 
 class UmrahRequisitionConfirmationSchema(BaseModel):
     id : int

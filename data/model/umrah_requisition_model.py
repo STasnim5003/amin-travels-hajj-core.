@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, Float
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -37,11 +37,15 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     guide_price = Column(JSONB, nullable=True)
     food_price = Column(JSONB, nullable=True)
     others_price = Column(JSONB, nullable=True)
-    per_head_price_adult = Column(Integer, nullable=True)
-    per_head_price_child = Column(Integer, nullable=True)
-    per_head_price_infant = Column(Integer, nullable=True)
-    total_vendor_price = Column(Integer, nullable=True)
-    total_service_charge = Column(Integer, nullable=True)
-    total_price = Column(Integer, nullable=True)
+    per_head_price_adult = Column(Float, nullable=True)
+    per_head_price_child = Column(Float, nullable=True)
+    per_head_price_infant = Column(Float, nullable=True)
+    total_vendor_price = Column(Float, nullable=True)
+    total_service_charge = Column(Float, nullable=True)
+    total_price = Column(Float, nullable=True)
     is_confirmed = Column(Boolean, nullable=True)
+    return_date_option_1 = Column(JSONB, nullable=True)
+    return_date_option_2= Column(JSONB, nullable=True)
+    return_date_final= Column(JSONB, nullable=True)
+    exchange_rate= Column(Float, nullable=True)
 
