@@ -42,8 +42,6 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
     )
     result = await db.execute(stmt)
     durations = [row[0] for row in result.fetchall()]
-    if not durations:
-        raise HTTPException(status_code=404, detail=f"No durations found for {package_name}")
     return durations
 
 
@@ -59,8 +57,6 @@ async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, dur
     )
     result = await db.execute(stmt)
     bed_type_json = result.scalars().first()
-    if not bed_type_json:
-        raise HTTPException(status_code=400, detail=f"No bed types found for {package_name}")
     return bed_type_json
 
 
