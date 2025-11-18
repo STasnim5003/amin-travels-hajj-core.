@@ -100,6 +100,8 @@ class UmrahRequisitionAssignedService(BaseModel):
     return_date_option_2: Optional[Any] = None
     return_date_final: Optional[Any] = None
     exchange_rate: Optional[float] = None
+    child_service: Optional[Any] = None
+    infant_service: Optional[Any] = None
 
 class UmrahRequisitionConfirmationSchema(BaseModel):
     id : int

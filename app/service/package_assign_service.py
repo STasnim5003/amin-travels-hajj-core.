@@ -24,8 +24,8 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
     return await package_assign_repository.get_durations_by_package_name(db, package_name, agency_name)
 
 
-async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, agency_name: str):
-    return await package_assign_repository.get_bed_types_by_package_name(db, package_name, agency_name)
+async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, duration:int, agency_name: str):
+    return await package_assign_repository.get_bed_types_by_package_name(db, package_name, duration, agency_name)
 
 
 async def assign_package(db: AsyncSession, request: PackageAssignSchema, agency_name: str):

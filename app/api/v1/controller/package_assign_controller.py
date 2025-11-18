@@ -33,11 +33,12 @@ async def get_duration_by_package_name(
 @private_router.get("/{package_name}/bed-types", tags=["package-assign"])
 async def get_bed_types_by_package_name(
         package_name: str,
+        duration: int,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     agency_name = current_user["agency_name"]
-    return await package_assign_service.get_bed_types_by_package_name(db, package_name, agency_name)
+    return await package_assign_service.get_bed_types_by_package_name(db, package_name, duration,  agency_name)
 
 
 @private_router.post("/assign-package", tags=["package-assign"])

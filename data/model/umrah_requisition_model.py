@@ -48,4 +48,6 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     return_date_option_2= Column(JSONB, nullable=True)
     return_date_final= Column(JSONB, nullable=True)
     exchange_rate= Column(Float, nullable=True)
+    child_service = Column(JSONB, nullable=True)
+    infant_service = Column(JSONB, nullable=True)
 

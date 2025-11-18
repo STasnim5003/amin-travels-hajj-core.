@@ -47,11 +47,12 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
     return durations
 
 
-async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, agency_name: str):
+async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, duration:int, agency_name: str):
     stmt = (
         select(PackageModel.bed_type)
         .where(
             PackageModel.name == package_name,
+            PackageModel.duration == duration,
             PackageModel.package_type == "HAJJ",
             PackageModel.agency_name == agency_name
         )
