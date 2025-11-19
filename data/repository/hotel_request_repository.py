@@ -19,7 +19,7 @@ async def create_hotel_request(db: AsyncSession, request_dict : dict):
 
 async def get_hotel_requests(db: AsyncSession, agency_name: List[str]):
     try:
-        stmt = select(HotelRequestModel).where(HotelRequestModel.agency_name.in_(agency_name))
+        stmt = select(HotelRequestModel).where(HotelRequestModel.agency_name.in_(agency_name)).order_by(HotelRequestModel.id.desc())
         result = await db.execute(stmt)
         return result.scalars().all()
     except Exception as e:

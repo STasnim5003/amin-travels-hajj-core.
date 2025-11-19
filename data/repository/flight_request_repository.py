@@ -75,6 +75,7 @@ async def get_all_flight_requests(db, agency_names):
             .join(ArrivalRoute, FlightRequestModel.arrival_route == ArrivalRoute.id, isouter=True)
             .join(DepartureRoute, FlightRequestModel.departure_route == DepartureRoute.id, isouter=True)
             .where(FlightRequestModel.agency_name.in_(agency_names))
+            .order_by(FlightRequestModel.id.desc())
         )
         result = await db.execute(stmt)
         return result.all()
