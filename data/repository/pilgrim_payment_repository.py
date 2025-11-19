@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import insert, update, select, text
+from sqlalchemy import insert, update, select, text, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -209,15 +209,18 @@ async def get_payments_by_tracking_id(
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-async def create_payable_for_package_change(db:AsyncSession, payable_info : dict):
+
+async def create_payable_for_package_change(db: AsyncSession, payable_info: dict):
     try:
         stmt = (
-            insert(PaymentModel)
+            update(PaymentModel)
+            .where(PaymentModel.tracking_id == payable_info.get('tracking_id'))
             .values(**payable_info)
         )
         await db.execute(stmt)
     except Exception as e:
         raise e
+
 
 async def update_group_leader_payment_info(db: AsyncSession, group_leader_finance_info: dict):
     try:
@@ -226,5 +229,32 @@ async def update_group_leader_payment_info(db: AsyncSession, group_leader_financ
             .where(AdminUserModel.code == group_leader_finance_info.get("code"))
             .values(**group_leader_finance_info)
         )
+    except Exception as e:
+        raise e
+
+
+async def get_group_leader_payable_report_data(db:AsyncSession, group_leader:str):
+    try:
+        stmt = (
+            select(
+                PilgrimDataModel.package_name,
+                PilgrimDataModel.package_duration,
+                PilgrimDataModel.package_bed_types,
+                func.count().label("total_haji"),
+                func.sum(PilgrimDataModel.actual_payable).label("total_actual_payable")
+            )
+            .where(PilgrimDataModel.group_leader == group_leader)
+            .group_by(
+                PilgrimDataModel.package_name,
+                PilgrimDataModel.package_duration,
+                PilgrimDataModel.package_bed_types
+            )
+            .order_by(
+                PilgrimDataModel.package_name
+            )
+        )
+
+        result = await db.execute(stmt)
+        return result.all()
     except Exception as e:
         raise e

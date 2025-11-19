@@ -74,3 +74,21 @@ async def umrah_requisition_confirmation(db:AsyncSession, request_dict:dict):
     except Exception as e:
         await db.rollback()
         raise e
+
+
+async def update_umrah_requisition(db: AsyncSession, request_dict: dict):
+    try:
+        stmt = (
+            update(UmrahRequisitionModel)
+            .where(UmrahRequisitionModel.id == request_dict.get("id"))
+            .values(**request_dict)
+            .returning(UmrahRequisitionModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+
+    except Exception as e:
+        await db.rollback()
+        raise e

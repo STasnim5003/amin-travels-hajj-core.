@@ -4,9 +4,12 @@ import string
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.repository import pilgrim_payment_repository, pilgrim_repository, file_repository
+from app.core.utils import num_to_words
+from data.repository import pilgrim_payment_repository, pilgrim_repository, file_repository, payment_repository, \
+    admin_user_repository
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentResponseSchema, \
-    PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema
+    PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
+    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema
 
 
 async def create_payable_for_pilgrim(
@@ -135,3 +138,85 @@ async def get_pilgrim_payments(
         total_due=pilgrim_total_due,
         total_available_amount=pilgrim_total_available_amount
     )
+
+
+async def get_pilgrim_payable_report(db: AsyncSession, payable_id: int, agency_name: str):
+    try:
+        payable = await payment_repository.get_by_id(db, payable_id)
+        if not payable:
+            raise HTTPException(status_code=400, detail="Payable not found")
+
+        if not payable.tracking_id:
+            raise HTTPException(status_code=400, detail="Payable not belong to any pilgrim")
+
+        pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, payable.tracking_id)
+        if not pilgrim:
+            raise HTTPException(status_code=400, detail="Pilgrim not found")
+
+        if payable.created_by != agency_name or pilgrim.group_name != agency_name:
+            raise HTTPException(status_code=400, detail="Payable not belong to this agency")
+
+        amount_in_words = num_to_words.amount_to_words(payable.amount)
+        return PilgrimPayableReportSchema(
+            id=payable_id,
+            name_en=pilgrim.name_en,
+            name_bn=pilgrim.name_bn,
+            nid=pilgrim.nid,
+            date_of_birth=pilgrim.date_of_birth,
+            gender=pilgrim.gender,
+            description=payable.description,
+            date=payable.date,
+            amount=payable.amount,
+            tracking_id=payable.tracking_id,
+            amount_in_words=amount_in_words,
+            package_name=pilgrim.package_name,
+            package_duration=pilgrim.package_duration,
+            package_bed_types=pilgrim.package_bed_types,
+            add_ons_services=pilgrim.add_ons_services,
+            agency_name=agency_name
+        )
+
+    except Exception as e:
+        raise e
+
+
+async def get_group_leader_payable_report_data(db: AsyncSession, payable_id: int, agency_name: str):
+    try:
+        payable = await payment_repository.get_by_id(db, payable_id)
+        if not payable:
+            raise HTTPException(status_code=400, detail="Payable not found")
+        if not payable.group_leader:
+            raise HTTPException(status_code=400, detail="Payable not belong to any group leader")
+
+        group_leader = await admin_user_repository.get_admin_user_by_code(db, payable.group_leader)
+        if not group_leader:
+            raise HTTPException(status_code=400, detail="Group leader not found")
+        if payable.created_by != agency_name or group_leader.agency_name != agency_name:
+            raise HTTPException(status_code=400, detail="Payable not belong to this group leader")
+
+        response = await pilgrim_payment_repository.get_group_leader_payable_report_data(db=db, group_leader=payable.group_leader)
+
+        package_wise_haji_summary = []
+
+        for row in response:
+            package_wise_haji_summary.append({
+                "package_name": row.package_name,
+                "package_duration": row.package_duration,
+                "package_bed_types": row.package_bed_types,
+                "total_haji": row.total_haji,
+                "total_actual_payable": row.total_actual_payable,
+            })
+
+        amount_in_words = num_to_words.amount_to_words(payable.amount)
+
+        return GroupLeaderPayableReportSchema(
+            id=payable_id,
+            name_en=group_leader.name,
+            code=group_leader.code,
+            agency_name=group_leader.agency_name,
+            amount = payable.amount,
+            amount_in_words=amount_in_words,
+            summary=package_wise_haji_summary
+        )
+    except Exception as e:
+        raise e

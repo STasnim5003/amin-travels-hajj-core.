@@ -61,6 +61,7 @@ class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
     total_payment: Optional[int] = 0
     total_due : Optional[int] = 0
     total_available_amount : Optional[int] = 0
+    package_price_discount: Optional[int] = 0
     package_bed_types: Optional[str] = None
     package_duration: Optional[int] = None
     add_ons_services: Optional[Dict[str, Any]] = None

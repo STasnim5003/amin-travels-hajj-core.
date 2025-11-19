@@ -7,7 +7,8 @@ from app.core.middleware.middleware import get_current_user
 from app.service import umrah_requisition_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionResponseSchema, UmrahRequisitionBase, \
-    UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema
+    UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema, \
+    UmrahRequisitionUpdateSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -58,14 +59,14 @@ async def confirm_umrah_requisition(
 
 @private_router.put("/umrah-requisition", response_model=UmrahRequisitionResponseSchema, tags=['Umrah Requisition'])
 async def update_umrah_requisition(
-        request: UmrahRequisitionAssignedService,
+        request: UmrahRequisitionUpdateSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user : dict = Depends(get_current_user)
 ) -> UmrahRequisitionResponseSchema:
     if current_user['role'] != 'AGENCY':
         raise HTTPException(status_code=403, detail='Unauthorized')
     agency_name = current_user['agency_name']
-    return await umrah_requisition_service.UmrahRequisitionAssignedService(db=db, request=request, agency_name=agency_name)
+    return await umrah_requisition_service.umrah_requisition_update(db, request, agency_name)
 
 @private_router.get("/umrah-requisition/{requisition_id}", response_model=UmrahRequisitionResponseSchema, tags=['Umrah Requisition'])
 async def get_umrah_requisition_by_id(

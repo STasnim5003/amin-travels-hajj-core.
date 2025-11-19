@@ -192,3 +192,31 @@ class ReceiptPrintSchema(BaseModel):
     voucher_no : Optional[str] = None
     cheque_no : Optional[str] = None
     cheque_bank : Optional[str] = None
+
+class PilgrimPayableReportSchema(BaseModel):
+    id: int
+    name_en: Optional[str] = None
+    name_bn: Optional[str] = None
+    nid: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    description: Optional[str] = None
+    date: Optional[str] = None
+    amount: int
+    tracking_id: Optional[str] = None
+    amount_in_words: Optional[str] = None
+    package_name : Optional[str] = None
+    package_duration: Optional[int] = None
+    package_bed_types: Optional[str] = None
+    add_ons_services: Optional[Any] = None
+    agency_name : str
+
+class GroupLeaderPayableReportSchema(BaseModel):
+    id: int
+    name_en: Optional[str] = None
+    agency_name: str
+    code: Optional[str] = None
+    amount: int
+    amount_in_words: Optional[str] = None
+    summary: Optional[Any] = None
+

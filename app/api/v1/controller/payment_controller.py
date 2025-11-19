@@ -216,3 +216,18 @@ async def get_payment_by_id(
 ):
     return await payment_service.get_payment_by_id(db,payment_id)
 
+@private_router.get("/payable-report/{payable_id}", tags=["payment"])
+async def get_payable_report_data(
+        payable_id: int,
+        user_type: str,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user),
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+
+    if user_type == "PILGRIM":
+        return await pilgrim_payment_service.get_pilgrim_payable_report(db=db, payable_id=payable_id, agency_name=agency_name)
+    else:
+        return await pilgrim_payment_service.get_group_leader_payable_report_data(db=db, payable_id=payable_id,agency_name=agency_name)

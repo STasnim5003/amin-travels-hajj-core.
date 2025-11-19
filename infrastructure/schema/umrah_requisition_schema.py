@@ -59,6 +59,32 @@ class UmrahRequisitionBase(BaseModel):
     passport_info : Optional[Any] = None
     ziara: Optional[bool] = None
 
+class UmrahRequisitionUpdateSchema(BaseModel):
+    id :int
+    name: Optional[str] = None
+    number_of_traveller: Optional[int] = None
+    adult_traveller: Optional[int] = None
+    other_traveller: Optional[Any] = None
+    is_visa: Optional[bool] = None
+    with_hotel_brn: Optional[bool] = None
+    air_ticket: bool = None
+    air_ticket_category: Optional[str] = None
+    airline_preference: Optional[str] = None
+    flight_data: Optional[Any] = None
+    hotel_info: Optional[List[UmrahRequisitionHotelSchema]] = None
+    transport: Optional[List[UmrahRequisitionTransportSchema]] = None
+    remarks: Optional[str] = None
+    food: Optional[bool] = None
+    mobile_no: Optional[str] = None
+    flight_date_option_1: Optional[Any] = None
+    flight_date_option_2: Optional[Any] = None
+    flight_date_final: Optional[Any] = None
+    return_date_option_1: Optional[Any] = None
+    return_date_option_2: Optional[Any] = None
+    return_date_final: Optional[Any] = None
+    passport_info: Optional[Any] = None
+    ziara: Optional[bool] = None
+
 
 class UmrahRequisitionAssignedService(BaseModel):
     id : int
