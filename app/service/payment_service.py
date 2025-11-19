@@ -12,7 +12,7 @@ from data.repository import payment_repository, admin_user_repository, pilgrim_p
 from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
     PayableInfoUpdateSchema, \
     GroupLeaderPayableBaseSchema, GroupLeaderPaymentBaseSchema, OverallSummarySchema, \
-    BankSummarySchema, PaginatedPaymentResponseForAgency, ReceiptPrintSchema
+    BankSummarySchema, PaginatedPaymentResponseForAgency, ReceiptPrintSchema, PaymentUpdateSchema
 
 
 async def create_payable_for_group_leader(db: AsyncSession, payment_request: GroupLeaderPayableBaseSchema,
@@ -242,7 +242,7 @@ async def get_agency_payments(
 async def update_payable(
         db: AsyncSession,
         payable_id: int,
-        payment_data: dict,
+        payable_data: PaymentUpdateSchema,
         agency_name: str
 ):
     existing_payment = await payment_repository.get_by_id(db, payable_id)
@@ -250,57 +250,64 @@ async def update_payable(
     if existing_payment.created_by != agency_name:
         raise HTTPException(status_code=403, detail="Unauthorized to update this payable")
 
-    filtered_data = {k: v for k, v in payment_data.items() if v is not None}
+    if not existing_payment:
+        raise HTTPException(status_code=400, detail="Payable not found")
 
-    if not filtered_data:
-        raise HTTPException(status_code=400, detail="No valid fields provided to update")
+    payable_data_dict = payable_data.model_dump(exclude_none=True)
 
-    if "amount" in filtered_data:
-        new_amount = filtered_data["amount"]
-        old_amount = existing_payment.amount or 0
 
-        # Only recalculate if the amount actually changed
-        if new_amount != old_amount:
 
-            # Fix the Payable itself
-            payable_due_itself = 0
-            if new_amount >= existing_payment.total_payment:
-                payable_due_itself = new_amount - existing_payment.total_payment
-
-            filtered_data.update({
-                "total_payable": new_amount,
-                "total_due": payable_due_itself
-            })
-
-            group_leader_code = existing_payment.group_leader
-            tracking_id = existing_payment.tracking_id
-            user = None
-            if group_leader_code:
-                user = await admin_user_repository.get_admin_user_by_code(db, group_leader_code)
-
-            elif tracking_id:
-                user = await pilgrim_repository.get_pilgrim_by_tracking_id(db, tracking_id)
-
-            if user:
-                # Reverse the old amount effect first
-                prev_total_payable = user.total_payable or 0
-                prev_total_payment = user.total_payment or 0
-
-                new_total_payable = prev_total_payable - old_amount + new_amount
-                new_total_due = max(0, new_total_payable - prev_total_payment)
-                new_available_amount = max(0, prev_total_payment - new_total_payable)
-
-                # Prepare update schema
-                payment_info = PayableInfoUpdateSchema(
-                    total_payable=new_total_payable,
-                    total_available_amount=new_available_amount,
-                    total_due=new_total_due,
-                    group_leader_code=group_leader_code if group_leader_code else None,
-                    tracking_id=tracking_id if tracking_id else None
-                )
-
-                # Update payment info (for either leader or pilgrim)
-                await pilgrim_payment_repository.update_payment_info(db, payment_info)
+    # filtered_data = {k: v for k, v in payment_data.items() if v is not None}
+    #
+    # if not filtered_data:
+    #     raise HTTPException(status_code=400, detail="No valid fields provided to update")
+    #
+    # if "amount" in filtered_data:
+    #     new_amount = filtered_data["amount"]
+    #     old_amount = existing_payment.amount or 0
+    #
+    #     # Only recalculate if the amount actually changed
+    #     if new_amount != old_amount:
+    #
+    #         # Fix the Payable itself
+    #         payable_due_itself = 0
+    #         if new_amount >= existing_payment.total_payment:
+    #             payable_due_itself = new_amount - existing_payment.total_payment
+    #
+    #         filtered_data.update({
+    #             "total_payable": new_amount,
+    #             "total_due": payable_due_itself
+    #         })
+    #
+    #         group_leader_code = existing_payment.group_leader
+    #         tracking_id = existing_payment.tracking_id
+    #         user = None
+    #         if group_leader_code:
+    #             user = await admin_user_repository.get_admin_user_by_code(db, group_leader_code)
+    #
+    #         elif tracking_id:
+    #             user = await pilgrim_repository.get_pilgrim_by_tracking_id(db, tracking_id)
+    #
+    #         if user:
+    #             # Reverse the old amount effect first
+    #             prev_total_payable = user.total_payable or 0
+    #             prev_total_payment = user.total_payment or 0
+    #
+    #             new_total_payable = prev_total_payable - old_amount + new_amount
+    #             new_total_due = max(0, new_total_payable - prev_total_payment)
+    #             new_available_amount = max(0, prev_total_payment - new_total_payable)
+    #
+    #             # Prepare update schema
+    #             payment_info = PayableInfoUpdateSchema(
+    #                 total_payable=new_total_payable,
+    #                 total_available_amount=new_available_amount,
+    #                 total_due=new_total_due,
+    #                 group_leader_code=group_leader_code if group_leader_code else None,
+    #                 tracking_id=tracking_id if tracking_id else None
+    #             )
+    #
+    #             # Update payment info (for either leader or pilgrim)
+    #             await pilgrim_payment_repository.update_payment_info(db, payment_info)
 
     updated_payment = await payment_repository.update_payable(db, payable_id, filtered_data)
     return updated_payment

@@ -21,3 +21,5 @@ class HotelRequestModel(Base, BaseMixinModel):
     status = Column(String, nullable=True)
     nusuk_request_id = Column(String, nullable=True)
     agency_name = Column(String, nullable=True)
+    document = Column(JSONB, nullable=True)
+    pricing = Column(JSONB, nullable=True)

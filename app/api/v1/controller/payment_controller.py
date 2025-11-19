@@ -133,7 +133,7 @@ async def update_payable(
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
 
-    return await payment_service.update_payable(db, payable_id, payable_request.dict(exclude_unset=True), agency_name)
+    return await payment_service.update_payable(db, payable_id, payable_request, agency_name)
 
 
 @private_router.post("/pilgrim/create-payable", response_model=PaymentResponseSchema, tags=["payment"])

@@ -1,5 +1,5 @@
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Form, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
@@ -33,14 +33,45 @@ async def get_hotel_requests(
 
 @private_router.put("/hotel-request", response_model=HotelRequestResponseSchema)
 async def update_hotel_request(
-        request: HotelRequestUpdateSchema,
+        # request: HotelRequestUpdateSchema,
+        id: int = Form(...),
+        city: str = Form(None),
+        type: str = Form(None),
+        name: str = Form(None),
+        tasria_number: int = Form(None),
+        check_in: str = Form(None),
+        check_out: str = Form(None),
+        number_of_haji: int = Form(None),
+        room_allocation: str = Form(None),
+        hotel_contact_person: str = Form(None),
+        status: str = Form(None),
+        nusuk_request_id: str = Form(None),
+        is_active: bool = Form(None),
+        pricing: str = Form(None),
+        document: UploadFile = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await hotel_request_service.update_hotel_request(db, request, agency_name)
+    hotel_request_update = HotelRequestUpdateSchema(
+        id=id,
+        city=city,
+        type=type,
+        name=name,
+        tasria_number=tasria_number,
+        check_in=check_in,
+        check_out=check_out,
+        number_of_haji=number_of_haji,
+        room_allocation=room_allocation,
+        hotel_contact_person=hotel_contact_person,
+        status=status,
+        nusuk_request_id=nusuk_request_id,
+        is_active=is_active,
+        pricing=pricing
+    )
+    return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name, document)
 
 @private_router.get("/hotel-request/{request_id}", response_model=HotelRequestResponseSchema)
 async def get_request_by_id(

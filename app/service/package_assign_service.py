@@ -43,8 +43,10 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
         pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, request.tracking_id)
         if not pilgrim:
             raise HTTPException(status_code=400, detail="Pilgrim not found")
-        if pilgrim.group_name != agency_name or not pilgrim.is_package_assigned:
+        if pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="This pilgrim not in your agency")
+        if not pilgrim.is_package_assigned:
+            raise HTTPException(status_code=400, detail="This pilgrim is not previously assigned")
 
         prev_total_payable = pilgrim.total_payable
         prev_total_payment = pilgrim.total_payment
@@ -252,26 +254,27 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
         if pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="Pilgrim Agency Name Mismatch")
 
-        pilgrim_existing_package_name = pilgrim.package_name
-        pilgrim_existing_package_duration = pilgrim.package_duration
-        pilgrim_existing_package_bed_types = pilgrim.package_bed_types
-
-        package_info = await package_repository.get_package_by_name_and_duration(db=db,
-                                                                                 package_name=pilgrim_existing_package_name,
-                                                                                 duration=pilgrim_existing_package_duration,
-                                                                                 agency_name=agency_name)
-        package_info_bed_types = package_info.bed_type
-        package_price_based_on_bed_types = package_info_bed_types.get(pilgrim_existing_package_bed_types)
-
-        if isinstance(package_price_based_on_bed_types, str):
-            package_price_based_on_bed_types = int(package_price_based_on_bed_types)
+        # pilgrim_existing_package_name = pilgrim.package_name
+        # pilgrim_existing_package_duration = pilgrim.package_duration
+        # pilgrim_existing_package_bed_types = pilgrim.package_bed_types
+        #
+        # package_info = await package_repository.get_package_by_name_and_duration(db=db,
+        #                                                                          package_name=pilgrim_existing_package_name,
+        #                                                                          duration=pilgrim_existing_package_duration,
+        #                                                                          agency_name=agency_name)
+        # package_info_bed_types = package_info.bed_type
+        # package_price_based_on_bed_types = package_info_bed_types.get(pilgrim_existing_package_bed_types)
+        #
+        # if isinstance(package_price_based_on_bed_types, str):
+        #     package_price_based_on_bed_types = int(package_price_based_on_bed_types)
 
         # pilgrim finance info calculate
-        total_payable = pilgrim.total_payable or 0
+        # total_payable = pilgrim.total_payable or 0
         total_payment = pilgrim.total_payment or 0
 
         # remove previous package price
-        total_payable = total_payable - package_price_based_on_bed_types + request.total_payable
+        # total_payable = total_payable - package_price_based_on_bed_types + request.total_payable
+        total_payable = request.total_payable
         total_due = max(total_payable - total_payment, 0)
         total_available_amount = max(total_payment - total_payable, 0)
         package_price_discount = request.package_price_discount or 0
@@ -295,56 +298,56 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
 
         await package_assign_repository.individual_pilgrim_package_change(db, pilgrim_package_and_finance_update)
 
-        if not pilgrim.group_leader:
-            # payment table er row
-            pilgrim_payable_info = {
-                "description": "Package Change Bill",
-                "date": datetime.today().strftime("%Y-%m-%d"),
-                "amount": request.total_payable,
-                "tracking_id": request.tracking_id,
-                "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
-                "created_by": agency_name,
-                "updated_by": agency_name,
-                "category" : "Payable"
-            }
-            await pilgrim_payment_repository.create_payable_for_package_change(db, pilgrim_payable_info)
+
+        # payment table er row
+        pilgrim_payable_info = {
+            "description": "Package Bill",
+            "date": datetime.today().strftime("%Y-%m-%d"),
+            "amount": request.total_payable,
+            "tracking_id": request.tracking_id,
+            "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
+            "created_by": agency_name,
+            "updated_by": agency_name,
+            "category" : "Payable"
+        }
+        await pilgrim_payment_repository.create_payable_for_package_change(db, pilgrim_payable_info)
 
 
-        else:
-
-            #group leader finance info calculate
-            group_leader = await admin_user_repository.get_admin_user_by_code(db, pilgrim.group_leader)
-            total_payable_of_group_leader = group_leader.total_payable
-            total_payment_of_group_leader = group_leader.total_payment
-
-            total_payable_of_group_leader = total_payable_of_group_leader - package_price_based_on_bed_types + total_actual_payable
-            total_due_of_group_leader = max(total_payable_of_group_leader - total_payment_of_group_leader, 0)
-            total_available_of_group_leader = max(total_payment_of_group_leader - total_payable_of_group_leader, 0)
-
-            group_leader_finance_info = {
-                "total_payable" : total_payable_of_group_leader,
-                "total_payment" : total_payment_of_group_leader,
-                "total_due" : total_due_of_group_leader,
-                "total_available_amount" : total_available_of_group_leader,
-                "code" : group_leader.code
-            }
-            await pilgrim_payment_repository.update_group_leader_payment_info(db, group_leader_finance_info)
-
-
-            # payment table er row
-            group_leader_payable_info = {
-                "description": "Package Change Bill",
-                "date": datetime.today().strftime("%Y-%m-%d"),
-                "amount": request.total_payable,
-                "group_leader" : group_leader.code,
-                "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
-                "created_by": agency_name,
-                "updated_by": agency_name,
-                "category": "Payable",
-                "pilgrims_tracking_id": [request.tracking_id],
-                "no_of_hajji" : 1
-            }
-            await pilgrim_payment_repository.create_payable_for_package_change(db, group_leader_payable_info)
+        # else:
+        #
+        #     #group leader finance info calculate
+        #     group_leader = await admin_user_repository.get_admin_user_by_code(db, pilgrim.group_leader)
+        #     total_payable_of_group_leader = group_leader.total_payable
+        #     total_payment_of_group_leader = group_leader.total_payment
+        #
+        #     total_payable_of_group_leader = total_payable_of_group_leader - package_price_based_on_bed_types + total_actual_payable
+        #     total_due_of_group_leader = max(total_payable_of_group_leader - total_payment_of_group_leader, 0)
+        #     total_available_of_group_leader = max(total_payment_of_group_leader - total_payable_of_group_leader, 0)
+        #
+        #     group_leader_finance_info = {
+        #         "total_payable" : total_payable_of_group_leader,
+        #         "total_payment" : total_payment_of_group_leader,
+        #         "total_due" : total_due_of_group_leader,
+        #         "total_available_amount" : total_available_of_group_leader,
+        #         "code" : group_leader.code
+        #     }
+        #     await pilgrim_payment_repository.update_group_leader_payment_info(db, group_leader_finance_info)
+        #
+        #
+        #     # payment table er row
+        #     group_leader_payable_info = {
+        #         "description": "Package Change Bill",
+        #         "date": datetime.today().strftime("%Y-%m-%d"),
+        #         "amount": request.total_payable,
+        #         "group_leader" : group_leader.code,
+        #         "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
+        #         "created_by": agency_name,
+        #         "updated_by": agency_name,
+        #         "category": "Payable",
+        #         "pilgrims_tracking_id": [request.tracking_id],
+        #         "no_of_hajji" : 1
+        #     }
+        #     await pilgrim_payment_repository.create_payable_for_package_change(db, group_leader_payable_info)
 
         await db.commit()
         return {"message": "package changed successfully"}

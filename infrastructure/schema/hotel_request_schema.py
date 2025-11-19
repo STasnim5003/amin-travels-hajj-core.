@@ -16,6 +16,8 @@ class HotelRequestBase(BaseModel):
     hotel_contact_person: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
     nusuk_request_id: Optional[str] = None
+    pricing: Optional[Dict[str, Any]] = None
+    document: Optional[List[Dict[str, Any]]] = None
 
 class HotelRequestResponseSchema(HotelRequestBase):
     id: int
@@ -44,3 +46,5 @@ class HotelRequestUpdateSchema(BaseModel):
     status: Optional[str] = None
     nusuk_request_id: Optional[str] = None
     is_active: Optional[bool] = None
+    document: Optional[Dict[str, Any]] = None
+    pricing: Optional[Dict[str, Any]] = None
