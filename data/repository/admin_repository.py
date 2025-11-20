@@ -288,3 +288,14 @@ async def get_child_agencies(db, lead_agency_name):
         return result.scalars().all()
     except Exception as e:
         raise e
+
+async def get_lead_agency(db:AsyncSession, agency_name:str):
+    try:
+        result = await db.execute(
+            select(AdminModel.lead_agency)
+            .where(AdminModel.agency_name == agency_name)
+        )
+
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise e

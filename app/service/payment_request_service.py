@@ -1,0 +1,106 @@
+from datetime import datetime
+from typing import Optional
+from zoneinfo import ZoneInfo
+
+from fastapi import HTTPException, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.utils.file_downloadable_url import generate_downloadable_urls
+from app.service import admin_service
+from data.repository import payment_request_repository, admin_repository, file_repository
+from infrastructure.schema.payment_request_schema import PaymentRequestResponse, \
+    PaymentRequestListResponseSchema, PaymentRequestUpdateSchema
+
+
+async def create_payment_request(db: AsyncSession, request_dict: dict, money_receipt_payment_slip_file:Optional[UploadFile]):
+    try:
+        document_data = []
+        if money_receipt_payment_slip_file:
+            try:
+                document_resp = await file_repository.upload_file(file=money_receipt_payment_slip_file, name="payment_request_slip")
+                document_data.append(document_resp.model_dump())
+                request_dict['money_receipt_payment_slip_file'] = document_data
+            except Exception as e:
+                raise e
+
+        result = await payment_request_repository.create_payment_request(db=db, request_dict=request_dict)
+        return PaymentRequestResponse.model_validate(result)
+    except Exception as e:
+        raise e
+
+
+async def get_payment_requests(db: AsyncSession, agency_name: str):
+    try:
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
+
+        result = await payment_request_repository.get_payment_requests(db=db, agency_names=child_agencies)
+        payment_requests = []
+
+        for payment_request in result:
+            payment_requests.append(PaymentRequestResponse.model_validate(payment_request))
+
+        return PaymentRequestListResponseSchema(payment_requests=payment_requests)
+    except Exception as e:
+        raise e
+
+
+async def get_payment_request_by_id(db: AsyncSession, payment_request_id: int, agency_name: str):
+    try:
+        result = await payment_request_repository.get_payment_request_by_id(db=db,
+                                                                            payment_request_id=payment_request_id)
+        if not result:
+            raise HTTPException(status_code=400, detail='Payment request not found')
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+
+        associated_agencies = [lead_agency, agency_name]
+        associated_agencies = list(set(associated_agencies))
+
+        if result.agency_name not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
+
+        if result.money_receipt_payment_slip_file:
+            result.money_receipt_payment_slip_file = await generate_downloadable_urls(result.money_receipt_payment_slip_file)
+
+        return PaymentRequestResponse.model_validate(result)
+    except Exception as e:
+        raise e
+
+
+async def update_payment_request(db: AsyncSession, request_dict: dict, money_receipt_payment_slip_file: Optional[UploadFile]):
+    try:
+        result = await payment_request_repository.get_payment_request_by_id(db=db, payment_request_id=request_dict.get('id'))
+        if not result:
+            raise HTTPException(status_code=400, detail='Payment request not found')
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=request_dict['agency_name'])
+
+        associated_agencies = [lead_agency, request_dict['agency_name']]
+        associated_agencies = list(set(associated_agencies))
+
+        if result.agency_name not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
+
+        document_data = []
+        if money_receipt_payment_slip_file:
+            try:
+                document_resp = await file_repository.upload_file(file=money_receipt_payment_slip_file,
+                                                                  name="payment_request_slip")
+                document_data.append(document_resp.model_dump())
+                request_dict['money_receipt_payment_slip_file'] = document_data
+            except Exception as e:
+                raise e
+
+
+        request_dict = {k: v for k, v in request_dict.items() if v is not None}
+
+        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
+        updated_time_bd = updated_time_bd.replace(tzinfo=None)
+        request_dict['updated_at'] = updated_time_bd
+
+        result = await payment_request_repository.update_payment_request(db=db, request_dict=request_dict)
+        return PaymentRequestResponse.model_validate(result)
+    except Exception as e:
+        raise e
