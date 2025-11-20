@@ -25,9 +25,9 @@ async def get_hotel_requests(db: AsyncSession, agency_name: List[str]):
     except Exception as e:
         raise e
 
-async def get_hotel_request_by_id(db:AsyncSession, request_id:int, agency_name:str):
+async def get_hotel_request_by_id(db:AsyncSession, request_id:int):
     try:
-        stmt = select(HotelRequestModel).where(HotelRequestModel.id == request_id, HotelRequestModel.agency_name == agency_name)
+        stmt = select(HotelRequestModel).where(HotelRequestModel.id == request_id)
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
     except Exception as e:

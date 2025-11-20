@@ -17,7 +17,7 @@ async def create(db: AsyncSession, data: dict):
         await db.rollback()
         raise e
 
-async def get_by_id(db:AsyncSession, flight_request_id:int, agency_name:str):
+async def get_by_id(db:AsyncSession, flight_request_id:int):
     try:
         ArrivalRoute = aliased(RouteModel)
         DepartureRoute = aliased(RouteModel)
@@ -30,7 +30,7 @@ async def get_by_id(db:AsyncSession, flight_request_id:int, agency_name:str):
             )
             .join(ArrivalRoute, FlightRequestModel.arrival_route == ArrivalRoute.id, isouter=True)
             .join(DepartureRoute, FlightRequestModel.departure_route == DepartureRoute.id, isouter=True)
-            .where(FlightRequestModel.id == flight_request_id, FlightRequestModel.agency_name==agency_name)
+            .where(FlightRequestModel.id == flight_request_id)
         )
         row = result.first()
         if not row:

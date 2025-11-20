@@ -20,7 +20,7 @@ async def create_flight_request(db: AsyncSession, request: FlightRequestCreateSc
 
 async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSchema, agency_name: str):
     try:
-        flight_request = await flight_request_repository.get_by_id(db, request.id, agency_name)
+        flight_request = await flight_request_repository.get_by_id(db, request.id)
 
         if not flight_request:
             raise HTTPException(status_code=400, detail='Flight request not found')
@@ -28,6 +28,14 @@ async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSc
         update_data = request.model_dump(exclude_unset=True, exclude_none=True)
         update_data["updated_by"] = agency_name
         update_data["updated_at"] = datetime.utcnow() + timedelta(hours=6)
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+
+        associated_agencies = [lead_agency, agency_name]
+        associated_agencies = list(set(associated_agencies))
+
+        if flight_request['agency_name'] not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
 
         result = await flight_request_repository.update_flight_request(db, request.id, update_data)
         return FlightRequestResponseSchema.model_validate(result)
@@ -57,10 +65,18 @@ async def get_flight_requests(db:AsyncSession, agency_name:str):
 
 async def get_flight_request_by_id(db:AsyncSession, flight_request_id:int, agency_name:str):
     try:
-        result = await flight_request_repository.get_by_id(db=db, flight_request_id= flight_request_id, agency_name=agency_name)
+        result = await flight_request_repository.get_by_id(db=db, flight_request_id= flight_request_id)
 
         if not result:
             raise HTTPException(status_code=400, detail='Flight request not found')
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+
+        associated_agencies = [lead_agency, agency_name]
+        associated_agencies = list(set(associated_agencies))
+
+        if result['agency_name'] not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
 
         return FlightRequestResponseSchema.model_validate(result)
     except Exception as e:

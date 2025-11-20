@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.service import admin_service
-from data.repository import zone_request_repository
+from data.repository import zone_request_repository, admin_repository
 from infrastructure.schema.zone_request_schema import ZoneRequestCreateSchema, ZoneRequestResponseSchema, \
     ZoneRequestUpdateSchema, ZoneRequestListResponseSchema
 
@@ -21,10 +21,18 @@ async def create_zone_request(db: AsyncSession, request: ZoneRequestCreateSchema
 
 async def update_zone_request(db: AsyncSession, request: ZoneRequestUpdateSchema, agency_name: str):
     try:
-        zone_request = await zone_request_repository.get_by_id(db, request.id, agency_name)
+        zone_request = await zone_request_repository.get_by_id(db, request.id)
 
         if not zone_request:
             raise HTTPException(status_code=400, detail='Zone request not found')
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+
+        associated_agencies = [lead_agency, agency_name]
+        associated_agencies = list(set(associated_agencies))
+
+        if zone_request.agency_name not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
 
         update_data = request.model_dump(exclude_unset=True, exclude_none=True)
         update_data["updated_by"] = agency_name
@@ -55,10 +63,18 @@ async def get_zone_requests(db: AsyncSession, agency_name: str):
 
 async def get_zone_request_by_id(db: AsyncSession, zone_request_id: int, agency_name: str):
     try:
-        result = await zone_request_repository.get_by_id(db, zone_request_id, agency_name)
+        result = await zone_request_repository.get_by_id(db, zone_request_id)
 
         if not result:
             raise HTTPException(status_code=400, detail='Zone request not found')
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+
+        associated_agencies = [lead_agency, agency_name]
+        associated_agencies = list(set(associated_agencies))
+
+        if result.agency_name not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
 
         return ZoneRequestResponseSchema.model_validate(result)
 

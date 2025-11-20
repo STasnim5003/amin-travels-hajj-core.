@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.service import admin_service
-from data.repository import hotel_request_repository, file_repository
+from data.repository import hotel_request_repository, file_repository, admin_repository
 from infrastructure.schema.hotel_request_schema import HotelRequestBase, HotelRequestResponseSchema, \
     HotelRequestListResponseSchema, HotelRequestUpdateSchema
 
@@ -42,9 +42,17 @@ async def get_hotel_requests(db: AsyncSession, agency_name : str):
 
 async def get_hotel_request_by_id(db:AsyncSession, request_id:int, agency_name:str):
     try:
-        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id, agency_name=agency_name)
+        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if result.document:
             result.document = await generate_downloadable_urls(result.document)
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+
+        associated_agencies = [lead_agency, agency_name]
+        associated_agencies = list(set(associated_agencies))
+
+        if result.agency_name not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
 
         return HotelRequestResponseSchema.model_validate(result)
     except Exception as e:
@@ -52,9 +60,17 @@ async def get_hotel_request_by_id(db:AsyncSession, request_id:int, agency_name:s
 
 async def update_hotel_request(db:AsyncSession, request: HotelRequestUpdateSchema, agency_name : str, document: Optional[UploadFile]):
     try:
-        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request.id, agency_name=agency_name)
+        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request.id)
         if not result:
             raise HTTPException(status_code=400, detail="Hotel Request not found")
+
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+
+        associated_agencies = [lead_agency, agency_name]
+        associated_agencies = list(set(associated_agencies))
+
+        if result.agency_name not in associated_agencies:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
 
         request_dict = request.model_dump(exclude_none=True)
         document_data = []
@@ -69,6 +85,7 @@ async def update_hotel_request(db:AsyncSession, request: HotelRequestUpdateSchem
         request_dict['updated_by'] = agency_name
         request_dict["updated_at"] = datetime.now() + timedelta(hours=6)
 
+
         result = await hotel_request_repository.update_hotel_request(db=db, request_dict=request_dict)
         return HotelRequestResponseSchema.model_validate(result)
     except Exception as e:
@@ -77,7 +94,7 @@ async def update_hotel_request(db:AsyncSession, request: HotelRequestUpdateSchem
 
 async def delete_hotel_request(db:AsyncSession, request_id:int, agency_name:str):
     try:
-        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id, agency_name=agency_name)
+        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if not result:
             raise HTTPException(status_code=400, detail="Hotel Request not found")
 

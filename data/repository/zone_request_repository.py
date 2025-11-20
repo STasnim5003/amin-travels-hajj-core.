@@ -16,12 +16,11 @@ async def create(db: AsyncSession, data: dict):
         raise e
 
 
-async def get_by_id(db: AsyncSession, zone_request_id: int, agency_name: str):
+async def get_by_id(db: AsyncSession, zone_request_id: int):
     try:
         result = await db.execute(
             select(ZoneRequestModel).where(
-                ZoneRequestModel.id == zone_request_id,
-                ZoneRequestModel.agency_name == agency_name
+                ZoneRequestModel.id == zone_request_id
             )
         )
         return result.scalar_one_or_none()
