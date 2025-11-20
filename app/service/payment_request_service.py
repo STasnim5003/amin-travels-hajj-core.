@@ -104,3 +104,17 @@ async def update_payment_request(db: AsyncSession, request_dict: dict, money_rec
         return PaymentRequestResponse.model_validate(result)
     except Exception as e:
         raise e
+
+
+async def delete_payment_request(db:AsyncSession, payment_request_id:int, agency_name:str):
+    try:
+        payment_request = await payment_request_repository.get_payment_request_by_id(db, payment_request_id)
+        if not payment_request:
+            raise HTTPException(status_code=400, detail='Payment request not found')
+        if payment_request.agency_name != agency_name:
+            raise HTTPException(status_code=400, detail='You can not delete other payment request')
+
+        return await payment_request_repository.delete_payment_request(db=db, payment_request_id=payment_request_id)
+
+    except Exception as e:
+        raise e

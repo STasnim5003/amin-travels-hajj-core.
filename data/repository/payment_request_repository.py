@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,6 +54,21 @@ async def update_payment_request(db:AsyncSession, request_dict: dict):
         result = await db.execute(stmt)
         await db.commit()
         return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def delete_payment_request(db, payment_request_id):
+    try:
+        stmt = (
+            delete(PaymentRequestModel)
+            .where(PaymentRequestModel.id == payment_request_id)
+        )
+
+        await db.execute(stmt)
+        await db.commit()
+        return True
     except Exception as e:
         await db.rollback()
         raise e
