@@ -140,14 +140,8 @@ async def get_pilgrim_payments(
     )
 
 
-async def get_pilgrim_payable_report(db: AsyncSession, payable_id: int, agency_name: str):
+async def get_pilgrim_payable_report(db: AsyncSession, payable, agency_name: str):
     try:
-        payable = await payment_repository.get_by_id(db, payable_id)
-        if not payable:
-            raise HTTPException(status_code=400, detail="Payable not found")
-
-        if not payable.tracking_id:
-            raise HTTPException(status_code=400, detail="Payable not belong to any pilgrim")
 
         pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, payable.tracking_id)
         if not pilgrim:
@@ -158,7 +152,7 @@ async def get_pilgrim_payable_report(db: AsyncSession, payable_id: int, agency_n
 
         amount_in_words = num_to_words.amount_to_words(payable.amount)
         return PilgrimPayableReportSchema(
-            id=payable_id,
+            id=payable.id,
             name_en=pilgrim.name_en,
             name_bn=pilgrim.name_bn,
             nid=pilgrim.nid,
@@ -180,14 +174,8 @@ async def get_pilgrim_payable_report(db: AsyncSession, payable_id: int, agency_n
         raise e
 
 
-async def get_group_leader_payable_report_data(db: AsyncSession, payable_id: int, agency_name: str):
+async def get_group_leader_payable_report_data(db: AsyncSession, payable, agency_name: str):
     try:
-        payable = await payment_repository.get_by_id(db, payable_id)
-        if not payable:
-            raise HTTPException(status_code=400, detail="Payable not found")
-        if not payable.group_leader:
-            raise HTTPException(status_code=400, detail="Payable not belong to any group leader")
-
         group_leader = await admin_user_repository.get_admin_user_by_code(db, payable.group_leader)
         if not group_leader:
             raise HTTPException(status_code=400, detail="Group leader not found")
@@ -210,7 +198,7 @@ async def get_group_leader_payable_report_data(db: AsyncSession, payable_id: int
         amount_in_words = num_to_words.amount_to_words(payable.amount)
 
         return GroupLeaderPayableReportSchema(
-            id=payable_id,
+            id=payable.id,
             name_en=group_leader.name,
             code=group_leader.code,
             agency_name=group_leader.agency_name,
@@ -218,5 +206,19 @@ async def get_group_leader_payable_report_data(db: AsyncSession, payable_id: int
             amount_in_words=amount_in_words,
             summary=package_wise_haji_summary
         )
+    except Exception as e:
+        raise e
+
+
+async def get_payable_report_data(db:AsyncSession, payable_id:int, agency_name:str):
+    try:
+        payable = await payment_repository.get_by_id(db, payable_id)
+        if not payable:
+            raise HTTPException(status_code=400, detail="Payable not found")
+
+        if payable.tracking_id:
+            return await get_pilgrim_payable_report(db, payable, agency_name)
+        else:
+            return await get_group_leader_payable_report_data(db, payable, agency_name)
     except Exception as e:
         raise e
