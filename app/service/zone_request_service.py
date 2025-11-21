@@ -26,12 +26,11 @@ async def update_zone_request(db: AsyncSession, request: ZoneRequestUpdateSchema
         if not zone_request:
             raise HTTPException(status_code=400, detail='Zone request not found')
 
-        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
 
-        associated_agencies = [lead_agency, agency_name]
-        associated_agencies = list(set(associated_agencies))
-
-        if zone_request.agency_name not in associated_agencies:
+        if zone_request.agency_name not in child_agencies:
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         update_data = request.model_dump(exclude_unset=True, exclude_none=True)
@@ -68,12 +67,11 @@ async def get_zone_request_by_id(db: AsyncSession, zone_request_id: int, agency_
         if not result:
             raise HTTPException(status_code=400, detail='Zone request not found')
 
-        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
 
-        associated_agencies = [lead_agency, agency_name]
-        associated_agencies = list(set(associated_agencies))
-
-        if result.agency_name not in associated_agencies:
+        if result.agency_name not in child_agencies:
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         return ZoneRequestResponseSchema.model_validate(result)

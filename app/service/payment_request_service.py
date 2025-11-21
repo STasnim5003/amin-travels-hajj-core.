@@ -53,12 +53,11 @@ async def get_payment_request_by_id(db: AsyncSession, payment_request_id: int, a
         if not result:
             raise HTTPException(status_code=400, detail='Payment request not found')
 
-        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
 
-        associated_agencies = [lead_agency, agency_name]
-        associated_agencies = list(set(associated_agencies))
-
-        if result.agency_name not in associated_agencies:
+        if result.agency_name not in child_agencies:
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         if result.money_receipt_payment_slip_file:
@@ -75,12 +74,11 @@ async def update_payment_request(db: AsyncSession, request_dict: dict, money_rec
         if not result:
             raise HTTPException(status_code=400, detail='Payment request not found')
 
-        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=request_dict['agency_name'])
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=request_dict.get('agency_name'))
+        child_agencies.append(request_dict.get('agency_name'))
+        child_agencies = list(set(child_agencies))
 
-        associated_agencies = [lead_agency, request_dict['agency_name']]
-        associated_agencies = list(set(associated_agencies))
-
-        if result.agency_name not in associated_agencies:
+        if result.agency_name not in child_agencies:
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         document_data = []
