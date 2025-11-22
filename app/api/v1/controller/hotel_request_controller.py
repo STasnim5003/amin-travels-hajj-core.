@@ -1,3 +1,5 @@
+import json
+
 import fastapi
 from fastapi import Depends, HTTPException, Form, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,21 +57,33 @@ async def update_hotel_request(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
+    def parse_json(field):
+        if field is None:
+            return None
+        try:
+            return json.loads(field)
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid JSON for field: {field}"
+            )
+
     hotel_request_update = HotelRequestUpdateSchema(
         id=id,
         city=city,
         type=type,
         name=name,
         tasria_number=tasria_number,
-        check_in=check_in,
-        check_out=check_out,
+        check_in=parse_json(check_in),
+        check_out=parse_json(check_out),
         number_of_haji=number_of_haji,
-        room_allocation=room_allocation,
-        hotel_contact_person=hotel_contact_person,
+        room_allocation=parse_json(room_allocation),
+        hotel_contact_person=parse_json(hotel_contact_person),
         status=status,
         nusuk_request_id=nusuk_request_id,
         is_active=is_active,
-        pricing=pricing
+        pricing=parse_json(pricing),
+        document=None  # You likely handle file separately
     )
     return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name, document)
 

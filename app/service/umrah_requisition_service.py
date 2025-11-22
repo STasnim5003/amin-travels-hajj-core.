@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,7 +49,10 @@ async def umrah_requisition_assign_service(db:AsyncSession, request:UmrahRequisi
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = agency_name
-        request_dict['updated_at'] = datetime.now() + timedelta(hours=6)
+
+        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
+        updated_time_bd = updated_time_bd.replace(tzinfo=None)
+        request_dict['updated_at'] = updated_time_bd
 
         result = await umrah_requisition_repository.umrah_requisition_assign_service(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(result)

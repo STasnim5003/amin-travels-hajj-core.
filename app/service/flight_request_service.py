@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +28,10 @@ async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSc
 
         update_data = request.model_dump(exclude_unset=True, exclude_none=True)
         update_data["updated_by"] = agency_name
-        update_data["updated_at"] = datetime.utcnow() + timedelta(hours=6)
+
+        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
+        updated_time_bd = updated_time_bd.replace(tzinfo=None)
+        update_data['updated_at'] = updated_time_bd
 
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
         child_agencies.append(agency_name)

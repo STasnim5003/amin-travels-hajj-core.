@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,7 +82,9 @@ async def update_hotel_request(db:AsyncSession, request: HotelRequestUpdateSchem
                 raise e
 
         request_dict['updated_by'] = agency_name
-        request_dict["updated_at"] = datetime.now() + timedelta(hours=6)
+        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
+        updated_time_bd = updated_time_bd.replace(tzinfo=None)
+        request_dict['updated_at'] = updated_time_bd
 
 
         result = await hotel_request_repository.update_hotel_request(db=db, request_dict=request_dict)
