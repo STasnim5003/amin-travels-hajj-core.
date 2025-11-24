@@ -21,6 +21,7 @@ async def fetch_pilgrim_data_json(
         registration_status: Optional[str] = None,
         group_leader: Optional[str] = None,
         show_customers: bool = True,
+        is_package_assigned: Optional[bool] = None,
         skip: int = 0,
         limit: int = 10,
 ):
@@ -68,6 +69,10 @@ async def fetch_pilgrim_data_json(
 
         if not show_customers:
             where_conditions.append("tracking_id IS NOT NULL")
+
+        if is_package_assigned is not None:
+            where_conditions.append("is_package_assigned = :is_package_assigned")
+            params['is_package_assigned'] = is_package_assigned
 
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
