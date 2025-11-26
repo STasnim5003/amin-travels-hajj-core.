@@ -350,10 +350,10 @@ async def update_payable(db: AsyncSession, update_data: dict, finance_info: dict
                 .values(**finance_info)
             )
             await db.execute(query)
-        elif finance_info.get('group_leader'):
+        elif finance_info.get('code'):
             query = (
                 update(AdminUserModel)
-                .where(AdminUserModel.code == finance_info['group_leader'])
+                .where(AdminUserModel.code == finance_info['code'])
                 .values(**finance_info)
             )
             await db.execute(query)
