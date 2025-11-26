@@ -324,12 +324,30 @@ async def get_payment_summary_for_agency(
 
 
 async def get_by_id(db: AsyncSession, payable_id: int):
-    result = await db.execute(
-        select(PaymentModel).where(PaymentModel.id == payable_id)
+    stmt = (
+        select(
+            PaymentModel,
+            PilgrimDataModel.id.label("pilgrim_id")
+        )
+        .join(
+            PilgrimDataModel,
+            PilgrimDataModel.tracking_id == PaymentModel.tracking_id,
+            isouter=True
+        )
+        .where(PaymentModel.id == payable_id)
     )
-    payment = result.scalar_one_or_none()
-    if not payment:
+
+    result = await db.execute(stmt)
+    row = result.one_or_none()
+
+    if not row:
         raise HTTPException(status_code=400, detail="Payable not found")
+
+    payment, pilgrim_id = row
+
+    # Attach pilgrim_id to the SQLAlchemy model instance
+    setattr(payment, "pilgrim_id", pilgrim_id)
+
     return payment
 
 
