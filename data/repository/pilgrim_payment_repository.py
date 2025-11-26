@@ -214,7 +214,7 @@ async def create_payable_for_package_change(db: AsyncSession, payable_info: dict
     try:
         stmt = (
             update(PaymentModel)
-            .where(PaymentModel.tracking_id == payable_info.get('tracking_id'))
+            .where(PaymentModel.tracking_id == payable_info.get('tracking_id'), PaymentModel.category == 'Payable')
             .values(**payable_info)
         )
         await db.execute(stmt)
