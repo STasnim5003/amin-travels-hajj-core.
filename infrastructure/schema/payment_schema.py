@@ -220,3 +220,13 @@ class GroupLeaderPayableReportSchema(BaseModel):
     amount_in_words: Optional[str] = None
     summary: Optional[Any] = None
 
+class PayableUpdateSchema(BaseModel):
+    payable_id : int
+    tracking_id: Optional[str] = None
+    group_leader: Optional[str] = None
+    payment_category: Optional[str] = None
+    amount: Optional[int] = None
+    description: Optional[str] = None
+    date: Optional[str] = None
+    pilgrims_tracking_id: Optional[List[str]] = None
+

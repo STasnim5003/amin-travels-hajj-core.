@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data.model.admin_user_model import AdminUserModel
 from data.model.bank_info_model import BankInfoModel
 from data.model.payment_model import PaymentModel
+from data.model.pilgrim_data_model import PilgrimDataModel
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema
 
 
@@ -332,24 +333,38 @@ async def get_by_id(db: AsyncSession, payable_id: int):
     return payment
 
 
-async def update_payable(db: AsyncSession, payable_id: int, update_data: dict):
+async def update_payable(db: AsyncSession, update_data: dict, finance_info: dict):
     try:
-        if not update_data:
-            raise HTTPException(status_code=400, detail="No fields provided to update")
-
         query = (
             update(PaymentModel)
-            .where(PaymentModel.id == payable_id)
+            .where(PaymentModel.id == update_data['payable_id'])
             .values(**update_data)
             .returning(PaymentModel)
         )
         result = await db.execute(query)
+
+        if finance_info.get('tracking_id'):
+            query = (
+                update(PilgrimDataModel)
+                .where(PilgrimDataModel.tracking_id == finance_info['tracking_id'])
+                .values(**finance_info)
+            )
+            await db.execute(query)
+        elif finance_info.get('group_leader'):
+            query = (
+                update(AdminUserModel)
+                .where(AdminUserModel.code == finance_info['group_leader'])
+                .values(**finance_info)
+            )
+            await db.execute(query)
+
+
         updated_payment = result.scalar_one_or_none()
+        await db.commit()
 
         if not updated_payment:
             raise HTTPException(status_code=400, detail="Update failed — Payable not found")
 
-        await db.commit()
         return updated_payment
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

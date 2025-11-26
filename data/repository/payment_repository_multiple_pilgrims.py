@@ -5,8 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from data.model.admin_user_model import AdminUserModel
 from data.model.payment_model import PaymentModel
 from data.model.pilgrim_data_model import PilgrimDataModel
-from infrastructure.schema.payment_schema import GroupLeaderPayableBaseSchema, GroupLeaderPaymentBaseSchema, \
-    PaymentUpdateSchema, PayableInfoUpdateSchema
+from infrastructure.schema.payment_schema import PayableInfoUpdateSchema
 
 
 async def create_payable_for_multiple_pilgrims(
@@ -29,7 +28,8 @@ async def create_payable_for_multiple_pilgrims(
 
         for pilgrim in pilgrims:
             if pilgrim.group_name != agency_name or pilgrim.group_leader != payment_request["group_leader"]:
-                raise HTTPException(status_code=403, detail=f"Agency or group leader mismatched for {pilgrim.tracking_id}")
+                raise HTTPException(status_code=403,
+                                    detail=f"Agency or group leader mismatched for {pilgrim.tracking_id}")
 
         case_total_payable = case(
             *((
@@ -95,7 +95,9 @@ async def create_payable_for_multiple_pilgrims(
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-async def create_payment_for_multiple_pilgrims(db: AsyncSession, payment_request:dict, agency_name:str, payment_info:PayableInfoUpdateSchema):
+
+async def create_payment_for_multiple_pilgrims(db: AsyncSession, payment_request: dict, agency_name: str,
+                                               payment_info: PayableInfoUpdateSchema):
     try:
         tracking_ids = payment_request["pilgrims_tracking_id"]
 
@@ -113,7 +115,8 @@ async def create_payment_for_multiple_pilgrims(db: AsyncSession, payment_request
 
         for pilgrim in pilgrims:
             if pilgrim.group_name != agency_name or pilgrim.group_leader != payment_request["group_leader"]:
-                raise HTTPException(status_code=403, detail=f"Agency or group leader mismatched for {pilgrim.tracking_id}")
+                raise HTTPException(status_code=403,
+                                    detail=f"Agency or group leader mismatched for {pilgrim.tracking_id}")
 
         case_total_payment = case(
             *((
@@ -138,7 +141,6 @@ async def create_payment_for_multiple_pilgrims(db: AsyncSession, payment_request
             ) for pilgrim in pilgrims),
             else_=PilgrimDataModel.total_available_amount
         )
-
 
         await db.execute(
             update(PilgrimDataModel)
@@ -170,4 +172,3 @@ async def create_payment_for_multiple_pilgrims(db: AsyncSession, payment_request
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
-
