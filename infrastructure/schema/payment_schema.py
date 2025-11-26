@@ -230,3 +230,17 @@ class PayableUpdateSchema(BaseModel):
     date: Optional[str] = None
     pilgrims_tracking_id: Optional[List[str]] = None
 
+class PaymentUpdateSchema(BaseModel):
+    group_leader: Optional[str]= None,
+    tracking_id: Optional[str] = None,
+    amount: Optional[int] = None,
+    description: Optional[str] = None,
+    date: Optional[str] = None,
+    payment_category: Optional[str] = None,
+    bank_info_id: Optional[int] = None,
+    way_of_payment: Optional[str] = None,
+    transfer_no: Optional[str] = None,
+    voucher_no: Optional[str] = None,
+    cheque_no: Optional[str] = None,
+    cheque_bank: Optional[str] = None,
+    pilgrims_tracking_id: Optional[List[str]] = None,

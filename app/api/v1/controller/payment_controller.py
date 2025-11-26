@@ -128,10 +128,35 @@ async def update_payable(
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
 
     return await payment_service.update_payable(db, payable_request, agency_name)
+
+@private_router.put("/update-payment")
+async def update_payment(
+        db: AsyncSession = Depends(get_async_db),
+        group_leader: Optional[str] = Form(None),
+        tracking_id : Optional[str] = Form(None),
+        amount: Optional[int] = Form(None),
+        description: Optional[str] = Form(None),
+        date: Optional[str] = Form(None),
+        payment_category: Optional[str] = Form(None),
+        bank_info_id: Optional[int] = Form(None),
+        way_of_payment: Optional[str] = Form(None),
+        transfer_no: Optional[str] = Form(None),
+        voucher_no: Optional[str] = Form(None),
+        cheque_no: Optional[str] = Form(None),
+        cheque_bank: Optional[str] = Form(None),
+        receipt: Optional[UploadFile] = File(None),
+        pilgrims_tracking_id: Optional[str] = Form(None),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+
+
 
 
 @private_router.post("/pilgrim/create-payable", response_model=PaymentResponseSchema, tags=["payment"])
@@ -215,6 +240,16 @@ async def get_payment_by_id(
 ):
     return await payment_service.get_payment_by_id(db, payment_id)
 
+@private_router.get("/payable/{payable_id}", tags=["payment"])
+async def get_payable_by_id(
+        payable_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await pilgrim_payment_service.get_payable_by_id(db, payable_id, agency_name)
 
 @private_router.get("/payable-report/{payable_id}", tags=["payment"])
 async def get_payable_report_data(

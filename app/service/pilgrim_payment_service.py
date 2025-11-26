@@ -222,3 +222,14 @@ async def get_payable_report_data(db:AsyncSession, payable_id:int, agency_name:s
             return await get_group_leader_payable_report_data(db, payable, agency_name)
     except Exception as e:
         raise e
+
+
+async def get_payable_by_id(db:AsyncSession, payable_id:int, agency_name:str):
+    try:
+        payable = await payment_repository.get_by_id(db, payable_id)
+
+        # if payable.created_by != agency_name:
+        #     raise HTTPException(status_code=400, detail="Payable not belong to this agency")
+        return payable
+    except Exception as e:
+        raise e
