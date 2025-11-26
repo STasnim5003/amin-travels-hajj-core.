@@ -12,7 +12,7 @@ from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaginatedPaymentResponseForGroupLeader, \
     PaginatedPaymentResponseForAgency, GroupLeaderPayableBaseSchema, PilgrimPayableBaseSchema, \
     PilgrimPaymentBaseSchema, \
-    GroupLeaderPaymentBaseSchema, PayableUpdateSchema
+    GroupLeaderPaymentBaseSchema, PayableUpdateSchema, PaymentUpdateSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -133,9 +133,10 @@ async def update_payable(
 
     return await payment_service.update_payable(db, payable_request, agency_name)
 
-@private_router.put("/update-payment")
+@private_router.put("/update-payment", tags=["payment"])
 async def update_payment(
         db: AsyncSession = Depends(get_async_db),
+        payment_id: int = Form(...),
         group_leader: Optional[str] = Form(None),
         tracking_id : Optional[str] = Form(None),
         amount: Optional[int] = Form(None),
@@ -155,7 +156,24 @@ async def update_payment(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
+    payment_update_schema = PaymentUpdateSchema(
+        payment_id = payment_id,
+        tracking_id=tracking_id,
+        group_leader=group_leader,
+        amount=amount,
+        description=description,
+        date=date,
+        payment_category=payment_category,
+        bank_info_id=bank_info_id,
+        way_of_payment=way_of_payment,
+        transfer_no=transfer_no,
+        voucher_no=voucher_no,
+        cheque_no=cheque_no,
+        cheque_bank=cheque_bank,
+        pilgrims_tracking_id=pilgrims_tracking_id
+    )
 
+    return await pilgrim_payment_service.update_payment(db=db, payment_update_schema=payment_update_schema, agency_name=agency_name, receipt=receipt)
 
 
 
@@ -238,6 +256,18 @@ async def get_payment_by_id(
         payment_id: int,
         db: AsyncSession = Depends(get_async_db),
 ):
+    return await payment_service.get_payment_by_id(db, payment_id)
+
+@private_router.get("/payment/{payment_id}", tags=["payment"])
+async def get_payment_by_id(
+        payment_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_pilgrim)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+
     return await payment_service.get_payment_by_id(db, payment_id)
 
 @private_router.get("/payable/{payable_id}", tags=["payment"])

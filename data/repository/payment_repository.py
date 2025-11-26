@@ -333,11 +333,19 @@ async def get_by_id(db: AsyncSession, payable_id: int):
     return payment
 
 
-async def update_payable(db: AsyncSession, update_data: dict, finance_info: dict):
+async def update_payable_payment(db: AsyncSession, update_data: dict, finance_info: dict):
     try:
+        payment_payable_update_id = None
+        if update_data.get('payable_id'):
+            payment_payable_update_id = update_data['payable_id']
+            update_data.pop('payable_id')
+        elif update_data.get('payment_id'):
+            payment_payable_update_id = update_data['payment_id']
+            update_data.pop('payment_id')
+
         query = (
             update(PaymentModel)
-            .where(PaymentModel.id == update_data['payable_id'])
+            .where(PaymentModel.id == payment_payable_update_id)
             .values(**update_data)
             .returning(PaymentModel)
         )
@@ -363,7 +371,7 @@ async def update_payable(db: AsyncSession, update_data: dict, finance_info: dict
         await db.commit()
 
         if not updated_payment:
-            raise HTTPException(status_code=400, detail="Update failed — Payable not found")
+            raise HTTPException(status_code=400, detail="Update failed")
 
         return updated_payment
     except Exception as e:
@@ -394,4 +402,3 @@ async def get_payment_by_id(db:AsyncSession, payment_id:int):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail="Payment not found")
-

@@ -1,5 +1,8 @@
 import random
 import string
+from datetime import datetime
+from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +12,7 @@ from data.repository import pilgrim_payment_repository, pilgrim_repository, file
     admin_user_repository
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
-    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema
+    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema
 
 
 async def create_payable_for_pilgrim(
@@ -228,8 +231,92 @@ async def get_payable_by_id(db:AsyncSession, payable_id:int, agency_name:str):
     try:
         payable = await payment_repository.get_by_id(db, payable_id)
 
-        # if payable.created_by != agency_name:
-        #     raise HTTPException(status_code=400, detail="Payable not belong to this agency")
+        if payable.created_by != agency_name:
+            raise HTTPException(status_code=400, detail="Payable not belong to this agency")
         return payable
+    except Exception as e:
+        raise e
+
+
+async def update_payment(db:AsyncSession, payment_update_schema:PaymentUpdateSchema, agency_name:str, receipt:Optional[UploadFile]):
+    try:
+        if payment_update_schema.amount is not None and payment_update_schema.amount <= 0:
+            raise HTTPException(status_code=400, detail="Amount must be greater than zero")
+
+        existing_payment = await payment_repository.get_by_id(db, payment_update_schema.payment_id)
+
+        if existing_payment.category != "Payment":
+            raise HTTPException(status_code=400, detail="It is not Payment")
+
+        if existing_payment.created_by != agency_name:
+            raise HTTPException(status_code=403, detail="Unauthorized to update this payable")
+
+        if existing_payment.tracking_id and existing_payment.tracking_id != payment_update_schema.tracking_id:
+            raise HTTPException(status_code=400, detail="Tracking ID does not match")
+
+        if existing_payment.group_leader and existing_payment.group_leader != payment_update_schema.group_leader:
+            raise HTTPException(status_code=400, detail="Group Leader does not match")
+
+
+        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
+        updated_time_bd = updated_time_bd.replace(tzinfo=None)
+
+        payment_data_dict = payment_update_schema.model_dump(exclude_none=True)
+        payment_data_dict['updated_by'] = agency_name
+        payment_data_dict['updated_at'] = updated_time_bd
+
+        receipt_data = []
+        if receipt:
+            try:
+                receipt_resp = await file_repository.upload_file(file=receipt, name="receipt")
+                receipt_data.append(receipt_resp.model_dump())
+                payment_data_dict['receipt'] = receipt_data
+            except Exception as e:
+                raise e
+
+        finance_info = {}
+
+        # pilgrim finance info
+        if payment_update_schema.amount and existing_payment.amount != payment_update_schema.amount and existing_payment.tracking_id:
+            pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, existing_payment.tracking_id)
+
+            curr_payable = pilgrim.total_payable
+            curr_payment = pilgrim.total_payment
+
+            total_payment = curr_payment - existing_payment.amount + payment_update_schema.amount
+            total_due = max(0, curr_payable - total_payment)
+            total_available_amount = max(0, total_payment - curr_payable)
+
+            finance_info = {
+                'total_payment': total_payment,
+                'total_available_amount': total_available_amount,
+                'total_due': total_due,
+                'tracking_id': pilgrim.tracking_id,
+                'updated_by' : agency_name,
+                'updated_at' : updated_time_bd
+            }
+
+        # group leader finance info
+        elif payment_update_schema.amount and existing_payment.amount != payment_update_schema.amount and existing_payment.group_leader:
+            group_leader = await admin_user_repository.get_admin_user_by_code(db, existing_payment.group_leader)
+
+            curr_payable = group_leader.total_payable
+            curr_payment = group_leader.total_payment
+
+            total_payment = curr_payment - existing_payment.amount + payment_update_schema.amount
+            total_due = max(0, curr_payable - total_payment)
+            total_available_amount = max(0, total_payment - curr_payable)
+
+            finance_info = {
+                'total_payment': total_payment,
+                'total_available_amount': total_available_amount,
+                'total_due': total_due,
+                'code': existing_payment.group_leader,
+                'updated_by': agency_name,
+                'updated_at': updated_time_bd
+            }
+
+        updated_payment = await payment_repository.update_payable_payment(db, payment_data_dict, finance_info)
+        return updated_payment
     except Exception as e:
         raise e

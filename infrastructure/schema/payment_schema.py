@@ -111,16 +111,6 @@ class PaginatedPaymentResponseForAgency(BaseModel):
         from_attributes = True
 
 
-class PaymentUpdateSchema(BaseModel):
-    description: Optional[str] = None
-    date: Optional[str] = None
-    amount: Optional[int] = None
-    pilgrims_id: Optional[List[str]] = None
-
-    class Config:
-        from_attributes = True
-
-
 class PayableInfoUpdateSchema(BaseModel):
     tracking_id: Optional[str] = None
     group_leader_code: Optional[str] = None
@@ -231,16 +221,17 @@ class PayableUpdateSchema(BaseModel):
     pilgrims_tracking_id: Optional[List[str]] = None
 
 class PaymentUpdateSchema(BaseModel):
-    group_leader: Optional[str]= None,
-    tracking_id: Optional[str] = None,
-    amount: Optional[int] = None,
-    description: Optional[str] = None,
-    date: Optional[str] = None,
-    payment_category: Optional[str] = None,
-    bank_info_id: Optional[int] = None,
-    way_of_payment: Optional[str] = None,
-    transfer_no: Optional[str] = None,
-    voucher_no: Optional[str] = None,
-    cheque_no: Optional[str] = None,
-    cheque_bank: Optional[str] = None,
-    pilgrims_tracking_id: Optional[List[str]] = None,
+    payment_id : int
+    group_leader: Optional[str]= None
+    tracking_id: Optional[str] = None
+    amount: Optional[int] = None
+    description: Optional[str] = None
+    date: Optional[str] = None
+    payment_category: Optional[str] = None
+    bank_info_id: Optional[int] = None
+    way_of_payment: Optional[str] = None
+    transfer_no: Optional[str] = None
+    voucher_no: Optional[str] = None
+    cheque_no: Optional[str] = None
+    cheque_bank: Optional[str] = None
+    pilgrims_tracking_id: Optional[List[str]] = None

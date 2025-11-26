@@ -292,6 +292,8 @@ async def update_payable(
                 'total_due': total_due,
                 'actual_payable': actual_payable,
                 'tracking_id': pilgrim.tracking_id,
+                'updated_by': agency_name,
+                'updated_at': updated_time_bd
             }
 
         # group leader finance info
@@ -310,9 +312,11 @@ async def update_payable(
                 'total_available_amount': total_available_amount,
                 'total_due': total_due,
                 'code': existing_payment.group_leader,
+                'updated_by': agency_name,
+                'updated_at': updated_time_bd
             }
 
-        updated_payment = await payment_repository.update_payable(db, payable_data_dict, finance_info)
+        updated_payment = await payment_repository.update_payable_payment(db, payable_data_dict, finance_info)
         return updated_payment
     except Exception as e:
         raise e
