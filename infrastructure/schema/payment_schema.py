@@ -219,6 +219,9 @@ class PayableUpdateSchema(BaseModel):
     description: Optional[str] = None
     date: Optional[str] = None
     pilgrims_tracking_id: Optional[List[str]] = None
+    cheque_no: Optional[str] = None
+    cheque_bank: Optional[str] = None
+    category: Optional[str] = None
 
 class PaymentUpdateSchema(BaseModel):
     payment_id : int
