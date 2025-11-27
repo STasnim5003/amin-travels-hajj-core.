@@ -422,10 +422,11 @@ async def get_payment_by_id(db: AsyncSession, payment_id: int):
 
         payment, bank_info, pilgrim_id = row
 
+        setattr(payment, "pilgrim_id", pilgrim_id)
+
         return {
             "payment": payment,
-            "bank_info": bank_info,
-            "pilgrim_id": pilgrim_id
+            "bank_info": bank_info
         }
 
     except Exception as e:
