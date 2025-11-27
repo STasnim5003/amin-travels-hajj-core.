@@ -395,13 +395,22 @@ async def update_payable_payment(db: AsyncSession, update_data: dict, finance_in
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-async def get_payment_by_id(db:AsyncSession, payment_id:int):
+async def get_payment_by_id(db: AsyncSession, payment_id: int):
     try:
         result = await db.execute(
-            select(PaymentModel, BankInfoModel)
+            select(
+                PaymentModel,
+                BankInfoModel,
+                PilgrimDataModel.id.label("pilgrim_id")
+            )
             .join(
                 BankInfoModel,
                 BankInfoModel.id == PaymentModel.bank_info_id,
+                isouter=True
+            )
+            .join(
+                PilgrimDataModel,
+                PilgrimDataModel.tracking_id == PaymentModel.tracking_id,
                 isouter=True
             )
             .where(PaymentModel.id == payment_id)
@@ -411,12 +420,13 @@ async def get_payment_by_id(db:AsyncSession, payment_id:int):
         if not row:
             raise HTTPException(status_code=404, detail="Payment not found")
 
-        payment, bank_info = row
+        payment, bank_info, pilgrim_id = row
 
-        # Combine data into a single dictionary
         return {
             "payment": payment,
-            "bank_info": bank_info
+            "bank_info": bank_info,
+            "pilgrim_id": pilgrim_id
         }
+
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Payment not found")
+        raise HTTPException(status_code=500, detail=str(e))
