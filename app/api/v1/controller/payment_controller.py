@@ -1,4 +1,3 @@
-import json
 from typing import Optional
 
 import fastapi
@@ -54,10 +53,7 @@ async def create_payment_of_group_leader(
 
     tracking_ids = []
     if pilgrims_tracking_id:
-        try:
-            tracking_ids = json.loads(pilgrims_tracking_id)
-        except json.JSONDecodeError:
-            tracking_ids = [pilgrims_tracking_id]
+        tracking_ids = [tid.strip() for tid in pilgrims_tracking_id.split(',')]
 
     request_schema = GroupLeaderPaymentBaseSchema(
         group_leader=group_leader,
@@ -133,12 +129,13 @@ async def update_payable(
 
     return await payment_service.update_payable(db, payable_request, agency_name)
 
+
 @private_router.put("/update-payment", tags=["payment"])
 async def update_payment(
         db: AsyncSession = Depends(get_async_db),
         payment_id: int = Form(...),
         group_leader: Optional[str] = Form(None),
-        tracking_id : Optional[str] = Form(None),
+        tracking_id: Optional[str] = Form(None),
         amount: Optional[int] = Form(None),
         description: Optional[str] = Form(None),
         date: Optional[str] = Form(None),
@@ -156,8 +153,13 @@ async def update_payment(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
+
+    tracking_ids = []
+    if pilgrims_tracking_id:
+        tracking_ids = [tid.strip() for tid in pilgrims_tracking_id.split(',')]
+
     payment_update_schema = PaymentUpdateSchema(
-        payment_id = payment_id,
+        payment_id=payment_id,
         tracking_id=tracking_id,
         group_leader=group_leader,
         amount=amount,
@@ -170,11 +172,11 @@ async def update_payment(
         voucher_no=voucher_no,
         cheque_no=cheque_no,
         cheque_bank=cheque_bank,
-        pilgrims_tracking_id=pilgrims_tracking_id
+        pilgrims_tracking_id=tracking_ids
     )
 
-    return await pilgrim_payment_service.update_payment(db=db, payment_update_schema=payment_update_schema, agency_name=agency_name, receipt=receipt)
-
+    return await pilgrim_payment_service.update_payment(db=db, payment_update_schema=payment_update_schema,
+                                                        agency_name=agency_name, receipt=receipt)
 
 
 @private_router.post("/pilgrim/create-payable", response_model=PaymentResponseSchema, tags=["payment"])
@@ -258,6 +260,7 @@ async def get_payment_by_id(
 ):
     return await payment_service.get_payment_by_id(db, payment_id)
 
+
 @private_router.get("/payment/{payment_id}", tags=["payment"])
 async def get_payment_by_id(
         payment_id: int,
@@ -270,6 +273,7 @@ async def get_payment_by_id(
 
     return await payment_service.get_payment_by_id_for_update(db, payment_id, agency_name)
 
+
 @private_router.get("/payable/{payable_id}", tags=["payment"])
 async def get_payable_by_id(
         payable_id: int,
@@ -280,6 +284,7 @@ async def get_payable_by_id(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await pilgrim_payment_service.get_payable_by_id(db, payable_id, agency_name)
+
 
 @private_router.get("/payable-report/{payable_id}", tags=["payment"])
 async def get_payable_report_data(
