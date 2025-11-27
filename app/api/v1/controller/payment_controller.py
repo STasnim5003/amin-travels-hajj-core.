@@ -262,13 +262,13 @@ async def get_payment_by_id(
 async def get_payment_by_id(
         payment_id: int,
         db: AsyncSession = Depends(get_async_db),
-        current_user: dict = Depends(get_current_pilgrim)
+        current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
 
-    return await payment_service.get_payment_by_id(db, payment_id)
+    return await payment_service.get_payment_by_id_for_update(db, payment_id, agency_name)
 
 @private_router.get("/payable/{payable_id}", tags=["payment"])
 async def get_payable_by_id(

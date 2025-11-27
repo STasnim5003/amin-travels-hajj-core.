@@ -8,6 +8,7 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils import num_to_words
+from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from data.repository import payment_repository, admin_user_repository, pilgrim_repository, file_repository
 from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
     PayableInfoUpdateSchema, \
@@ -367,6 +368,24 @@ async def get_payment_by_id(db: AsyncSession, payment_id: int):
         )
 
         return receipt
+
+    except Exception as e:
+        raise e
+
+
+async def get_payment_by_id_for_update(db:AsyncSession, payment_id:int, agency_name:str):
+    try:
+        result = await payment_repository.get_payment_by_id(db, payment_id)
+        payment = result["payment"]
+        if payment.receipt:
+            payment.receipt = await generate_downloadable_urls(payment.receipt)
+
+        if payment.created_by != agency_name:
+            raise HTTPException(status_code=400, detail=f"This payment is not belong to {agency_name}")
+        if payment.category != 'Payment':
+            raise HTTPException(status_code=400, detail="This is not a Payment")
+        return result
+
 
     except Exception as e:
         raise e
