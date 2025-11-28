@@ -226,6 +226,8 @@ async def get_agency_payments(
 
             final_result.append(base_fields)
 
+        day_wise_payment = await payment_repository.get_day_wise_payment(db=db, agency_name=agency_name)
+
         # Return paginated response
         return PaginatedPaymentResponseForAgency(
             page=page,
@@ -233,7 +235,10 @@ async def get_agency_payments(
             total=total,
             bank_summary=bank_summary,
             overall_summary=overall_summary,
-            grouped_payments=final_result
+            grouped_payments=final_result,
+            today_payments=day_wise_payment.get("today", []),
+            yesterday_payments=day_wise_payment.get("yesterday", []),
+            last_7_days_payments=day_wise_payment.get("last_7_days", []),
         )
 
 

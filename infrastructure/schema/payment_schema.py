@@ -106,6 +106,9 @@ class PaginatedPaymentResponseForAgency(BaseModel):
     total: int
     bank_summary: Optional[List[BankSummarySchema]] = None
     overall_summary: Optional[OverallSummarySchema] = None
+    today_payments: Optional[List[Dict[str, Any]]] = None
+    yesterday_payments: Optional[List[Dict[str, Any]]] = None
+    last_7_days_payments: Optional[List[Dict[str, Any]]] = None
 
     class Config:
         from_attributes = True

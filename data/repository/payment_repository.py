@@ -431,3 +431,55 @@ async def get_payment_by_id(db: AsyncSession, payment_id: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+async def get_day_wise_payment(db: AsyncSession, agency_name: str):
+    try:
+        tz = pytz.timezone('Asia/Dhaka')
+        now = datetime.now(tz)
+
+        today = now.date()
+        yesterday = today - timedelta(days=1)
+        seven_days_ago = today - timedelta(days=7)
+
+        query = """
+            SELECT json_build_object(
+                'today', (
+                    SELECT json_agg(p.*)
+                    FROM core.payment p
+                    WHERE DATE(p.updated_at) = :today
+                      AND p.category = 'Payment'
+                      AND p.created_by = :agency_name
+                ),
+                'yesterday', (
+                    SELECT json_agg(p.*)
+                    FROM core.payment p
+                    WHERE DATE(p.updated_at) = :yesterday
+                      AND p.category = 'Payment'
+                      AND p.created_by = :agency_name
+                ),
+                'last_7_days', (
+                    SELECT json_agg(p.*)
+                    FROM core.payment p
+                    WHERE DATE(p.updated_at) >= :seven_days_ago
+                      AND DATE(p.updated_at) <= :today
+                      AND p.category = 'Payment'
+                      AND p.created_by = :agency_name
+                )
+            ) AS payments_json;
+        """
+
+        result = await db.execute(
+            text(query),
+            {
+                "today": today,
+                "yesterday": yesterday,
+                "seven_days_ago": seven_days_ago,
+                "agency_name": agency_name
+            }
+        )
+
+        return result.scalar_one()
+    except Exception as e:
+        raise e
+
+
