@@ -12,7 +12,7 @@ from data.repository import pilgrim_payment_repository, pilgrim_repository, file
     admin_user_repository
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
-    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema, PaymentLedgerSchema
+    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema, PaymentLedgerSchema, PaymentSchema
 
 
 async def create_payable_for_pilgrim(
@@ -325,12 +325,12 @@ def split_ledger_rows(rows):
     payable_list, payment_list = [], []
     for r in rows:
         if r.category == "Payable":
-            payable_list.append(r)
+            payable_list.append(PaymentResponseSchema.model_validate(r))
         elif r.category == "Payment":
-            payment_list.append(r)
+            payment_list.append(PaymentResponseSchema.model_validate(r))
     return payable_list, payment_list
 
-async def get_payment_ledger(db, tracking_id, group_leader, agency_name):
+async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
     try:
         if tracking_id:
             pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, tracking_id)
@@ -344,7 +344,7 @@ async def get_payment_ledger(db, tracking_id, group_leader, agency_name):
 
             payable_list, payment_list = split_ledger_rows(result)
 
-            return PaymentLedgerSchema(
+            payment_ledger =  PaymentLedgerSchema(
                 tracking_id = tracking_id,
                 name = pilgrim.name_en,
                 mobile_no = pilgrim.mobile_no,
@@ -356,20 +356,21 @@ async def get_payment_ledger(db, tracking_id, group_leader, agency_name):
                 payment_list = payment_list,
                 generated_on = datetime.now(ZoneInfo("Asia/Dhaka"))
             )
+            return payment_ledger
 
-        if group_leader:
-            group_leader = await admin_user_repository.get_admin_user_by_code(db, group_leader)
+        if group_leader_code:
+            group_leader = await admin_user_repository.get_admin_user_by_code(db, group_leader_code)
             if not group_leader:
                 raise HTTPException(status_code=400, detail="Group Leader Not Found")
 
             if group_leader.agency_name != agency_name:
                 raise HTTPException(status_code=400, detail="Group Leader not belong to this agency")
 
-            result = await payment_repository.get_group_leader_ledger(db, group_leader)
+            result = await payment_repository.get_group_leader_ledger(db, group_leader_code)
             payable_list, payment_list = split_ledger_rows(result)
 
-            return PaymentLedgerSchema(
-                group_leader=group_leader,
+            payment_ledger = PaymentLedgerSchema(
+                group_leader=group_leader_code,
                 name=group_leader.name,
                 mobile_no=group_leader.mobile_no,
                 total_payable=group_leader.total_payable,
@@ -380,5 +381,6 @@ async def get_payment_ledger(db, tracking_id, group_leader, agency_name):
                 payment_list=payment_list,
                 generated_on=datetime.now(ZoneInfo("Asia/Dhaka"))
             )
+            return payment_ledger
     except Exception as e:
         raise e

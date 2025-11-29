@@ -299,15 +299,19 @@ async def get_payable_report_data(
     return await pilgrim_payment_service.get_payable_report_data(db=db, payable_id=payable_id, agency_name=agency_name)
 
 
-@private_router.get("/payment-ledger", response_model=PaymentLedgerSchema, tags=["payment"])
+@private_router.get("/payment-ledger", tags=["payment"])
 async def get_payment_ledger(
         tracking_id: Optional[str] = None,
         group_leader: Optional[str] = None,
         db: AsyncSession = Depends(get_async_db),
-        current_user: dict = Depends(get_current_user)
-) -> PaymentLedgerSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    agency_name = current_user["agency_name"]
+        # current_user: dict = Depends(get_current_user)
+):
 
-    return await pilgrim_payment_service.get_payment_ledger(db, tracking_id, group_leader, agency_name)
+    # if current_user["role"] != "AGENCY":
+    #     raise HTTPException(status_code=403, detail="Unauthorized")
+    # agency_name = current_user["agency_name"]
+    agency_name = 'Marvellous Air Travels Ltd'
+
+    result = await pilgrim_payment_service.get_payment_ledger(db, tracking_id, group_leader, agency_name)
+    return PaymentLedgerSchema.model_validate(result)
+

@@ -251,6 +251,9 @@ class PaymentLedgerSchema(BaseModel):
     total_available_amount: Optional[int] = 0
     total_payment: Optional[int] = 0
     total_due: Optional[int] = 0
-    payable_list: Optional[List[Dict[str, Any]]] = None
-    payment_list: Optional[List[Dict[str, Any]]] = None
+    payable_list: Optional[List[PaymentResponseSchema]] = None
+    payment_list: Optional[List[PaymentResponseSchema]] = None
     generated_on: Optional[datetime] = None
+
+    class config:
+        from_attributes: True
