@@ -236,9 +236,9 @@ async def get_agency_payments(
             bank_summary=bank_summary,
             overall_summary=overall_summary,
             grouped_payments=final_result,
-            today_payments=day_wise_payment.get("today", []),
-            yesterday_payments=day_wise_payment.get("yesterday", []),
-            last_7_days_payments=day_wise_payment.get("last_7_days", []),
+            today_payments=day_wise_payment.get("today") or [],
+            yesterday_payments=day_wise_payment.get("yesterday") or [],
+            last_7_days_payments=day_wise_payment.get("last_7_days") or []
         )
 
 
