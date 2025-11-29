@@ -224,6 +224,15 @@ async def get_agency_payments(
                 "children": payments
             })
 
+            tracking_id = payments[0].get("tracking_id")
+            group_leader = payments[0].get("group_leader")
+
+            if tracking_id:
+                base_fields["tracking_id"] = tracking_id
+
+            if group_leader:
+                base_fields["group_leader"] = group_leader
+
             final_result.append(base_fields)
 
         day_wise_payment = await payment_repository.get_day_wise_payment(db=db, agency_name=agency_name)
