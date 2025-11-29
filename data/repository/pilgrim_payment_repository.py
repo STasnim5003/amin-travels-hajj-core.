@@ -258,3 +258,15 @@ async def get_group_leader_payable_report_data(db:AsyncSession, group_leader:str
         return result.all()
     except Exception as e:
         raise e
+
+async def get_pilgrim_payment_ledger(db: AsyncSession, tracking_id: str):
+    try:
+        stmt = (
+            select(PaymentModel)
+            .where(PaymentModel.tracking_id == tracking_id)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        raise e

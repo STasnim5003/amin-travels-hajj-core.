@@ -11,7 +11,7 @@ from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaginatedPaymentResponseForGroupLeader, \
     PaginatedPaymentResponseForAgency, GroupLeaderPayableBaseSchema, PilgrimPayableBaseSchema, \
     PilgrimPaymentBaseSchema, \
-    GroupLeaderPaymentBaseSchema, PayableUpdateSchema, PaymentUpdateSchema
+    GroupLeaderPaymentBaseSchema, PayableUpdateSchema, PaymentUpdateSchema, PaymentLedgerSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -297,3 +297,17 @@ async def get_payable_report_data(
     agency_name = current_user["agency_name"]
 
     return await pilgrim_payment_service.get_payable_report_data(db=db, payable_id=payable_id, agency_name=agency_name)
+
+
+@private_router.get("/payment-ledger", response_model=PaymentLedgerSchema, tags=["payment"])
+async def get_payment_ledger(
+        tracking_id: Optional[str] = None,
+        group_leader: Optional[str] = None,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+) -> PaymentLedgerSchema:
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+
+    return await pilgrim_payment_service.get_payment_ledger(db, tracking_id, group_leader, agency_name)

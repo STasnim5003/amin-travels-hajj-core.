@@ -240,4 +240,17 @@ class PaymentUpdateSchema(BaseModel):
     voucher_no: Optional[str] = None
     cheque_no: Optional[str] = None
     cheque_bank: Optional[str] = None
-    pilgrims_tracking_id: Optional[List[str]] = None
+    pilgrims_tracking_id: Optional[List[str]] = None,
+
+class PaymentLedgerSchema(BaseModel):
+    tracking_id: Optional[str] = None
+    group_leader: Optional[str] = None
+    name: Optional[str] = None
+    mobile_no: Optional[str] = None
+    total_payable: Optional[int] = 0
+    total_available_amount: Optional[int] = 0
+    total_payment: Optional[int] = 0
+    total_due: Optional[int] = 0
+    payable_list: Optional[List[Dict[str, Any]]] = None
+    payment_list: Optional[List[Dict[str, Any]]] = None
+    generated_on: Optional[datetime] = None

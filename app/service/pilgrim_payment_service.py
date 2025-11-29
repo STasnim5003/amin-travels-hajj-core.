@@ -12,7 +12,7 @@ from data.repository import pilgrim_payment_repository, pilgrim_repository, file
     admin_user_repository
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
-    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema
+    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema, PaymentLedgerSchema
 
 
 async def create_payable_for_pilgrim(
@@ -318,5 +318,67 @@ async def update_payment(db:AsyncSession, payment_update_schema:PaymentUpdateSch
 
         updated_payment = await payment_repository.update_payable_payment(db, payment_data_dict, finance_info)
         return updated_payment
+    except Exception as e:
+        raise e
+
+def split_ledger_rows(rows):
+    payable_list, payment_list = [], []
+    for r in rows:
+        if r.category == "Payable":
+            payable_list.append(r)
+        elif r.category == "Payment":
+            payment_list.append(r)
+    return payable_list, payment_list
+
+async def get_payment_ledger(db, tracking_id, group_leader, agency_name):
+    try:
+        if tracking_id:
+            pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, tracking_id)
+            if not pilgrim:
+                raise HTTPException(status_code=400, detail="Pilgrim Not Found")
+
+            if pilgrim.group_name != agency_name:
+                raise HTTPException(status_code=400, detail="Pilgrim not belong to this agency")
+
+            result = await pilgrim_payment_repository.get_pilgrim_payment_ledger(db, tracking_id)
+
+            payable_list, payment_list = split_ledger_rows(result)
+
+            return PaymentLedgerSchema(
+                tracking_id = tracking_id,
+                name = pilgrim.name_en,
+                mobile_no = pilgrim.mobile_no,
+                total_payable = pilgrim.total_payable,
+                total_due = pilgrim.total_due,
+                total_available_amount = pilgrim.total_available_amount,
+                total_payment = pilgrim.total_payment,
+                payable_list = payable_list,
+                payment_list = payment_list,
+                generated_on = datetime.now(ZoneInfo("Asia/Dhaka"))
+            )
+
+        if group_leader:
+            group_leader = await admin_user_repository.get_admin_user_by_code(db, group_leader)
+            if not group_leader:
+                raise HTTPException(status_code=400, detail="Group Leader Not Found")
+
+            if group_leader.agency_name != agency_name:
+                raise HTTPException(status_code=400, detail="Group Leader not belong to this agency")
+
+            result = await payment_repository.get_group_leader_ledger(db, group_leader)
+            payable_list, payment_list = split_ledger_rows(result)
+
+            return PaymentLedgerSchema(
+                group_leader=group_leader,
+                name=group_leader.name,
+                mobile_no=group_leader.mobile_no,
+                total_payable=group_leader.total_payable,
+                total_due=group_leader.total_due,
+                total_available_amount=group_leader.total_available_amount,
+                total_payment=group_leader.total_payment,
+                payable_list=payable_list,
+                payment_list=payment_list,
+                generated_on=datetime.now(ZoneInfo("Asia/Dhaka"))
+            )
     except Exception as e:
         raise e

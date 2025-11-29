@@ -482,4 +482,15 @@ async def get_day_wise_payment(db: AsyncSession, agency_name: str):
     except Exception as e:
         raise e
 
+async def get_group_leader_ledger(db:AsyncSession, group_leader:str):
+    try:
+        stmt = (
+            select(PaymentModel)
+            .where(PaymentModel.group_leader == group_leader)
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        raise e
+
 
