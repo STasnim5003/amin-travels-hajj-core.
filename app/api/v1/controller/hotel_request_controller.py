@@ -50,7 +50,10 @@ async def update_hotel_request(
         nusuk_request_id: str = Form(None),
         is_active: bool = Form(None),
         pricing: str = Form(None),
+        price_per_hajji: str = Form(None),
+        grand_total: str = Form(None),
         document: UploadFile = File(None),
+        nusuk_request_file_category: str = Form(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
@@ -83,6 +86,9 @@ async def update_hotel_request(
         nusuk_request_id=nusuk_request_id,
         is_active=is_active,
         pricing=parse_json(pricing),
+        price_per_hajji=parse_json(price_per_hajji),
+        grand_total=parse_json(grand_total),
+        nusuk_request_file_category = nusuk_request_file_category,
         document=None  # You likely handle file separately
     )
     return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name, document)

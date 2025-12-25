@@ -6,10 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
+from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
 from data.repository import admin_repository, file_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema, \
-    AdminProfileUpdateResponseSchema, AssignLeadAgencySchema
+    AdminProfileUpdateResponseSchema, SubAgencyAmountUpdateSchema
 
 
 async def create_admin(db: AsyncSession,
@@ -125,8 +126,9 @@ async def delete_admin_by_id(db: AsyncSession, admin_id: int) -> AdminProfileUpd
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unexpected error occurred while deleting the admin.")
 
+
 async def update_admin_profile(
-        db:AsyncSession,
+        db: AsyncSession,
         location: str,
         google_map_location: str,
         logo: UploadFile,
@@ -150,9 +152,9 @@ async def update_admin_profile(
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-
     try:
-        response = await admin_repository.update_admin_profile(db, location, google_map_location, logo_data, passport_data, agency_name )
+        response = await admin_repository.update_admin_profile(db, location, google_map_location, logo_data,
+                                                               passport_data, agency_name)
         if response.passport_copy:
             response.passport_copy = await generate_downloadable_urls(response.passport_copy)
         if response.logo:
@@ -165,7 +167,7 @@ async def update_admin_profile(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def assign_lead_agency(db:AsyncSession, request:dict):
+async def assign_lead_agency(db: AsyncSession, request: dict):
     try:
 
         fetched_agency = await admin_repository.get_agency_by_agency_name(db, request['agency_name'])
@@ -176,12 +178,12 @@ async def assign_lead_agency(db:AsyncSession, request:dict):
 
         result = await admin_repository.assign_lead_agency(db, request)
         if result:
-            return {"message" : "Lead agency assigned successfully"}
+            return {"message": "Lead agency assigned successfully"}
     except Exception as e:
         raise e
 
 
-async def get_lead_agency_pilgrims(db:AsyncSession, lead_agency_name: str):
+async def get_lead_agency_pilgrims(db: AsyncSession, lead_agency_name: str):
     try:
         records = await admin_repository.get_lead_agency_pilgrims(db, lead_agency_name)
 
@@ -217,15 +219,32 @@ async def check_lead_agency_assignment(db, agency_name):
     try:
         result = await admin_repository.check_lead_agency_assignment(db, agency_name)
         return {
-            "agency_name" : agency_name,
-            "lead_agency_name" : result
+            "agency_name": agency_name,
+            "lead_agency_name": result
         }
     except Exception as e:
         raise e
 
-async def get_child_agencies(db:AsyncSession, lead_agency_name: str):
+
+async def get_child_agencies(db: AsyncSession, lead_agency_name: str):
     try:
         agencies = await admin_repository.get_child_agencies(db, lead_agency_name)
         return agencies
+    except Exception as e:
+        raise e
+
+
+async def update_sub_agency_amount(db: AsyncSession, agency_name: str,
+                                   sub_agency_account_update: SubAgencyAmountUpdateSchema):
+    try:
+        agencies = await admin_repository.get_child_agencies(db, agency_name)
+        if sub_agency_account_update.agency_name not in agencies:
+            raise HTTPException(status_code=400, detail="It is not your sub agency")
+
+        request_schema = sub_agency_account_update.model_dump()
+        request_schema["updated_by"] = agency_name
+        request_schema["updated_at"] = get_current_time()
+
+        return await admin_repository.update_sub_agency_amount(db, request_schema)
     except Exception as e:
         raise e

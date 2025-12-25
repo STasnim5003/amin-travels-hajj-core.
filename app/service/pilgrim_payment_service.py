@@ -8,11 +8,12 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils import num_to_words
+from app.core.utils.get_current_time import get_current_time
 from data.repository import pilgrim_payment_repository, pilgrim_repository, file_repository, payment_repository, \
     admin_user_repository
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
-    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema, PaymentLedgerSchema, PaymentSchema
+    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema, PaymentLedgerSchema
 
 
 async def create_payable_for_pilgrim(
@@ -185,7 +186,8 @@ async def get_group_leader_payable_report_data(db: AsyncSession, payable, agency
         if payable.created_by != agency_name or group_leader.agency_name != agency_name:
             raise HTTPException(status_code=400, detail="Payable not belong to this group leader")
 
-        response = await pilgrim_payment_repository.get_group_leader_payable_report_data(db=db, group_leader=payable.group_leader)
+        response = await pilgrim_payment_repository.get_group_leader_payable_report_data(db=db,
+                                                                                         group_leader=payable.group_leader)
 
         package_wise_haji_summary = []
 
@@ -205,7 +207,7 @@ async def get_group_leader_payable_report_data(db: AsyncSession, payable, agency
             name_en=group_leader.name,
             code=group_leader.code,
             agency_name=group_leader.agency_name,
-            amount = payable.amount,
+            amount=payable.amount,
             amount_in_words=amount_in_words,
             summary=package_wise_haji_summary
         )
@@ -213,7 +215,7 @@ async def get_group_leader_payable_report_data(db: AsyncSession, payable, agency
         raise e
 
 
-async def get_payable_report_data(db:AsyncSession, payable_id:int, agency_name:str):
+async def get_payable_report_data(db: AsyncSession, payable_id: int, agency_name: str):
     try:
         payable = await payment_repository.get_by_id(db, payable_id)
         if not payable:
@@ -227,7 +229,7 @@ async def get_payable_report_data(db:AsyncSession, payable_id:int, agency_name:s
         raise e
 
 
-async def get_payable_by_id(db:AsyncSession, payable_id:int, agency_name:str):
+async def get_payable_by_id(db: AsyncSession, payable_id: int, agency_name: str):
     try:
         payable = await payment_repository.get_by_id(db, payable_id)
 
@@ -238,7 +240,8 @@ async def get_payable_by_id(db:AsyncSession, payable_id:int, agency_name:str):
         raise e
 
 
-async def update_payment(db:AsyncSession, payment_update_schema:PaymentUpdateSchema, agency_name:str, receipt:Optional[UploadFile]):
+async def update_payment(db: AsyncSession, payment_update_schema: PaymentUpdateSchema, agency_name: str,
+                         receipt: Optional[UploadFile]):
     try:
         if payment_update_schema.amount is not None and payment_update_schema.amount <= 0:
             raise HTTPException(status_code=400, detail="Amount must be greater than zero")
@@ -257,13 +260,9 @@ async def update_payment(db:AsyncSession, payment_update_schema:PaymentUpdateSch
         if existing_payment.group_leader and existing_payment.group_leader != payment_update_schema.group_leader:
             raise HTTPException(status_code=400, detail="Group Leader does not match")
 
-
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-
         payment_data_dict = payment_update_schema.model_dump(exclude_none=True)
         payment_data_dict['updated_by'] = agency_name
-        payment_data_dict['updated_at'] = updated_time_bd
+        payment_data_dict['updated_at'] = get_current_time()
 
         receipt_data = []
         if receipt:
@@ -292,8 +291,8 @@ async def update_payment(db:AsyncSession, payment_update_schema:PaymentUpdateSch
                 'total_available_amount': total_available_amount,
                 'total_due': total_due,
                 'tracking_id': pilgrim.tracking_id,
-                'updated_by' : agency_name,
-                'updated_at' : updated_time_bd
+                'updated_by': agency_name,
+                'updated_at': get_current_time()
             }
 
         # group leader finance info
@@ -313,13 +312,14 @@ async def update_payment(db:AsyncSession, payment_update_schema:PaymentUpdateSch
                 'total_due': total_due,
                 'code': existing_payment.group_leader,
                 'updated_by': agency_name,
-                'updated_at': updated_time_bd
+                'updated_at': get_current_time()
             }
 
         updated_payment = await payment_repository.update_payable_payment(db, payment_data_dict, finance_info)
         return updated_payment
     except Exception as e:
         raise e
+
 
 def split_ledger_rows(rows):
     payable_list, payment_list = [], []
@@ -329,6 +329,7 @@ def split_ledger_rows(rows):
         elif r.category == "Payment":
             payment_list.append(PaymentResponseSchema.model_validate(r))
     return payable_list, payment_list
+
 
 async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
     try:
@@ -344,17 +345,17 @@ async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
 
             payable_list, payment_list = split_ledger_rows(result)
 
-            payment_ledger =  PaymentLedgerSchema(
-                tracking_id = tracking_id,
-                name = pilgrim.name_en,
-                mobile_no = pilgrim.mobile_no,
-                total_payable = pilgrim.total_payable,
-                total_due = pilgrim.total_due,
-                total_available_amount = pilgrim.total_available_amount,
-                total_payment = pilgrim.total_payment,
-                payable_list = payable_list,
-                payment_list = payment_list,
-                generated_on = datetime.now(ZoneInfo("Asia/Dhaka"))
+            payment_ledger = PaymentLedgerSchema(
+                tracking_id=tracking_id,
+                name=pilgrim.name_en,
+                mobile_no=pilgrim.mobile_no,
+                total_payable=pilgrim.total_payable,
+                total_due=pilgrim.total_due,
+                total_available_amount=pilgrim.total_available_amount,
+                total_payment=pilgrim.total_payment,
+                payable_list=payable_list,
+                payment_list=payment_list,
+                generated_on=datetime.now(ZoneInfo("Asia/Dhaka"))
             )
             return payment_ledger
 

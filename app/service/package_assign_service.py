@@ -1,12 +1,12 @@
 import random
 import string
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy import case
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
 from data.model.pilgrim_data_model import PilgrimDataModel
 from data.repository import package_assign_repository, pilgrim_repository, pilgrim_payment_repository
 from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema, \
@@ -49,15 +49,12 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
         total_payable = request.total_payable
         total_payment = pilgrim.total_payment
 
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-
         request_dict = request.model_dump(exclude_unset=True)
         request_dict['total_available_amount'] = max(0, total_payment - total_payable)
         request_dict['total_due'] = max(0, total_payable - total_payment)
         request_dict['actual_payable'] = total_payable - request.package_price_discount
         request_dict['updated_by'] = agency_name
-        request_dict['updated_at'] = updated_time_bd
+        request_dict['updated_at'] = get_current_time()
 
         await package_assign_repository.individual_pilgrim_package_change(db, request_dict)
 
@@ -69,7 +66,7 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
             "tracking_id": request.tracking_id,
             "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
             "updated_by": agency_name,
-            "updated_at": updated_time_bd
+            "updated_at": get_current_time()
         }
         await pilgrim_payment_repository.create_payable_for_package_change(db, pilgrim_payable_info)
 
@@ -97,11 +94,9 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
         if not pilgrims:
             raise HTTPException(status_code=400, detail="No pilgrims found for the given tracking IDs")
 
-
         for pilgrim in pilgrims:
             if pilgrim.group_name != agency_name:
                 raise HTTPException(status_code=403, detail=f"Agency name mismatched for {pilgrim.tracking_id}")
-
 
         case_total_payable_for_pilgrims = case(
             *((
@@ -172,9 +167,6 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
         if pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="Pilgrim Agency Name Mismatch")
 
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-
         total_payment = pilgrim.total_payment or 0
 
         total_payable = request.total_payable
@@ -196,7 +188,7 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
             "tracking_id": request.tracking_id,
             "add_ons_services": request.add_ons_services,
             "updated_by": agency_name,
-            "updated_at": updated_time_bd
+            "updated_at": get_current_time()
         }
 
         await package_assign_repository.individual_pilgrim_package_change(db, pilgrim_package_and_finance_update)
@@ -209,7 +201,7 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
             "tracking_id": request.tracking_id,
             "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
             "updated_by": agency_name,
-            "updated_at": updated_time_bd
+            "updated_at": get_current_time()
         }
         await pilgrim_payment_repository.create_payable_for_package_change(db, pilgrim_payable_info)
 

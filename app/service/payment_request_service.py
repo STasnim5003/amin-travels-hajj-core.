@@ -1,23 +1,24 @@
-from datetime import datetime
 from typing import Optional
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
+from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
-from data.repository import payment_request_repository, admin_repository, file_repository
+from data.repository import payment_request_repository, file_repository
 from infrastructure.schema.payment_request_schema import PaymentRequestResponse, \
-    PaymentRequestListResponseSchema, PaymentRequestUpdateSchema
+    PaymentRequestListResponseSchema
 
 
-async def create_payment_request(db: AsyncSession, request_dict: dict, money_receipt_payment_slip_file:Optional[UploadFile]):
+async def create_payment_request(db: AsyncSession, request_dict: dict,
+                                 money_receipt_payment_slip_file: Optional[UploadFile]):
     try:
         document_data = []
         if money_receipt_payment_slip_file:
             try:
-                document_resp = await file_repository.upload_file(file=money_receipt_payment_slip_file, name="payment_request_slip")
+                document_resp = await file_repository.upload_file(file=money_receipt_payment_slip_file,
+                                                                  name="payment_request_slip")
                 document_data.append(document_resp.model_dump())
                 request_dict['money_receipt_payment_slip_file'] = document_data
             except Exception as e:
@@ -61,16 +62,19 @@ async def get_payment_request_by_id(db: AsyncSession, payment_request_id: int, a
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         if result.money_receipt_payment_slip_file:
-            result.money_receipt_payment_slip_file = await generate_downloadable_urls(result.money_receipt_payment_slip_file)
+            result.money_receipt_payment_slip_file = await generate_downloadable_urls(
+                result.money_receipt_payment_slip_file)
 
         return PaymentRequestResponse.model_validate(result)
     except Exception as e:
         raise e
 
 
-async def update_payment_request(db: AsyncSession, request_dict: dict, money_receipt_payment_slip_file: Optional[UploadFile]):
+async def update_payment_request(db: AsyncSession, request_dict: dict,
+                                 money_receipt_payment_slip_file: Optional[UploadFile]):
     try:
-        result = await payment_request_repository.get_payment_request_by_id(db=db, payment_request_id=request_dict.get('id'))
+        result = await payment_request_repository.get_payment_request_by_id(db=db,
+                                                                            payment_request_id=request_dict.get('id'))
         if not result:
             raise HTTPException(status_code=400, detail='Payment request not found')
 
@@ -91,12 +95,9 @@ async def update_payment_request(db: AsyncSession, request_dict: dict, money_rec
             except Exception as e:
                 raise e
 
-
         request_dict = {k: v for k, v in request_dict.items() if v is not None}
 
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-        request_dict['updated_at'] = updated_time_bd
+        request_dict['updated_at'] = get_current_time()
 
         result = await payment_request_repository.update_payment_request(db=db, request_dict=request_dict)
         return PaymentRequestResponse.model_validate(result)
@@ -104,7 +105,7 @@ async def update_payment_request(db: AsyncSession, request_dict: dict, money_rec
         raise e
 
 
-async def delete_payment_request(db:AsyncSession, payment_request_id:int, agency_name:str):
+async def delete_payment_request(db: AsyncSession, payment_request_id: int, agency_name: str):
     try:
         payment_request = await payment_request_repository.get_payment_request_by_id(db, payment_request_id)
         if not payment_request:

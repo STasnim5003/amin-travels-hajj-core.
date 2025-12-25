@@ -299,3 +299,30 @@ async def get_lead_agency(db:AsyncSession, agency_name:str):
         return result.scalar_one_or_none()
     except Exception as e:
         raise e
+
+
+async def update_sub_agency_amount(db:AsyncSession, request_schema:dict):
+    try:
+        result = await db.execute(
+            update(AdminModel)
+            .values(**request_schema)
+            .where(AdminModel.agency_name == request_schema['agency_name'])
+            .returning(AdminModel)
+        )
+
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Error Updating Sub Agency Amount")
+
+async def get_agency_by_agency_name(db:AsyncSession, agency_name:str):
+    try:
+        stmt = (
+            select(AdminModel)
+            .where(AdminModel.agency_name == agency_name)
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise e

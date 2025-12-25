@@ -11,7 +11,8 @@ from app.core.middleware.middleware import get_current_user
 from app.service import admin_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_schema import AdminResponseSchema, TokenSchema, AdminListResponseSchema, \
-    AdminProfileUpdateResponseSchema, AssignLeadAgencySchema, CheckLeadAssignResponseSchema
+    AdminProfileUpdateResponseSchema, AssignLeadAgencySchema, CheckLeadAssignResponseSchema, \
+    SubAgencyAmountUpdateSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -127,9 +128,10 @@ async def delete_admin_by_id(
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
 
+
 @private_router.put("/admin/profile", response_model=AdminResponseSchema, tags=["admin"])
 async def update_admin_profile(
-        location : str = Form(None),
+        location: str = Form(None),
         google_map_location: str = Form(None),
         logo: UploadFile = File(None),
         passport_copy: UploadFile = File(None),
@@ -141,9 +143,11 @@ async def update_admin_profile(
     agency_name = current_user["agency_name"]
 
     try:
-        return await admin_service.update_admin_profile(db, location, google_map_location, logo, passport_copy, agency_name)
+        return await admin_service.update_admin_profile(db, location, google_map_location, logo, passport_copy,
+                                                        agency_name)
     except Exception as e:
         raise
+
 
 @private_router.put("/admin/assign-lead-agency", tags=["admin"])
 async def assign_lead_agency(
@@ -168,7 +172,8 @@ async def assign_lead_agency(
         request_dict["agency_name"] = agency_name
     return await admin_service.assign_lead_agency(db, request_dict)
 
-@private_router.get("/lead-agency/pilgrims",  tags=["admin"])
+
+@private_router.get("/lead-agency/pilgrims", tags=["admin"])
 async def get_lead_agency_pilgrims(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
@@ -180,6 +185,7 @@ async def get_lead_agency_pilgrims(
     lead_agency_name = current_user["agency_name"]
     return await admin_service.get_lead_agency_pilgrims(db, lead_agency_name)
 
+
 @private_router.get("/lead-agency-assignment-check", tags=["admin"])
 async def get_lead_agency_assignment_check(
         db: AsyncSession = Depends(get_async_db),
@@ -190,3 +196,26 @@ async def get_lead_agency_assignment_check(
     agency_name = current_user["agency_name"]
     result = await admin_service.check_lead_agency_assignment(db, agency_name)
     return CheckLeadAssignResponseSchema.model_validate(result)
+
+
+@private_router.get("/sub-agencies", tags=["admin"])
+async def get_sub_agencies(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] not in ["AGENCY"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await admin_service.get_child_agencies(db, agency_name)
+
+
+@private_router.put("/sub-agencies/update-amount", tags=["admin"])
+async def update_sub_agency_amount(
+        sub_agency_account_update: SubAgencyAmountUpdateSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await admin_service.update_sub_agency_amount(db, agency_name, sub_agency_account_update)

@@ -23,3 +23,5 @@ class HotelRequestModel(Base, BaseMixinModel):
     agency_name = Column(String, nullable=True)
     document = Column(JSONB, nullable=True)
     pricing = Column(JSONB, nullable=True)
+    price_per_hajji = Column(JSONB, nullable=True)
+    grand_total = Column(JSONB, nullable=True)

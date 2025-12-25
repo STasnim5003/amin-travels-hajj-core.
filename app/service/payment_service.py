@@ -1,14 +1,12 @@
 import random
-import random
 import string
-from datetime import datetime
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils import num_to_words
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
+from app.core.utils.get_current_time import get_current_time
 from data.repository import payment_repository, admin_user_repository, pilgrim_repository, file_repository
 from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
     PayableInfoUpdateSchema, \
@@ -54,15 +52,6 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
     )
 
     try:
-        # if existing_group_leader.is_payment_distributed and len(payment_request.pilgrims_tracking_id) > 0:
-        #     result = await payment_repository_multiple_pilgrims.create_payable_for_multiple_pilgrims(db, payment_data,
-        #                                                                                              agency_name,
-        #                                                                                              payable_info)
-        #     return result
-        # else:
-        #     result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info,
-        #                                                                       agency_name)
-        #     return result
         result = await payment_repository.create_payable_for_group_leader(db, payment_data, payable_info,
                                                                           agency_name)
         return result
@@ -115,16 +104,6 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
         group_leader_code=request.group_leader
     )
     try:
-        # if existing_group_leader.is_payment_distributed and len(request.pilgrims_tracking_id) > 0:
-        #     result = await payment_repository_multiple_pilgrims.create_payment_for_multiple_pilgrims(db, payment_data,
-        #                                                                                              agency_name,
-        #                                                                                              payment_info)
-        #     return result
-        # else:
-        #     result = await payment_repository.create_payment_for_group_leader(db, payment_data, agency_name,
-        #                                                                       payment_info)
-        #
-        #     return result
         result = await payment_repository.create_payment_for_group_leader(db, payment_data, agency_name,
                                                                           payment_info)
 
@@ -278,12 +257,9 @@ async def update_payable(
         if existing_payment.group_leader and existing_payment.group_leader != payable_data.group_leader:
             raise HTTPException(status_code=400, detail="Group Leader does not match")
 
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-
         payable_data_dict = payable_data.model_dump(exclude_none=True)
         payable_data_dict['updated_by'] = agency_name
-        payable_data_dict['updated_at'] = updated_time_bd
+        payable_data_dict['updated_at'] = get_current_time()
 
         finance_info = {}
 
@@ -294,7 +270,6 @@ async def update_payable(
             curr_payable = pilgrim.total_payable
             curr_payment = pilgrim.total_payment
             package_price_discount = pilgrim.package_price_discount
-
 
             total_payable = curr_payable - existing_payment.amount + payable_data.amount
             total_due = max(0, total_payable - curr_payment)
@@ -308,7 +283,7 @@ async def update_payable(
                 'actual_payable': actual_payable,
                 'tracking_id': pilgrim.tracking_id,
                 'updated_by': agency_name,
-                'updated_at': updated_time_bd
+                'updated_at': get_current_time()
             }
 
         # group leader finance info
@@ -328,7 +303,7 @@ async def update_payable(
                 'total_due': total_due,
                 'code': existing_payment.group_leader,
                 'updated_by': agency_name,
-                'updated_at': updated_time_bd
+                'updated_at': get_current_time()
             }
 
         updated_payment = await payment_repository.update_payable_payment(db, payable_data_dict, finance_info)
@@ -387,7 +362,7 @@ async def get_payment_by_id(db: AsyncSession, payment_id: int):
         raise e
 
 
-async def get_payment_by_id_for_update(db:AsyncSession, payment_id:int, agency_name:str):
+async def get_payment_by_id_for_update(db: AsyncSession, payment_id: int, agency_name: str):
     try:
         result = await payment_repository.get_payment_by_id(db, payment_id)
         payment = result["payment"]

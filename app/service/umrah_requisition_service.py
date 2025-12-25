@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
 from data.repository import umrah_requisition_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema, \
@@ -23,7 +23,7 @@ async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, ag
         raise e
 
 
-async def get_umrah_requisitions(db:AsyncSession, agency_name:str):
+async def get_umrah_requisitions(db: AsyncSession, agency_name: str):
     try:
         result = await umrah_requisition_repository.get_umrah_requisitions(db, agency_name)
 
@@ -41,7 +41,8 @@ async def get_umrah_requisition_by_id(db, requisition_id, agency_name):
         raise e
 
 
-async def umrah_requisition_assign_service(db:AsyncSession, request:UmrahRequisitionAssignedService, agency_name:str):
+async def umrah_requisition_assign_service(db: AsyncSession, request: UmrahRequisitionAssignedService,
+                                           agency_name: str):
     try:
         requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
         if not requisition:
@@ -49,17 +50,15 @@ async def umrah_requisition_assign_service(db:AsyncSession, request:UmrahRequisi
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = agency_name
-
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-        request_dict['updated_at'] = updated_time_bd
+        request_dict['updated_at'] = get_current_time()
 
         result = await umrah_requisition_repository.umrah_requisition_assign_service(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(result)
     except Exception as e:
         raise e
 
-async def umrah_requisition_update(db:AsyncSession, request:UmrahRequisitionUpdateSchema, agency_name:str):
+
+async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUpdateSchema, agency_name: str):
     try:
         requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
         if not requisition:
@@ -75,7 +74,8 @@ async def umrah_requisition_update(db:AsyncSession, request:UmrahRequisitionUpda
         raise e
 
 
-async def umrah_requisition_confirmation(db:AsyncSession, request:UmrahRequisitionConfirmationSchema, agency_name:str):
+async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisitionConfirmationSchema,
+                                         agency_name: str):
     try:
         requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
 

@@ -1,30 +1,38 @@
-from datetime import datetime, timedelta
-from typing import List, Optional
-from zoneinfo import ZoneInfo
+from typing import Optional
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
+from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
 from data.repository import hotel_request_repository, file_repository, admin_repository
 from infrastructure.schema.hotel_request_schema import HotelRequestBase, HotelRequestResponseSchema, \
     HotelRequestListResponseSchema, HotelRequestUpdateSchema
 
 
-async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name :str):
+async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str):
     try:
+        agency = await admin_repository.get_agency_by_agency_name(db,agency_name)
+        if agency is None:
+            raise HTTPException(status_code=400, detail="Agency not found")
+
+        if agency.sar < request.pricing.with_vat:
+            raise HTTPException(status_code=400, detail="You have not enough amount in SAR")
+
         request_dict = request.model_dump(exclude_none=True)
         request_dict["agency_name"] = agency_name
         request_dict["created_by"] = agency_name
         request_dict["updated_by"] = agency_name
+        request_dict["status"] = "SEND_TO_LEAD"
 
         result = await hotel_request_repository.create_hotel_request(db=db, request_dict=request_dict)
         return HotelRequestResponseSchema.model_validate(result)
     except Exception as e:
         raise e
 
-async def get_hotel_requests(db: AsyncSession, agency_name : str):
+
+async def get_hotel_requests(db: AsyncSession, agency_name: str):
     try:
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
         child_agencies.append(agency_name)
@@ -36,12 +44,13 @@ async def get_hotel_requests(db: AsyncSession, agency_name : str):
             hotel_requests.append(HotelRequestResponseSchema.model_validate(hotel_request))
 
         return HotelRequestListResponseSchema(
-            hotel_requests = hotel_requests
+            hotel_requests=hotel_requests
         )
     except Exception as e:
         raise e
 
-async def get_hotel_request_by_id(db:AsyncSession, request_id:int, agency_name:str):
+
+async def get_hotel_request_by_id(db: AsyncSession, request_id: int, agency_name: str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if result.document:
@@ -58,7 +67,9 @@ async def get_hotel_request_by_id(db:AsyncSession, request_id:int, agency_name:s
     except Exception as e:
         raise e
 
-async def update_hotel_request(db:AsyncSession, request: HotelRequestUpdateSchema, agency_name : str, document: Optional[UploadFile]):
+
+async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSchema, agency_name: str,
+                               document: Optional[UploadFile]):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request.id)
         if not result:
@@ -82,10 +93,7 @@ async def update_hotel_request(db:AsyncSession, request: HotelRequestUpdateSchem
                 raise e
 
         request_dict['updated_by'] = agency_name
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-        request_dict['updated_at'] = updated_time_bd
-
+        request_dict['updated_at'] = get_current_time()
 
         result = await hotel_request_repository.update_hotel_request(db=db, request_dict=request_dict)
         return HotelRequestResponseSchema.model_validate(result)
@@ -93,7 +101,7 @@ async def update_hotel_request(db:AsyncSession, request: HotelRequestUpdateSchem
         raise e
 
 
-async def delete_hotel_request(db:AsyncSession, request_id:int, agency_name:str):
+async def delete_hotel_request(db: AsyncSession, request_id: int, agency_name: str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if not result:

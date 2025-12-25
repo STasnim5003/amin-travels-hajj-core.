@@ -19,6 +19,8 @@ class AdminBaseSchema(BaseModel):
     google_map_location : Optional[str] = None
     saudi_representatives : Optional[Dict[str, Any]] = None
     lead_agency : Optional[str] = None
+    sar : Optional[float] = None
+    bdt : Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -98,3 +100,8 @@ class AgencyPilgrimSummarySchemaForLeadAgency(BaseModel):
 class LeadAgencyPilgrimsResponseSchema(BaseModel):
     lead_agency_name: str
     agencies: List[AgencyPilgrimSummarySchemaForLeadAgency]
+
+class SubAgencyAmountUpdateSchema(BaseModel):
+    agency_name: str
+    bdt:float
+    sar:float

@@ -3,6 +3,22 @@ from typing import Optional, Any, Dict, List
 
 from pydantic import BaseModel
 
+class HotelPricingSchema(BaseModel):
+    with_vat : float
+    without_vat : float
+
+class HotelRequestRoomAllocationSchema(BaseModel):
+    room_type : str
+    no_of_room : int
+    per_room_price_without_vat : float
+    per_room_price_with_vat : float
+    total_price_without_vat : float
+    total_price_with_vat : float
+
+class HotelRequestGrandTotal(BaseModel):
+    no_of_room : int
+    total_price_without_vat : float
+    total_price_with_vat : float
 
 class HotelRequestBase(BaseModel):
     city: str
@@ -12,12 +28,12 @@ class HotelRequestBase(BaseModel):
     check_in: Dict[str, Any]
     check_out: Dict[str, Any]
     number_of_haji: int
-    room_allocation: Dict[str, Any]
+    room_allocation: Optional[List[HotelRequestRoomAllocationSchema]] = None
     hotel_contact_person: Optional[Dict[str, Any]] = None
-    status: Optional[str] = None
-    nusuk_request_id: Optional[str] = None
-    pricing: Optional[Dict[str, Any]] = None
+    pricing: Optional[HotelPricingSchema] = None
     document: Optional[List[Dict[str, Any]]] = None
+    price_per_hajji: Optional[HotelPricingSchema] = None
+    grand_total: Optional[HotelRequestGrandTotal] = None
 
 class HotelRequestResponseSchema(HotelRequestBase):
     id: int
@@ -26,6 +42,8 @@ class HotelRequestResponseSchema(HotelRequestBase):
     created_by : Optional[str] = None
     updated_by : Optional[str] = None
     agency_name : Optional[str] = None
+    status : Optional[str] = None
+    nusuk_request_id: Optional[str] = None
     class Config:
         from_attributes = True
 
@@ -41,10 +59,13 @@ class HotelRequestUpdateSchema(BaseModel):
     check_in: Optional[Dict[str, Any]] = None
     check_out: Optional[Dict[str, Any]] = None
     number_of_haji: Optional[int] = None
-    room_allocation: Optional[Dict[str, Any]] = None
+    room_allocation: Optional[List[HotelRequestRoomAllocationSchema]] = None
     hotel_contact_person: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
     nusuk_request_id: Optional[str] = None
     is_active: Optional[bool] = None
     document: Optional[Dict[str, Any]] = None
-    pricing: Optional[Dict[str, Any]] = None
+    pricing: Optional[HotelPricingSchema] = None
+    price_per_hajji: Optional[HotelPricingSchema] = None
+    grand_total: Optional[HotelRequestGrandTotal] = None
+    nusuk_request_file_category : Optional[str] = None

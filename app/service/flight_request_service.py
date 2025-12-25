@@ -1,11 +1,9 @@
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
-from data.repository import flight_request_repository, admin_repository
+from data.repository import flight_request_repository
 from infrastructure.schema.flight_request_schema import FlightRequestCreateSchema, FlightRequestResponseSchema, \
     FlightRequestUpdateSchema, FlightRequestListResponseSchema
 
@@ -28,10 +26,7 @@ async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSc
 
         update_data = request.model_dump(exclude_unset=True, exclude_none=True)
         update_data["updated_by"] = agency_name
-
-        updated_time_bd = datetime.now(ZoneInfo("Asia/Dhaka"))
-        updated_time_bd = updated_time_bd.replace(tzinfo=None)
-        update_data['updated_at'] = updated_time_bd
+        update_data['updated_at'] = get_current_time()
 
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
         child_agencies.append(agency_name)
@@ -46,7 +41,7 @@ async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSc
         raise e
 
 
-async def get_flight_requests(db:AsyncSession, agency_name:str):
+async def get_flight_requests(db: AsyncSession, agency_name: str):
     try:
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
         child_agencies.append(agency_name)
@@ -61,14 +56,14 @@ async def get_flight_requests(db:AsyncSession, agency_name:str):
             data["departure_route_description"] = departure_desc
             flight_requests.append(data)
 
-        return FlightRequestListResponseSchema(flight_requests = flight_requests)
+        return FlightRequestListResponseSchema(flight_requests=flight_requests)
     except Exception as e:
         raise e
 
 
-async def get_flight_request_by_id(db:AsyncSession, flight_request_id:int, agency_name:str):
+async def get_flight_request_by_id(db: AsyncSession, flight_request_id: int, agency_name: str):
     try:
-        result = await flight_request_repository.get_by_id(db=db, flight_request_id= flight_request_id)
+        result = await flight_request_repository.get_by_id(db=db, flight_request_id=flight_request_id)
 
         if not result:
             raise HTTPException(status_code=400, detail='Flight request not found')
@@ -95,4 +90,4 @@ async def delete_flight_request(db: AsyncSession, flight_request_id: int, agency
     if not success:
         raise HTTPException(status_code=400, detail="Flight request not found or could not be deleted")
 
-    return {"message" : "Flight Request Deleted Successfully"}
+    return {"message": "Flight Request Deleted Successfully"}

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger, Boolean
+from sqlalchemy import Column, String, BigInteger, Boolean, Float
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -23,3 +23,5 @@ class AdminModel(Base, BaseMixinModel):
     google_map_location = Column(String, nullable=True)
     saudi_representatives = Column(JSONB, nullable=True)
     lead_agency = Column(String, nullable=True)
+    bdt = Column(Float, nullable=True)
+    sar = Column(Float, nullable=True)
