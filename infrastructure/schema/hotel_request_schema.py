@@ -44,6 +44,7 @@ class HotelRequestResponseSchema(HotelRequestBase):
     agency_name : Optional[str] = None
     status : Optional[str] = None
     nusuk_request_id: Optional[str] = None
+    nusuk_request_file_category: Optional[str] = None
     class Config:
         from_attributes = True
 

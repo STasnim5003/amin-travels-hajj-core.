@@ -79,7 +79,7 @@ async def update_hotel_request(
         tasria_number=tasria_number,
         check_in=parse_json(check_in),
         check_out=parse_json(check_out),
-        number_of_haji=number_of_haji,
+        number_of_haji=number_of_haji, # TODO: Number of hajji is not updating
         room_allocation=parse_json(room_allocation),
         hotel_contact_person=parse_json(hotel_contact_person),
         status=status,
