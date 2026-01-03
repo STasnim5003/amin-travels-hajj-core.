@@ -248,3 +248,11 @@ async def update_sub_agency_amount(db: AsyncSession, agency_name: str,
         return await admin_repository.update_sub_agency_amount(db, request_schema)
     except Exception as e:
         raise e
+
+
+async def get_sub_agencies_with_amount(db, agency_name):
+    try:
+        agencies = await admin_repository.get_sub_agencies_with_amount(db, agency_name)
+        return agencies
+    except Exception as e:
+        raise e

@@ -281,11 +281,11 @@ async def check_lead_agency_assignment(db, agency_name):
 async def get_child_agencies(db, lead_agency_name):
     try:
         result = await db.execute(
-            select(AdminModel.agency_name, AdminModel.bdt, AdminModel.sar)
+            select(AdminModel.agency_name)
             .where(AdminModel.lead_agency == lead_agency_name)
         )
 
-        return result.mappings().all()
+        return result.scalars().all()
     except Exception as e:
         raise e
 
@@ -316,13 +316,13 @@ async def update_sub_agency_amount(db:AsyncSession, request_schema:dict):
         await db.rollback()
         raise HTTPException(status_code=400, detail="Error Updating Sub Agency Amount")
 
-async def get_agency_by_agency_name(db:AsyncSession, agency_name:str):
+async def get_sub_agencies_with_amount(db:AsyncSession, lead_agency_name:str):
     try:
-        stmt = (
-            select(AdminModel)
-            .where(AdminModel.agency_name == agency_name)
+        result = await db.execute(
+            select(AdminModel.agency_name, AdminModel.bdt, AdminModel.sar)
+            .where(AdminModel.lead_agency == lead_agency_name)
         )
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+
+        return result.mappings().all()
     except Exception as e:
         raise e

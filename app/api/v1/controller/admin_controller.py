@@ -206,7 +206,7 @@ async def get_sub_agencies(
     if current_user["role"] not in ["AGENCY"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await admin_service.get_child_agencies(db, agency_name)
+    return await admin_service.get_sub_agencies_with_amount(db, agency_name)
 
 
 @private_router.put("/sub-agencies/update-amount", tags=["admin"])
