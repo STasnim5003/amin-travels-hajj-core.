@@ -20,6 +20,13 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
         if agency.sar < request.pricing.with_vat:
             raise HTTPException(status_code=400, detail="You have not enough amount in SAR")
 
+        if request.city == 'Madinah':
+            madinah_hotel_allocated_and_total_seat = await hotel_request_repository.get_madinah_allocated_and_total_seat(db, agency_name)
+            allocated_seat = madinah_hotel_allocated_and_total_seat.get('hotel_allocated_hajji')
+            total_seat = madinah_hotel_allocated_and_total_seat.get('total_pilgrims')
+            if allocated_seat + request.number_of_haji > total_seat:
+                raise HTTPException(status_code=400, detail="Number of Haji exceeds total seat")
+
         request_dict = request.model_dump(exclude_none=True)
         request_dict["agency_name"] = agency_name
         request_dict["created_by"] = agency_name
@@ -74,6 +81,11 @@ async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSche
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request.id)
         if not result:
             raise HTTPException(status_code=400, detail="Hotel Request not found")
+
+        is_lead_agency = await admin_repository.check_lead_agency(db, agency_name)
+
+        if not is_lead_agency and result.status != 'SEND_TO_LEAD':
+            raise HTTPException(status_code=400, detail="Lead Agency Makes Some changes. you can't update now!")
 
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
         child_agencies.append(agency_name)

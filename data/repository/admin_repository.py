@@ -326,3 +326,20 @@ async def get_sub_agencies_with_amount(db:AsyncSession, lead_agency_name:str):
         return result.mappings().all()
     except Exception as e:
         raise e
+
+
+async def check_lead_agency(db: AsyncSession, agency_name: str) -> bool:
+    try:
+        stmt = (
+            select(AdminModel.lead_agency)
+            .where(AdminModel.lead_agency == agency_name)
+            .limit(1)
+        )
+
+        result = await db.execute(stmt)
+        lead_agency = result.scalar_one_or_none()
+
+        return lead_agency is not None
+
+    except Exception as e:
+        raise e
