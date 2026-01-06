@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class HotelPricingSchema(BaseModel):
     with_vat : float
     without_vat : float
+    with_loading_unloading_fee: Optional[bool] = None
 
 class HotelRequestRoomAllocationSchema(BaseModel):
     room_type : str
