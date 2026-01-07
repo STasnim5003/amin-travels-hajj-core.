@@ -11,6 +11,14 @@ class PaymentRequestB2BBase(BaseModel):
     transaction_id: Optional[str] = None
     money_receipt_number: Optional[str] = None
     status: Optional[str] = None
+    purpose: Optional[str] = None
+    details : Optional[str] = None
+    payment_date : Optional[str] = None
+    amount : Optional[float] = None
+    exchange_rate : Optional[float] = None
+    sector : Optional[str] = None
+    remarks : Optional[str] = None
+    nusuk_request_id : Optional[str] = None
 
 class PaymentRequestResponse(PaymentRequestB2BBase):
     id: int

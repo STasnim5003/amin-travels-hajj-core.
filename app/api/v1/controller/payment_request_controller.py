@@ -18,7 +18,8 @@ async def payment_request(
         reference_number: str = Form(None),
         transaction_id: str = Form(None),
         money_receipt_number:str = Form(None),
-        status:str = Form(None),
+        payment_date : str = Form(None),
+        purpose : str = Form(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):

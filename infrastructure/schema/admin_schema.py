@@ -105,3 +105,4 @@ class SubAgencyAmountUpdateSchema(BaseModel):
     agency_name: str
     bdt:float
     sar:float
+    details: str

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Float
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -16,3 +16,11 @@ class PaymentRequestModel(Base, BaseMixinModel):
     money_receipt_number = Column(String, nullable=True)
     status = Column(String, nullable=True)
     agency_name = Column(String, nullable=True)
+    purpose = Column(String, nullable=True)
+    details = Column(String, nullable=True)
+    payment_date = Column(String, nullable=True)
+    amount = Column(Float, nullable=True)
+    exchange_rate = Column(Float, nullable=True)
+    sector = Column(String, nullable=True)
+    remarks = Column(String, nullable=True)
+    nusuk_request_id = Column(String, nullable=True)

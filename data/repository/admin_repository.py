@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_model import AdminModel
+from data.model.payment_request_model import PaymentRequestModel
 from data.model.pilgrim_data_model import PilgrimDataModel
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AssignLeadAgencySchema
 
@@ -303,11 +304,25 @@ async def get_lead_agency(db:AsyncSession, agency_name:str):
 
 async def update_sub_agency_amount(db:AsyncSession, request_schema:dict):
     try:
+        admin_amount_update_schema = {
+            'bdt' : request_schema.get('bdt'),
+            'sar' : request_schema.get('sar')
+        }
         result = await db.execute(
             update(AdminModel)
-            .values(**request_schema)
+            .values(**admin_amount_update_schema)
             .where(AdminModel.agency_name == request_schema['agency_name'])
             .returning(AdminModel)
+        )
+        payment_request_update = {
+            'payment_way' : 'Initial Amount',
+            'details' : request_schema['details'],
+            'agency_name' : request_schema['agency_name'],
+        }
+
+        await db.execute(
+            insert(PaymentRequestModel)
+            .values(**payment_request_update)
         )
 
         await db.commit()
