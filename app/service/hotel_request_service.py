@@ -20,12 +20,12 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
         if agency.sar < request.pricing.with_vat:
             raise HTTPException(status_code=400, detail="You have not enough amount in SAR")
 
-        if request.city == 'Madinah':
-            madinah_hotel_allocated_and_total_seat = await hotel_request_repository.get_madinah_allocated_and_total_seat(db, agency_name)
-            allocated_seat = madinah_hotel_allocated_and_total_seat.get('hotel_allocated_hajji')
-            total_seat = madinah_hotel_allocated_and_total_seat.get('total_pilgrims')
-            if allocated_seat + request.number_of_haji > total_seat:
-                raise HTTPException(status_code=400, detail="Number of Haji exceeds total seat")
+        # if request.city == 'Madinah':
+        #     madinah_hotel_allocated_and_total_seat = await hotel_request_repository.get_madinah_allocated_and_total_seat(db, agency_name)
+        #     allocated_seat = madinah_hotel_allocated_and_total_seat.get('hotel_allocated_hajji')
+        #     total_seat = madinah_hotel_allocated_and_total_seat.get('total_pilgrims')
+        #     if allocated_seat + request.number_of_haji > total_seat:
+        #         raise HTTPException(status_code=400, detail="Number of Haji exceeds total seat")
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict["agency_name"] = agency_name
