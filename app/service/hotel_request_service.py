@@ -146,7 +146,34 @@ async def cancel_request(db:AsyncSession, request_id:int, agency_name:str):
 
         result = await hotel_request_repository.cancel_hotel_request(db=db, request_dict = request_dict)
         if not result:
-            raise HTTPException(status_code=400, detail="Delete Hotel Request failed")
+            raise HTTPException(status_code=400, detail="Update Hotel Request failed")
+        return result
+    except Exception as e:
+        raise e
+
+
+async def cancel_request_lead_agency_action(db:AsyncSession, request_id:int, agency_name:str, status:str):
+    try:
+        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
+        if not result:
+            raise HTTPException(status_code=400, detail="Hotel Request not found")
+        if result.cancel_request_status != 'REQUEST_FOR_CANCELLATION':
+            raise HTTPException(status_code=400, detail="Can't Approved or Rejected")
+
+        is_lead_agency = await admin_repository.check_lead_agency_for_specific_sub_agency(db=db, sub_agency=result.agency_name, lead_agency=agency_name)
+        if not is_lead_agency:
+            raise HTTPException(status_code=400, detail="This is not your sub agency")
+
+        request_dict = {
+            'id' : request_id,
+            'updated_by' : agency_name,
+            'updated_at' : get_current_time(),
+            'cancel_request_status' : status if status == "REJECTED" else None,
+        }
+
+        result = await hotel_request_repository.cancel_request_lead_agency_action(db=db, request_dict=request_dict)
+        if not result:
+            raise HTTPException(status_code=400, detail="Update Hotel Request failed")
         return result
     except Exception as e:
         raise e

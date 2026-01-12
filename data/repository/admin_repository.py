@@ -358,3 +358,20 @@ async def check_lead_agency(db: AsyncSession, agency_name: str) -> bool:
 
     except Exception as e:
         raise e
+
+async def check_lead_agency_for_specific_sub_agency(
+    db: AsyncSession,
+    sub_agency: str,
+    lead_agency: str
+) -> bool:
+    stmt = (
+        select(AdminModel.agency_name)
+        .where(
+            AdminModel.agency_name == sub_agency,
+            AdminModel.lead_agency == lead_agency
+        )
+        .limit(1)
+    )
+
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none() is not None
