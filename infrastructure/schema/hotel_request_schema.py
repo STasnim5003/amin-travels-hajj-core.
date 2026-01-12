@@ -36,6 +36,7 @@ class HotelRequestBase(BaseModel):
     price_per_hajji: Optional[HotelPricingSchema] = None
     grand_total: Optional[HotelRequestGrandTotal] = None
     cancel_request_status : Optional[str] = None
+    tasria_copy: Optional[List[Dict[str, Any]]] = None
 
 class HotelRequestResponseSchema(HotelRequestBase):
     id: int
@@ -47,6 +48,7 @@ class HotelRequestResponseSchema(HotelRequestBase):
     status : Optional[str] = None
     nusuk_request_id: Optional[str] = None
     nusuk_request_file_category: Optional[str] = None
+    remarks : Optional[str] = None
     class Config:
         from_attributes = True
 
@@ -72,3 +74,4 @@ class HotelRequestUpdateSchema(BaseModel):
     price_per_hajji: Optional[HotelPricingSchema] = None
     grand_total: Optional[HotelRequestGrandTotal] = None
     nusuk_request_file_category : Optional[str] = None
+    remarks: Optional[str] = None

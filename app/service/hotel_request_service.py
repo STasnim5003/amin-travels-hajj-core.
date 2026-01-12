@@ -11,7 +11,7 @@ from infrastructure.schema.hotel_request_schema import HotelRequestBase, HotelRe
     HotelRequestListResponseSchema, HotelRequestUpdateSchema
 
 
-async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str):
+async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str, tasria_copy:Optional[UploadFile]):
     try:
         agency = await admin_repository.get_agency_by_agency_name(db,agency_name)
         if agency is None:
@@ -32,6 +32,17 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
         request_dict["created_by"] = agency_name
         request_dict["updated_by"] = agency_name
         request_dict["status"] = "SEND_TO_LEAD"
+        request_dict["sar"] = agency.sar - request.pricing.with_vat
+
+        document_data = []
+        if tasria_copy:
+            try:
+                document_resp = await file_repository.upload_file(file=tasria_copy, name="tasria_copy_files")
+                document_data.append(document_resp.model_dump())
+                request_dict['tasria_copy'] = document_data
+            except Exception as e:
+                raise e
+
 
         result = await hotel_request_repository.create_hotel_request(db=db, request_dict=request_dict)
         return HotelRequestResponseSchema.model_validate(result)
@@ -62,6 +73,9 @@ async def get_hotel_request_by_id(db: AsyncSession, request_id: int, agency_name
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if result.document:
             result.document = await generate_downloadable_urls(result.document)
+
+        if result.tasria_copy:
+            result.tasria_copy = await generate_downloadable_urls(result.tasria_copy)
 
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
         child_agencies.append(agency_name)

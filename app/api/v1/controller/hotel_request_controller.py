@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Form, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.parse_json import parse_json
 from app.service import hotel_request_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.hotel_request_schema import HotelRequestResponseSchema, HotelRequestBase, \
@@ -14,14 +15,46 @@ private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/privat
 
 @private_router.post("/hotel-request", response_model=HotelRequestResponseSchema)
 async def create_hotel_request(
-        request: HotelRequestBase,
+        city: str = Form(...),
+        type: str = Form(None),
+        name: str = Form(None),
+        tasria_number: str = Form(...),
+        check_in: str = Form(None),
+        check_out: str = Form(None),
+        number_of_haji: int = Form(None),
+        room_allocation: str = Form(None),
+        hotel_contact_person: str = Form(None),
+        pricing: str = Form(None),
+        price_per_hajji: str = Form(None),
+        grand_total: str = Form(None),
+        tasria_copy: UploadFile = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await hotel_request_service.create_hotel_request(db, request, agency_name)
+    try:
+
+        request = HotelRequestBase(
+            city=city,
+            type=type,
+            name=name,
+            tasria_number=tasria_number,
+            check_in=parse_json(check_in),
+            check_out=parse_json(check_out),
+            number_of_haji=int(number_of_haji),
+            room_allocation=parse_json(room_allocation),
+            hotel_contact_person=parse_json(hotel_contact_person),
+            pricing=parse_json(pricing),
+            price_per_hajji=parse_json(price_per_hajji),
+            grand_total=parse_json(grand_total)
+
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return await hotel_request_service.create_hotel_request(db, request, agency_name, tasria_copy)
 
 @private_router.get("/hotel-request", response_model=HotelRequestListResponseSchema)
 async def get_hotel_requests(
@@ -54,22 +87,13 @@ async def update_hotel_request(
         grand_total: str = Form(None),
         document: UploadFile = File(None),
         nusuk_request_file_category: str = Form(None),
+        remarks : str = Form(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    def parse_json(field):
-        if field is None:
-            return None
-        try:
-            return json.loads(field)
-        except Exception:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid JSON for field: {field}"
-            )
 
     hotel_request_update = HotelRequestUpdateSchema(
         id=id,
@@ -89,7 +113,8 @@ async def update_hotel_request(
         price_per_hajji=parse_json(price_per_hajji),
         grand_total=parse_json(grand_total),
         nusuk_request_file_category = nusuk_request_file_category,
-        document=None  # You likely handle file separately
+        document=None,
+        remarks=remarks
     )
     return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name, document)
 

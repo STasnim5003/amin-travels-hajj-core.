@@ -4,20 +4,36 @@ from fastapi import HTTPException
 from sqlalchemy import insert, select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from data.model.admin_model import AdminModel
 from data.model.hotel_request_model import HotelRequestModel
 from data.model.pilgrim_data_model import PilgrimDataModel
 
 
-async def create_hotel_request(db: AsyncSession, request_dict : dict):
+async def create_hotel_request(db: AsyncSession, request_dict: dict):
     try:
-        stmt = insert(HotelRequestModel).values(**request_dict).returning(HotelRequestModel)
+        hotel_request_data = request_dict.copy()
+        sar_value = hotel_request_data.pop("sar", None)
+
+        stmt = (
+            insert(HotelRequestModel)
+            .values(**hotel_request_data)
+            .returning(HotelRequestModel)
+        )
         result = await db.execute(stmt)
+
+        if sar_value is not None:
+            await db.execute(
+                update(AdminModel)
+                .where(AdminModel.agency_name == request_dict["agency_name"])
+                .values(sar=sar_value)
+            )
+
         await db.commit()
         return result.scalar_one_or_none()
-    except Exception as e:
+
+    except Exception:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Error Creating Hotel Request")
-
 async def get_hotel_requests(db: AsyncSession, agency_name: List[str]):
     try:
         stmt = select(HotelRequestModel).where(HotelRequestModel.agency_name.in_(agency_name)).order_by(HotelRequestModel.id.desc())
