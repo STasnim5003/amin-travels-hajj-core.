@@ -125,3 +125,28 @@ async def delete_hotel_request(db: AsyncSession, request_id: int, agency_name: s
         return result
     except Exception as e:
         raise e
+
+
+async def cancel_request(db:AsyncSession, request_id:int, agency_name:str):
+    try:
+        result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
+        if not result:
+            raise HTTPException(status_code=400, detail="Hotel Request not found")
+        if result.status == 'SEND_TO_LEAD':
+            raise HTTPException(status_code=400, detail="Can't Cancel Request. Edit/Delete it")
+        if result.agency_name != agency_name:
+            raise HTTPException(status_code=400, detail="Agency name does not match")
+
+        request_dict = {
+            'cancel_request_status' : "REQUEST_FOR_CANCELLATION",
+            'id' : request_id,
+            'updated_by' : agency_name,
+            'updated_at' : get_current_time()
+        }
+
+        result = await hotel_request_repository.cancel_hotel_request(db=db, request_dict = request_dict)
+        if not result:
+            raise HTTPException(status_code=400, detail="Delete Hotel Request failed")
+        return result
+    except Exception as e:
+        raise e

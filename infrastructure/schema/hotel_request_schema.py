@@ -35,6 +35,7 @@ class HotelRequestBase(BaseModel):
     document: Optional[List[Dict[str, Any]]] = None
     price_per_hajji: Optional[HotelPricingSchema] = None
     grand_total: Optional[HotelRequestGrandTotal] = None
+    cancel_request_status : Optional[str] = None
 
 class HotelRequestResponseSchema(HotelRequestBase):
     id: int

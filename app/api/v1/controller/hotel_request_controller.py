@@ -114,3 +114,14 @@ async def delete_hotel_request(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await hotel_request_service.delete_hotel_request(db, request_id, agency_name)
+
+@private_router.put("/hotel-request/cancel/{request_id}")
+async def cancel_hotel_request(
+        request_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await hotel_request_service.cancel_request(db, request_id, agency_name)

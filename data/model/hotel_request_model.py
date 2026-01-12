@@ -26,3 +26,4 @@ class HotelRequestModel(Base, BaseMixinModel):
     price_per_hajji = Column(JSONB, nullable=True)
     grand_total = Column(JSONB, nullable=True)
     nusuk_request_file_category = Column(String, nullable=True)
+    cancel_request_status = Column(String, nullable=True)

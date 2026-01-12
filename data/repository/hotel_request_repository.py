@@ -103,3 +103,17 @@ async def get_madinah_allocated_and_total_seat(db:AsyncSession, agency_name:str)
 
     except Exception as e:
         raise e
+
+
+async def cancel_hotel_request(db:AsyncSession, request_dict : dict):
+    try:
+        stmt = (update(HotelRequestModel)
+                .where(HotelRequestModel.id == request_dict['id'])
+                .values(**request_dict)
+                .returning(HotelRequestModel))
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
