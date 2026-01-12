@@ -208,6 +208,16 @@ async def get_sub_agencies(
     agency_name = current_user["agency_name"]
     return await admin_service.get_sub_agencies_with_amount(db, agency_name)
 
+@private_router.get("/agency-amount", tags=["admin"])
+async def get_agency_amount(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] not in ["AGENCY"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await admin_service.get_agency_amount(db, agency_name)
+
 
 @private_router.put("/sub-agencies/update-amount", tags=["admin"])
 async def update_sub_agency_amount(

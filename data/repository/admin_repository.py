@@ -375,3 +375,18 @@ async def check_lead_agency_for_specific_sub_agency(
 
     result = await db.execute(stmt)
     return result.scalar_one_or_none() is not None
+
+
+async def get_agency_amount(db:AsyncSession, agency_name:str):
+    try:
+        stmt = (
+            select(
+                AdminModel.agency_name, AdminModel.sar, AdminModel.bdt
+            )
+            .where(AdminModel.agency_name == agency_name)
+        )
+
+        result = await db.execute(stmt)
+        return result.mappings().one_or_none()
+    except Exception as e:
+        raise e
