@@ -1,3 +1,4 @@
+
 from sqlalchemy import Column, String, BigInteger, Boolean, Float
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -25,3 +26,4 @@ class AdminModel(Base, BaseMixinModel):
     lead_agency = Column(String, nullable=True)
     bdt = Column(Float, nullable=True)
     sar = Column(Float, nullable=True)
+    rfq_no = Column(BigInteger, nullable=True)

@@ -57,9 +57,10 @@ async def get_hotel_requests(db: AsyncSession, agency_name: str):
         child_agencies = list(set(child_agencies))
 
         result = await hotel_request_repository.get_hotel_requests(db=db, agency_name=child_agencies)
-        hotel_requests = []
-        for hotel_request in result:
-            hotel_requests.append(HotelRequestResponseSchema.model_validate(hotel_request))
+        hotel_requests = [
+            HotelRequestResponseSchema.model_validate(item)
+            for item in result
+        ]
 
         return HotelRequestListResponseSchema(
             hotel_requests=hotel_requests

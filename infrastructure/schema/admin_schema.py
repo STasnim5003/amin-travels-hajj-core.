@@ -21,6 +21,7 @@ class AdminBaseSchema(BaseModel):
     lead_agency : Optional[str] = None
     sar : Optional[float] = None
     bdt : Optional[float] = None
+    rfq_no : Optional[int] = None
 
     class Config:
         from_attributes = True
