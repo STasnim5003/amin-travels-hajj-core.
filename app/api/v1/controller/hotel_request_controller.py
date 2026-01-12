@@ -86,6 +86,7 @@ async def update_hotel_request(
         price_per_hajji: str = Form(None),
         grand_total: str = Form(None),
         document: UploadFile = File(None),
+        tasria_copy: UploadFile = File(None),
         nusuk_request_file_category: str = Form(None),
         remarks : str = Form(None),
         db: AsyncSession = Depends(get_async_db),
@@ -116,7 +117,7 @@ async def update_hotel_request(
         document=None,
         remarks=remarks
     )
-    return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name, document)
+    return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name, document, tasria_copy)
 
 @private_router.get("/hotel-request/{request_id}", response_model=HotelRequestResponseSchema)
 async def get_request_by_id(
