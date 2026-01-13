@@ -84,10 +84,14 @@ async def update_hotel_request(db:AsyncSession, request_dict: dict):
         raise e
 
 
-async def delete_hotel_request(db:AsyncSession, request_id:int):
+async def delete_hotel_request(db:AsyncSession, request_id:int, request_dict:dict):
     try:
         stmt = delete(HotelRequestModel).where(HotelRequestModel.id == request_id)
         await db.execute(stmt)
+
+        update_stmt = update(AdminModel).values(sar=request_dict['sar']).where(AdminModel.agency_name == request_dict["agency_name"])
+        await db.execute(update_stmt)
+
         await db.commit()
         return True
     except Exception as e:

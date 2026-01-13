@@ -143,7 +143,17 @@ async def delete_hotel_request(db: AsyncSession, request_id: int, agency_name: s
         if not result:
             raise HTTPException(status_code=400, detail="Hotel Request not found")
 
-        result = await hotel_request_repository.delete_hotel_request(db=db, request_id=request_id)
+        admin = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
+
+        price = result.pricing.get('with_vat') or 0
+        new_sar = admin.sar + price
+
+        request_dict = {
+            'agency_name': agency_name,
+            'sar': new_sar,
+        }
+
+        result = await hotel_request_repository.delete_hotel_request(db=db, request_id=request_id, request_dict=request_dict)
         if not result:
             raise HTTPException(status_code=400, detail="Delete Hotel Request failed")
         return result
