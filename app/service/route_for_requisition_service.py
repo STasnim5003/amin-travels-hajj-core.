@@ -1,3 +1,5 @@
+import string
+import random
 from typing import Optional
 
 from fastapi import HTTPException
@@ -7,21 +9,75 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.utils.get_current_time import get_current_time
 from data.repository import route_for_requisition_repository, admin_repository
 from infrastructure.schema.route_for_requistion_schema import RouteForRequisitionBaseSchema, \
-    RouteForRequisitionListResponseSchema, RouteForRequisitionResponseSchema, RouteForRequisitionUpdateSchema
+    RouteForRequisitionListResponseSchema, RouteForRequisitionResponseSchema, RouteForRequisitionUpdateSchema, \
+    RouteForRequisitionCreateSchema
 
 
-async def create_route(db:AsyncSession, route:RouteForRequisitionBaseSchema, agency_name:str):
+async def create_route(db:AsyncSession, route:RouteForRequisitionCreateSchema, agency_name:str):
     try:
-        existing_route = await route_for_requisition_repository.get_route_by_type_and_name(db=db, route_type=route.route_type, route_name=route.route_name,agency_name=agency_name)
-        if existing_route:
-            raise HTTPException(status_code=400, detail='Route with this name and type already exists')
+        # Check duplicate for route 1
+        existing_route_1 = await route_for_requisition_repository.get_route_by_type_and_name(
+            db=db,
+            route_type=route.route_type_1,
+            route_name=route.route_name_1,
+            agency_name=agency_name
+        )
+        if existing_route_1:
+            raise HTTPException(
+                status_code=400,
+                detail="Route with this name and type already exists"
+            )
 
-        route_request = route.model_dump(exclude_none=True)
-        route_request['agency_name'] = agency_name
-        route_request['created_by'] = agency_name
-        route_request['updated_by'] = agency_name
+        # Check duplicate for route 2 (if exists)
+        if route.route_type_2 and route.route_name_2:
+            existing_route_2 = await route_for_requisition_repository.get_route_by_type_and_name(
+                db=db,
+                route_type=route.route_type_2,
+                route_name=route.route_name_2,
+                agency_name=agency_name
+            )
+            if existing_route_2:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Associated route already exists"
+                )
 
-        return await route_for_requisition_repository.create_route_for_requisition(db=db, route_request=route_request)
+        route_mapping_id = ''.join(
+            random.choices(string.ascii_uppercase + string.digits, k=8)
+        )
+
+        route_request_1 = {
+            "route_type": route.route_type_1,
+            "route_name": route.route_name_1,
+            "route_price": route.route_price,
+            "agency_name": agency_name,
+            "created_by": agency_name,
+            "updated_by": agency_name,
+            "route_mapping_id": route_mapping_id
+        }
+
+        route_request_2 = None
+        if route.route_type_2 and route.route_name_2:
+            route_request_2 = {
+                "route_type": route.route_type_2,
+                "route_name": route.route_name_2,
+                "route_price": route.route_price,
+                "agency_name": agency_name,
+                "created_by": agency_name,
+                "updated_by": agency_name,
+                "route_mapping_id": route_mapping_id
+            }
+
+        result = await route_for_requisition_repository.create_route_for_requisition(
+            db=db,
+            route_request_1=route_request_1,
+            route_request_2=route_request_2
+        )
+        return RouteForRequisitionListResponseSchema.model_validate(
+            {"routes": result},
+            from_attributes=True
+        )
+
     except Exception as e:
         raise e
 

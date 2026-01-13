@@ -7,7 +7,15 @@ class RouteForRequisitionBaseSchema(BaseModel):
     route_type : str
     route_name : str
     route_price : float
+    route_mapping_id : Optional[str] = None
     agency_name: Optional[str] = None
+
+class RouteForRequisitionCreateSchema(BaseModel):
+    route_type_1 : str
+    route_name_1 : str
+    route_type_2: Optional[str] = None
+    route_name_2: Optional[str] = None
+    route_price : float
 
 class RouteForRequisitionUpdateSchema(BaseModel):
     id: int

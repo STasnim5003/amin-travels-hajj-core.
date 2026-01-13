@@ -7,7 +7,7 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    payment_category_controller, bank_info_controller, flight_request_controller,
                                    zone_request_controller, umrah_requisition_controller, city_name_controller,
                                    transport_controller, vendor_controller, hotel_request_controller,
-                                   payment_request_controller, route_for_request_controller)
+                                   payment_request_controller, route_for_request_controller, route_request_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
 from app.api.v1.controller.admin_user_controller import public_router
 
@@ -63,3 +63,4 @@ router.include_router(vendor_controller.private_router)
 router.include_router(hotel_request_controller.private_router)
 router.include_router(payment_request_controller.private_router)
 router.include_router(route_for_request_controller.private_router)
+router.include_router(route_request_controller.private_router)

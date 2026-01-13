@@ -10,3 +10,4 @@ class RouteForRequisition(Base, BaseMixinModel):
     route_name = Column(String, nullable=False)
     agency_name = Column(String, nullable=False)
     route_price = Column(Float, nullable=False)
+    route_mapping_id = Column(String, nullable=True)

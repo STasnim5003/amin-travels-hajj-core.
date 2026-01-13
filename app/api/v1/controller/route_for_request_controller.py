@@ -7,13 +7,14 @@ from app.core.middleware.middleware import get_current_user
 from app.service import route_for_requisition_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.route_for_requistion_schema import RouteForRequisitionResponseSchema, \
-    RouteForRequisitionBaseSchema, RouteForRequisitionListResponseSchema, RouteForRequisitionUpdateSchema
+    RouteForRequisitionBaseSchema, RouteForRequisitionListResponseSchema, RouteForRequisitionUpdateSchema, \
+    RouteForRequisitionCreateSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
-@private_router.post("/route-for-requisition", response_model=RouteForRequisitionResponseSchema, tags=["Route For Requisition"])
+@private_router.post("/route-for-requisition", response_model=RouteForRequisitionListResponseSchema, tags=["Route For Requisition"])
 async def create_route(
-        route: RouteForRequisitionBaseSchema,
+        route: RouteForRequisitionCreateSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
