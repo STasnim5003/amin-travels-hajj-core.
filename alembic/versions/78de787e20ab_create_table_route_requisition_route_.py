@@ -49,6 +49,7 @@ def upgrade() -> None:
         sa.Column('total_price', sa.Float, nullable=False),
         sa.Column('agency_name', sa.String, nullable=True),
         sa.Column('status', sa.String, nullable=True),
+        sa.Column('route_mapping_id', sa.String, nullable=True),
         sa.Column('cancellation_status', sa.String, nullable=True),
         sa.Column('created_at', sa.DateTime(),
                   server_default=sa.text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"), nullable=False),

@@ -9,6 +9,7 @@ class RouteRequestBaseSchema(BaseModel):
     number_of_pax : int
     total_price : float
     status : Optional[str] = None
+    route_mapping_id : Optional[str] = None
     cancellation_status : Optional[str] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
@@ -18,6 +19,9 @@ class RouteRequestResponseSchema(RouteRequestBaseSchema):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     is_active: Optional[bool] = None
+
+    class Config:
+        from_attributes = True
 
 class RouteRequestListResponseSchema(BaseModel):
     route_requests : Optional[List[RouteRequestResponseSchema]] = None

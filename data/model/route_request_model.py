@@ -15,4 +15,5 @@ class RouteRequestModel(Base, BaseMixinModel):
     total_price = Column(Float, nullable=False)
     agency_name = Column(String, nullable=False)
     status = Column(String, nullable=True)
+    route_mapping_id = Column(String, nullable=True)
     cancellation_status = Column(String, nullable=True)
