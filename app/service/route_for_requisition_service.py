@@ -28,10 +28,11 @@ async def create_route(db:AsyncSession, route:RouteForRequisitionBaseSchema, age
 
 async def get_routes(db:AsyncSession, route_type:Optional[str], agency_name:str):
     try:
-        child_agencies = await admin_repository.get_child_agencies(db=db, lead_agency_name=agency_name)
-        child_agencies.append(agency_name)
-        child_agencies = list(set(child_agencies))
-        result = await route_for_requisition_repository.get_routes(db=db, route_type=route_type, agency_names=child_agencies)
+        lead_agency = await admin_repository.get_lead_agency(db=db, agency_name=agency_name)
+        associated_agencies = []
+        associated_agencies.append(lead_agency)
+        associated_agencies.append(agency_name)
+        result = await route_for_requisition_repository.get_routes(db=db, route_type=route_type, agency_names=associated_agencies)
         return RouteForRequisitionListResponseSchema.model_validate(
             {"routes": result},
             from_attributes=True
