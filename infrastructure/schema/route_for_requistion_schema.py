@@ -21,7 +21,7 @@ class RouteForRequisitionUpdateSchema(BaseModel):
     id: int
     route_type: Optional[str] = None
     route_name: Optional[str] = None
-    route_price: Optional[str] = None
+    route_price: Optional[float] = None
 
 class RouteForRequisitionResponseSchema(RouteForRequisitionBaseSchema):
     id: int

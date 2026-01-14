@@ -18,3 +18,13 @@ async def create_route_request(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await route_request_service.create_route_request(db=db, request=request, agency_name=agency_name)
+
+@private_router.get("/route-request/hajji-count")
+async def route_wise_hajji_count(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    return await route_request_service.get_route_wise_hajji_count(db=db, agency_name=agency_name)
