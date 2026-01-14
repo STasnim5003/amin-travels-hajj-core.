@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert, func, update
 
@@ -72,3 +74,54 @@ async def get_route_wise_hajji_count(db: AsyncSession, agency_name: str):
 
     except Exception as e:
         raise e
+
+
+async def get_route_requests(db:AsyncSession, agency_names: List[str]):
+    try:
+        stmt = (
+            select(RouteRequestModel)
+            .where(RouteRequestModel.agency_name.in_(agency_names))
+            .order_by(RouteRequestModel.id.desc())
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        raise e
+
+
+async def get_route_request_by_id(db:AsyncSession, request_id:int):
+    try:
+        stmt = (
+            select(RouteRequestModel)
+            .where(RouteRequestModel.id == request_id)
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+    except Exception as e:
+        raise e
+
+
+async def update_route_requests(db:AsyncSession, request_dict:dict, sar_update_dict:dict):
+    try:
+        stmt = (
+            update(RouteRequestModel)
+            .where(RouteRequestModel.id == request_dict['id'])
+            .values(**request_dict)
+            .returning(RouteRequestModel)
+        )
+        result = await db.execute(stmt)
+
+        if sar_update_dict:
+            sar_update_stmt = (
+                update(AdminModel)
+                .where(AdminModel.agency_name == sar_update_dict['agency_name'])
+                .values(sar =sar_update_dict['sar'])
+            )
+            await db.execute(sar_update_stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+

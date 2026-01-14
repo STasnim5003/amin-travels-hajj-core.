@@ -1,8 +1,11 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
+from app.service import admin_service
 from data.repository import route_request_repository, admin_repository
-from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, RouteRequestResponseSchema
+from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, RouteRequestResponseSchema, \
+    RouteRequestListResponseSchema, RouteRequestUpdateSchema
 
 
 async def validate_mashaer_pax(
@@ -112,5 +115,75 @@ async def get_route_wise_hajji_count(db: AsyncSession, agency_name: str):
     try:
         result = await route_request_repository.get_route_wise_hajji_count(db=db, agency_name=agency_name)
         return result
+    except Exception as e:
+        raise e
+
+
+async def get_route_requests(db:AsyncSession, agency_name:str):
+    try:
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
+
+        result = await route_request_repository.get_route_requests(db=db, agency_names=child_agencies)
+        route_requests = [
+            RouteRequestResponseSchema.model_validate(item)
+            for item in result
+        ]
+
+        return RouteRequestListResponseSchema(
+            route_requests=route_requests
+        )
+    except Exception as e:
+        raise e
+
+
+async def get_route_request_by_id(db:AsyncSession, request_id:int, agency_name:str):
+    try:
+        request = await route_request_repository.get_route_request_by_id(db=db, request_id=request_id)
+        if not request:
+            raise HTTPException(status_code=400, detail="Route Request not found")
+
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
+
+        if agency_name not in child_agencies:
+            raise HTTPException(status_code=400, detail="Agency name mismatches")
+
+        return RouteRequestResponseSchema.model_validate(request)
+    except Exception as e:
+        raise e
+
+
+async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema, agency_name:str):
+    try:
+        response = await route_request_repository.get_route_request_by_id(db=db, request_id=request.id)
+        if not response:
+            raise HTTPException(status_code=400, detail="Route Request not found")
+
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
+
+        if agency_name not in child_agencies:
+            raise HTTPException(status_code=400, detail="Agency name mismatches")
+
+        sar_update_dict = {}
+        if request.total_price and response.total_price != request.total_price:
+            agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
+
+            new_sar = agency.sar + response.total_price - request.total_price
+            sar_update_dict = {
+                'sar': new_sar,
+                'agency_name': agency_name,
+            }
+
+        request_dict = request.model_dump(exclude_none=True)
+        request_dict['updated_by'] = agency_name
+        request_dict['updated_at'] = get_current_time()
+
+        result = await route_request_repository.update_route_requests(db=db, request_dict=request_dict, sar_update_dict=sar_update_dict)
+        return RouteRequestResponseSchema.model_validate(result)
     except Exception as e:
         raise e
