@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, insert, func, update
+from sqlalchemy import select, insert, func, update, delete
 
 from data.model.admin_model import AdminModel
 from data.model.route_request_model import RouteRequestModel
@@ -125,3 +125,52 @@ async def update_route_requests(db:AsyncSession, request_dict:dict, sar_update_d
         raise e
 
 
+async def delete_route_request(db:AsyncSession, request_id:int, sar_update_dict:dict):
+    try:
+        stmt = (
+            delete(RouteRequestModel)
+            .where(RouteRequestModel.id == request_id)
+        )
+        await db.execute(stmt)
+
+        sar_update_stmt = (
+            update(AdminModel)
+            .where(AdminModel.agency_name == sar_update_dict['agency_name'])
+            .values(sar = sar_update_dict['sar'])
+        )
+
+        await db.execute(sar_update_stmt)
+        await db.commit()
+        return True
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def cancel_route_request(db:AsyncSession, request_dict:dict):
+    try:
+        stmt = (
+            update(RouteRequestModel)
+            .where(RouteRequestModel.id == request_dict['id'])
+            .values(**request_dict)
+            .returning(RouteRequestModel))
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def cancel_request_lead_agency_action(db, request_dict):
+    try:
+        stmt = (update(RouteRequestModel)
+                .where(RouteRequestModel.id == request_dict['id'])
+                .values(**request_dict)
+                .returning(RouteRequestModel))
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
