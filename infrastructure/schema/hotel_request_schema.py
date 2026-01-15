@@ -37,6 +37,7 @@ class HotelRequestBase(BaseModel):
     grand_total: Optional[HotelRequestGrandTotal] = None
     cancel_request_status : Optional[str] = None
     tasria_copy: Optional[List[Dict[str, Any]]] = None
+    tent: Optional[str] = None
 
 class HotelRequestResponseSchema(HotelRequestBase):
     id: int
@@ -76,3 +77,4 @@ class HotelRequestUpdateSchema(BaseModel):
     grand_total: Optional[HotelRequestGrandTotal] = None
     nusuk_request_file_category : Optional[str] = None
     remarks: Optional[str] = None
+    tent : Optional[str] = None

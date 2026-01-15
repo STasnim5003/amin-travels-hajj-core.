@@ -13,6 +13,7 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
     try:
         hotel_request_data = request_dict.copy()
         sar_value = hotel_request_data.pop("sar", None)
+        rfq_no = hotel_request_data.pop("rfq_no", None)
 
         stmt = (
             insert(HotelRequestModel)
@@ -21,19 +22,27 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
         )
         result = await db.execute(stmt)
 
+        update_values = {}
+
         if sar_value is not None:
+            update_values["sar"] = sar_value
+
+        if rfq_no is not None:
+            update_values["rfq_no"] = rfq_no
+
+        if update_values:
             await db.execute(
                 update(AdminModel)
                 .where(AdminModel.agency_name == request_dict["agency_name"])
-                .values(sar=sar_value)
+                .values(**update_values)
             )
 
         await db.commit()
         return result.scalar_one_or_none()
 
-    except Exception:
+    except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail="Error Creating Hotel Request")
+        raise e
 async def get_hotel_requests(db: AsyncSession, agency_name: List[str]):
     try:
         stmt = (
