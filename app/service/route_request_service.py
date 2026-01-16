@@ -5,7 +5,7 @@ from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
 from data.repository import route_request_repository, admin_repository
 from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, RouteRequestResponseSchema, \
-    RouteRequestListResponseSchema, RouteRequestUpdateSchema
+    RouteRequestListResponseSchema, RouteRequestUpdateSchema, RouteRequestCreateSchema
 
 
 async def validate_mashaer_pax(
@@ -63,50 +63,62 @@ async def validate_between_cities_pax(
         )
 
 
-async def create_route_request(db: AsyncSession, request: RouteRequestBaseSchema, agency_name: str):
+async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str):
     try:
-        if request.total_price <= 0 or request.number_of_pax <= 0:
-            raise HTTPException(status_code=400, detail="Invalid request")
+        route_requests = request.route_requests
+        route_mapping_num_of_pax_dict = {}
+        request_dict_list = []
+        total_price = 0
 
-        request_dict = request.model_dump(exclude_none=True)
-        route_request = await route_request_repository.find_route_by_route_mapping_id(db=db,
-                                                                                      route_mapping_id=request.route_mapping_id,
-                                                                                      agency_name=agency_name)
+        for r in route_requests:
+            hajji_count = route_mapping_num_of_pax_dict.get(r.route_mapping_id)
+            if hajji_count is None:
+                route_mapping_num_of_pax_dict[r.route_mapping_id] = r.number_of_pax
 
-        request_dict['status'] = "SEND_TO_LEAD"
-        request_dict['agency_name'] = agency_name
-        request_dict['created_by'] = agency_name
-        request_dict['updated_by'] = agency_name
+            elif r.number_of_pax != hajji_count:
+                raise HTTPException(status_code=400, detail="Up-Down must have same number of pax")
 
-        if len(route_request) == 1:
-            if route_request[0].number_of_pax != request_dict['number_of_pax']:
-                raise HTTPException(status_code=400, detail="Up and Down number of pax not same")
+            total_price += r.total_price
 
-        if request.route_type == 'MASHAER':
-            await validate_mashaer_pax(db=db, agency_name=agency_name, new_pax=request.number_of_pax)
+            request_dict = r.model_dump(exclude_none=True)
+            request_dict['status'] = "SEND_TO_LEAD"
+            request_dict['agency_name'] = agency_name
+            request_dict['created_by'] = agency_name
+            request_dict['updated_by'] = agency_name
 
-        elif request.route_type in {"BETWEEN_CITIES_UP", "BETWEEN_CITIES_DOWN"}:
-            await validate_between_cities_pax(
-                db=db,
-                agency_name=agency_name,
-                new_pax=request.number_of_pax,
-            )
+            request_dict_list.append(request_dict)
+
+        # if request.route_type == 'MASHAER':
+        #     await validate_mashaer_pax(db=db, agency_name=agency_name, new_pax=request.number_of_pax)
+        #
+        # elif request.route_type in {"BETWEEN_CITIES_UP", "BETWEEN_CITIES_DOWN"}:
+        #     await validate_between_cities_pax(
+        #         db=db,
+        #         agency_name=agency_name,
+        #         new_pax=request.number_of_pax,
+        #     )
 
         agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
-        if agency.sar < request.total_price:
+        if agency.sar < total_price:
             raise HTTPException(status_code=400, detail="You have not enough money in SAR")
 
-        new_sar = agency.sar - request.total_price
+        new_sar = agency.sar - total_price
 
         sar_update_dict = {
             'sar': new_sar,
             'agency_name': agency_name,
         }
 
-        result = await route_request_repository.create_route_request(db=db, request_dict=request_dict,
+        result = await route_request_repository.create_route_request(db=db, request_dict=request_dict_list,
                                                                      sar_update_dict=sar_update_dict)
-        return RouteRequestResponseSchema.model_validate(result)
+        responses = [
+            RouteRequestResponseSchema.model_validate(item)
+            for item in result
+        ]
 
+        return RouteRequestListResponseSchema(
+            route_requests=responses
+        )
     except Exception as e:
         raise e
 

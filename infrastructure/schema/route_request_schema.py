@@ -14,6 +14,9 @@ class RouteRequestBaseSchema(BaseModel):
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
 
+class RouteRequestCreateSchema(BaseModel):
+    route_requests : List[RouteRequestBaseSchema]
+
 class RouteRequestUpdateSchema(BaseModel):
     id : int
     route_type: Optional[str] = None

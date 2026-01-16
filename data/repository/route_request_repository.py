@@ -20,11 +20,11 @@ async def find_route_by_route_mapping_id(db:AsyncSession, route_mapping_id:str, 
         raise e
 
 
-async def create_route_request(db:AsyncSession, request_dict:dict, sar_update_dict:dict):
+async def create_route_request(db:AsyncSession, request_dict:List[dict], sar_update_dict:dict):
     try:
         stmt = (
             insert(RouteRequestModel)
-            .values(**request_dict)
+            .values(request_dict)
             .returning(RouteRequestModel)
         )
         result = await db.execute(stmt)
@@ -36,7 +36,7 @@ async def create_route_request(db:AsyncSession, request_dict:dict, sar_update_di
         )
         await db.execute(sar_update_stmt)
         await db.commit()
-        return result.scalar_one_or_none()
+        return result.scalars().all()
     except Exception as e:
         await db.rollback()
         raise e
