@@ -89,7 +89,7 @@ async def update_hotel_request(
         pricing: str = Form(None),
         price_per_hajji: str = Form(None),
         grand_total: str = Form(None),
-        document: UploadFile = File(None),
+        document: list[UploadFile] = File(None),
         tasria_copy: UploadFile = File(None),
         nusuk_request_file_category: str = Form(None),
         remarks: str = Form(None),

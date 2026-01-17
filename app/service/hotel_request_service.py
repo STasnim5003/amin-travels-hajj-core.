@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,7 +94,7 @@ async def get_hotel_request_by_id(db: AsyncSession, request_id: int, agency_name
 
 
 async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSchema, agency_name: str,
-                               document: Optional[UploadFile], tasria_copy: Optional[UploadFile]):
+                               document: Optional[List[UploadFile]], tasria_copy: Optional[UploadFile]):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request.id)
         if not result:
@@ -115,12 +115,15 @@ async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSche
         request_dict = request.model_dump(exclude_none=True)
         document_data = []
         if document:
-            try:
-                document_resp = await file_repository.upload_file(file=document, name="hotel_request_files")
-                document_data.append(document_resp.model_dump())
-                request_dict['document'] = document_data
-            except Exception as e:
-                raise e
+            for dc in document:
+                try:
+                    document_resp = await file_repository.upload_file(file=dc, name="hotel_request_files")
+                    document_data.append(document_resp.model_dump())
+
+                except Exception as e:
+                    raise e
+        if document_data:
+            request_dict['document'] = document_data
 
         tasria_document = []
         if tasria_copy:
