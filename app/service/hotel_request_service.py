@@ -33,6 +33,7 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
         request_dict["updated_by"] = agency_name
         request_dict["status"] = "SEND_TO_LEAD"
         request_dict["sar"] = agency.sar - request.pricing.with_vat
+        request_dict['rfq_no'] = agency.rfq_no
 
         if request.tent == 'Tent A':
             request_dict['rfq_no'] = 7276

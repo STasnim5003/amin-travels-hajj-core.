@@ -16,6 +16,7 @@ class RouteRequestBaseSchema(BaseModel):
 
 class RouteRequestCreateSchema(BaseModel):
     route_requests : List[RouteRequestBaseSchema]
+    total_price : float
 
 class RouteRequestUpdateSchema(BaseModel):
     id : int

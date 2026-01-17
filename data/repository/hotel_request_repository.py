@@ -13,7 +13,6 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
     try:
         hotel_request_data = request_dict.copy()
         sar_value = hotel_request_data.pop("sar", None)
-        rfq_no = hotel_request_data.pop("rfq_no", None)
 
         stmt = (
             insert(HotelRequestModel)
@@ -26,9 +25,6 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
 
         if sar_value is not None:
             update_values["sar"] = sar_value
-
-        if rfq_no is not None:
-            update_values["rfq_no"] = rfq_no
 
         if update_values:
             await db.execute(
@@ -46,28 +42,12 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
 async def get_hotel_requests(db: AsyncSession, agency_name: List[str]):
     try:
         stmt = (
-            select(
-                HotelRequestModel,
-                AdminModel.rfq_no.label("rfq_no")
-            )
-            .join(
-                AdminModel,
-                AdminModel.agency_name == HotelRequestModel.agency_name
-            )
+            select(HotelRequestModel)
             .where(HotelRequestModel.agency_name.in_(agency_name))
-            .order_by(HotelRequestModel.id.desc())
         )
 
         result = await db.execute(stmt)
-        rows = result.all()  # tuples: (HotelRequestModel, rfq_no)
-
-        return [
-            {
-                **hotel_request.__dict__,
-                "rfq_no": rfq_no
-            }
-            for hotel_request, rfq_no in rows
-        ]
+        return result.scalars().all()
     except Exception as e:
         raise e
 

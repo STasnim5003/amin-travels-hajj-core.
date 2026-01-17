@@ -30,3 +30,4 @@ class HotelRequestModel(Base, BaseMixinModel):
     remarks = Column(String, nullable=True)
     tasria_copy = Column(JSONB, nullable=True)
     tent = Column(String, nullable=True)
+    rfq_no = Column(Integer, nullable = True)

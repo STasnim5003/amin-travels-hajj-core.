@@ -38,6 +38,7 @@ class HotelRequestBase(BaseModel):
     cancel_request_status : Optional[str] = None
     tasria_copy: Optional[List[Dict[str, Any]]] = None
     tent: Optional[str] = None
+    rfq_no : Optional[int] = None
 
 class HotelRequestResponseSchema(HotelRequestBase):
     id: int
@@ -78,3 +79,4 @@ class HotelRequestUpdateSchema(BaseModel):
     nusuk_request_file_category : Optional[str] = None
     remarks: Optional[str] = None
     tent : Optional[str] = None
+    rfq_no : Optional[int] = None

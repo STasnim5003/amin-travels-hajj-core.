@@ -8,78 +8,14 @@ from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, R
     RouteRequestListResponseSchema, RouteRequestUpdateSchema, RouteRequestCreateSchema
 
 
-async def validate_mashaer_pax(
-        db: AsyncSession,
-        agency_name: str,
-        new_pax: int,
-):
-    arrival_hajji = await route_request_repository.find_hajji_by_route_type(
-        db=db,
-        route_type="ARRIVAL",
-        agency_name=agency_name,
-    )
-
-    mashaer_hajji = await route_request_repository.find_hajji_by_route_type(
-        db=db,
-        route_type="MASHAER",
-        agency_name=agency_name,
-    )
-
-    total_arrival = sum(a.number_of_pax for a in arrival_hajji)
-    total_mashaer = sum(m.number_of_pax for m in mashaer_hajji)
-
-    if len(mashaer_hajji) == 0:
-        if total_mashaer + new_pax > total_arrival:
-            raise HTTPException(
-                status_code=400,
-                detail="Mashaer pax must be equal arrival pax",
-            )
-
-    elif len(mashaer_hajji) == 1:
-        if total_mashaer + new_pax != total_arrival:
-            raise HTTPException(
-                status_code=400,
-                detail="Mashaer pax must be equal arrival pax",
-            )
-
-
-async def validate_between_cities_pax(
-        db: AsyncSession,
-        agency_name: str,
-        new_pax: int,
-):
-    arrival_hajji = await route_request_repository.find_hajji_by_route_type(
-        db=db,
-        route_type="ARRIVAL",
-        agency_name=agency_name,
-    )
-
-    total_arrival = sum(a.number_of_pax for a in arrival_hajji)
-
-    if new_pax < total_arrival:
-        raise HTTPException(
-            status_code=400,
-            detail="Between Cities pax must exceed arrival pax",
-        )
-
 
 async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str):
     try:
         route_requests = request.route_requests
-        route_mapping_num_of_pax_dict = {}
         request_dict_list = []
-        total_price = 0
+        total_price = request.total_price
 
         for r in route_requests:
-            hajji_count = route_mapping_num_of_pax_dict.get(r.route_mapping_id)
-            if hajji_count is None:
-                route_mapping_num_of_pax_dict[r.route_mapping_id] = r.number_of_pax
-
-            elif r.number_of_pax != hajji_count:
-                raise HTTPException(status_code=400, detail="Up-Down must have same number of pax")
-
-            total_price += r.total_price
-
             request_dict = r.model_dump(exclude_none=True)
             request_dict['status'] = "SEND_TO_LEAD"
             request_dict['agency_name'] = agency_name
@@ -88,15 +24,7 @@ async def create_route_request(db: AsyncSession, request: RouteRequestCreateSche
 
             request_dict_list.append(request_dict)
 
-        # if request.route_type == 'MASHAER':
-        #     await validate_mashaer_pax(db=db, agency_name=agency_name, new_pax=request.number_of_pax)
-        #
-        # elif request.route_type in {"BETWEEN_CITIES_UP", "BETWEEN_CITIES_DOWN"}:
-        #     await validate_between_cities_pax(
-        #         db=db,
-        #         agency_name=agency_name,
-        #         new_pax=request.number_of_pax,
-        #     )
+
 
         agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
         if agency.sar < total_price:
