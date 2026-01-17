@@ -11,42 +11,51 @@ from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, R
 
 async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str):
     try:
-        route_requests = request.route_requests
-        request_dict_list = []
-        total_price = request.total_price
+        route_type_map = {
+            "ARRIVAL": "arrival",
+            "DEPARTURE": "departure",
+            "BETWEEN_CITIES_UP": "between_cities_up",
+            "BETWEEN_CITIES_DOWN": "between_cities_down",
+            "MASHAER": "mashaer",
+        }
 
-        for r in route_requests:
-            request_dict = r.model_dump(exclude_none=True)
-            request_dict['status'] = "SEND_TO_LEAD"
-            request_dict['agency_name'] = agency_name
-            request_dict['created_by'] = agency_name
-            request_dict['updated_by'] = agency_name
+        # initialize all buckets
+        final_request_dict = {
+            "arrival": [],
+            "departure": [],
+            "between_cities_up": [],
+            "between_cities_down": [],
+            "mashaer": [],
+            "total_price": request.total_price,
+            "status": request.status,
+            "agency_name": agency_name,
+            "created_by": agency_name,
+            "updated_by": agency_name,
+        }
 
-            request_dict_list.append(request_dict)
+        for route in request.route_requests:
+            route_dict = route.model_dump(exclude_none=True)
+            bucket_key = route_type_map.get(route.route_type)
+
+            if bucket_key:
+                final_request_dict[bucket_key].append(route_dict)
 
 
 
         agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
-        if agency.sar < total_price:
+        if agency.sar < request.total_price:
             raise HTTPException(status_code=400, detail="You have not enough money in SAR")
 
-        new_sar = agency.sar - total_price
+        new_sar = agency.sar - request.total_price
 
         sar_update_dict = {
             'sar': new_sar,
             'agency_name': agency_name,
         }
 
-        result = await route_request_repository.create_route_request(db=db, request_dict=request_dict_list,
+        result = await route_request_repository.create_route_request(db=db, request_dict=final_request_dict,
                                                                      sar_update_dict=sar_update_dict)
-        responses = [
-            RouteRequestResponseSchema.model_validate(item)
-            for item in result
-        ]
-
-        return RouteRequestListResponseSchema(
-            route_requests=responses
-        )
+        return RouteRequestResponseSchema.model_validate(result)
     except Exception as e:
         raise e
 

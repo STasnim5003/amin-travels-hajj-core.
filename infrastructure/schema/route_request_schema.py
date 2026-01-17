@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -17,6 +17,7 @@ class RouteRequestBaseSchema(BaseModel):
 class RouteRequestCreateSchema(BaseModel):
     route_requests : List[RouteRequestBaseSchema]
     total_price : float
+    status : Optional[str] = None
 
 class RouteRequestUpdateSchema(BaseModel):
     id : int
@@ -29,12 +30,20 @@ class RouteRequestUpdateSchema(BaseModel):
     route_mapping_id: Optional[str] = None
     cancellation_status: Optional[str] = None
 
-class RouteRequestResponseSchema(RouteRequestBaseSchema):
+class RouteRequestResponseSchema(BaseModel):
     id:int
+    arrival: Optional[Any] = None
+    departure: Optional[Any] = None
+    between_cities_up: Optional[Any] = None
+    between_cities_down: Optional[Any] = None
+    mashaer: Optional[Any] = None
+    agency_name: Optional[str] = None
+    status: Optional[str] = None
+    total_price: Optional[float] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     is_active: Optional[bool] = None
-    agency_name: Optional[str] = None
+
 
     class Config:
         from_attributes = True

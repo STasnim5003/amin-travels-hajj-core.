@@ -9,7 +9,7 @@ from infrastructure.schema.route_request_schema import RouteRequestResponseSchem
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private" , tags=["Route Request"])
 
-@private_router.post("/route-request", response_model=RouteRequestListResponseSchema)
+@private_router.post("/route-request", response_model=RouteRequestResponseSchema)
 async def create_route_request(
         request: RouteRequestCreateSchema,
         db: AsyncSession = Depends(get_async_db),
