@@ -1,5 +1,6 @@
 import string
 import random
+from collections import defaultdict
 from typing import Optional
 
 from fastapi import HTTPException
@@ -7,7 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
-from data.repository import route_for_requisition_repository, admin_repository
+from data.repository import route_for_requisition_repository, admin_repository, route_request_repository
 from infrastructure.schema.route_for_requistion_schema import RouteForRequisitionBaseSchema, \
     RouteForRequisitionListResponseSchema, RouteForRequisitionResponseSchema, RouteForRequisitionUpdateSchema, \
     RouteForRequisitionCreateSchema
@@ -142,5 +143,45 @@ async def delete_routes(db:AsyncSession, requisition_id:int, agency_name:str):
             raise HTTPException(status_code=400, detail='Route with this name and type does not exist')
 
         return await route_for_requisition_repository.delete_route(db=db, requisition_id=requisition_id)
+    except Exception as e:
+        raise e
+
+
+async def get_route_summary(db:AsyncSession, route_type:str, route_name: str, agency_name:str):
+    try:
+        child_agencies = await admin_repository.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
+        child_agencies = list(set(child_agencies))
+
+        responses = await route_request_repository.get_route_summary(db=db, agency_names=child_agencies)
+
+        result = []
+        route_type_key_map = {
+            "ARRIVAL": "arrival",
+            "DEPARTURE": "departure",
+            "BETWEEN_CITIES_UP": "between_cities_up",
+            "BETWEEN_CITIES_DOWN": "between_cities_down",
+            "MASHAER": "mashaer",
+        }
+
+        route_key = route_type_key_map.get(route_type)
+        if not route_key:
+            return result
+
+        for agency_data in responses:
+            agency_name = agency_data.agency_name
+            routes = getattr(agency_data, route_key, [])
+
+
+            for r in routes:
+                if r.get('route_type') == route_type and r.get('route_name') == route_name:
+                    result.append({
+                        "agency_name" : agency_name,
+                        "route_type" : route_type,
+                        "route_name" : route_name,
+                        "number_of_pax" : r.get('number_of_pax')
+                    })
+
+        return result
     except Exception as e:
         raise e

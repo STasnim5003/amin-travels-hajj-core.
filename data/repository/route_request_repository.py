@@ -41,18 +41,6 @@ async def create_route_request(db:AsyncSession, request_dict:dict, sar_update_di
         await db.rollback()
         raise e
 
-async def find_hajji_by_route_type(db:AsyncSession, route_type : str, agency_name : str):
-    try:
-        stmt = (
-            select(RouteRequestModel)
-            .where(RouteRequestModel.agency_name == agency_name,
-                   RouteRequestModel.route_type == route_type)
-        )
-        result = await db.execute(stmt)
-        return result.scalars().all()
-    except Exception as e:
-        raise e
-
 
 async def get_route_wise_hajji_count(db: AsyncSession, agency_name: str):
     try:
@@ -76,15 +64,24 @@ async def get_route_wise_hajji_count(db: AsyncSession, agency_name: str):
         raise e
 
 
-async def get_route_requests(db:AsyncSession, agency_names: List[str]):
+async def get_route_requests(db:AsyncSession, agency_names: List[str], is_lead_agency : bool):
     try:
+        conditions = [
+            RouteRequestModel.agency_name.in_(agency_names)
+        ]
+
+        if is_lead_agency:
+            conditions.append(RouteRequestModel.status != "SAVE")
+
         stmt = (
             select(RouteRequestModel)
-            .where(RouteRequestModel.agency_name.in_(agency_names))
+            .where(*conditions)
             .order_by(RouteRequestModel.id.desc())
         )
+
         result = await db.execute(stmt)
         return result.scalars().all()
+
     except Exception as e:
         raise e
 
@@ -173,4 +170,19 @@ async def cancel_request_lead_agency_action(db, request_dict):
         return result.scalar_one_or_none()
     except Exception as e:
         await db.rollback()
+        raise e
+
+
+async def get_route_summary(db:AsyncSession, agency_names:List[str]):
+    try:
+        stmt = (
+            select(RouteRequestModel)
+            .where(
+                RouteRequestModel.agency_name.in_(agency_names),
+                RouteRequestModel.status != "SAVE"
+            )
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
         raise e

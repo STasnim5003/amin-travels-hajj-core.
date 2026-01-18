@@ -70,11 +70,16 @@ async def get_route_wise_hajji_count(db: AsyncSession, agency_name: str):
 
 async def get_route_requests(db:AsyncSession, agency_name:str):
     try:
+        is_lead_agency = False
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        if child_agencies:
+            is_lead_agency = True
         child_agencies.append(agency_name)
         child_agencies = list(set(child_agencies))
 
-        result = await route_request_repository.get_route_requests(db=db, agency_names=child_agencies)
+
+
+        result = await route_request_repository.get_route_requests(db=db, agency_names=child_agencies, is_lead_agency=is_lead_agency)
         route_requests = [
             RouteRequestResponseSchema.model_validate(item)
             for item in result
