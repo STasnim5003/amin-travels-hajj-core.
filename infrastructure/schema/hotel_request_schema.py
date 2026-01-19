@@ -72,7 +72,8 @@ class HotelRequestUpdateSchema(BaseModel):
     status: Optional[str] = None
     nusuk_request_id: Optional[str] = None
     is_active: Optional[bool] = None
-    document: Optional[Dict[str, Any]] = None
+    document: Optional[Any] = None
+    tasria_copy: Optional[Any] = None
     pricing: Optional[HotelPricingSchema] = None
     price_per_hajji: Optional[HotelPricingSchema] = None
     grand_total: Optional[HotelRequestGrandTotal] = None

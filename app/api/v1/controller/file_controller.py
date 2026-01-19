@@ -19,13 +19,17 @@ private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/privat
 
 
 
-# @router.post("/upload", response_model=FileUploadResponseSchema ,tags=["files"])
-# async def upload_file(
-#                         file: UploadFile = File(...),
-#                         name: Optional[str] = "default",
-#                       ):
-#     response = await file_service.upload_file(name=name, file=file)
-#     return JSONResponse(content=jsonable_encoder(response))
+@private_router.post("/file/upload", response_model=FileUploadResponseSchema ,tags=["files"])
+async def upload_file(
+        file: UploadFile = File(...),
+        name: str = Form(...),
+        current_user : dict = Depends(get_current_user)
+):
+    if current_user["role"] not in ["SUPER_ADMIN", "AGENCY"]:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    response = await file_service.upload_file(name=name, file=file)
+    return JSONResponse(content=jsonable_encoder(response))
 #
 
 

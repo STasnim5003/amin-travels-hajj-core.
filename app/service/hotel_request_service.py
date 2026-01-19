@@ -94,8 +94,7 @@ async def get_hotel_request_by_id(db: AsyncSession, request_id: int, agency_name
         raise e
 
 
-async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSchema, agency_name: str,
-                               document: Optional[List[UploadFile]], tasria_copy: Optional[UploadFile]):
+async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSchema, agency_name: str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request.id)
         if not result:
@@ -114,26 +113,26 @@ async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSche
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         request_dict = request.model_dump(exclude_none=True)
-        document_data = []
-        if document:
-            for dc in document:
-                try:
-                    document_resp = await file_repository.upload_file(file=dc, name="hotel_request_files")
-                    document_data.append(document_resp.model_dump())
-
-                except Exception as e:
-                    raise e
-        if document_data:
-            request_dict['document'] = document_data
-
-        tasria_document = []
-        if tasria_copy:
-            try:
-                tasria_document_resp = await file_repository.upload_file(file=tasria_copy, name="tasria_copy_files")
-                tasria_document.append(tasria_document_resp.model_dump())
-                request_dict['tasria_copy'] = tasria_document
-            except Exception as e:
-                raise e
+        # document_data = []
+        # if document:
+        #     for dc in document:
+        #         try:
+        #             document_resp = await file_repository.upload_file(file=dc, name="hotel_request_files")
+        #             document_data.append(document_resp.model_dump())
+        #
+        #         except Exception as e:
+        #             raise e
+        # if document_data:
+        #     request_dict['document'] = document_data
+        #
+        # tasria_document = []
+        # if tasria_copy:
+        #     try:
+        #         tasria_document_resp = await file_repository.upload_file(file=tasria_copy, name="tasria_copy_files")
+        #         tasria_document.append(tasria_document_resp.model_dump())
+        #         request_dict['tasria_copy'] = tasria_document
+        #     except Exception as e:
+        #         raise e
 
         request_dict['updated_by'] = agency_name
         request_dict['updated_at'] = get_current_time()
