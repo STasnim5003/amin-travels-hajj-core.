@@ -99,33 +99,30 @@ async def update_hotel_request(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
 
-    try:
-        hotel_request_update = HotelRequestUpdateSchema(
-            id=id,
-            city=city,
-            type=type,
-            name=name,
-            tasria_number=tasria_number,
-            check_in=parse_json(check_in),
-            check_out=parse_json(check_out),
-            number_of_haji=number_of_haji,  # TODO: Number of hajji is not updating
-            room_allocation=parse_json(room_allocation),
-            hotel_contact_person=parse_json(hotel_contact_person),
-            status=status,
-            nusuk_request_id=nusuk_request_id,
-            is_active=is_active,
-            pricing=parse_json(pricing),
-            price_per_hajji=parse_json(price_per_hajji),
-            grand_total=parse_json(grand_total),
-            nusuk_request_file_category=nusuk_request_file_category,
-            document=parse_json(document),
-            tasria_copy = parse_json(tasria_copy),
-            remarks=remarks,
-            tent=tent
-        )
-        return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name)
-    except Exception as e:
-        raise e
+    hotel_request_update = HotelRequestUpdateSchema(
+        id=id,
+        city=city,
+        type=type,
+        name=name,
+        tasria_number=tasria_number,
+        check_in=parse_json(check_in),
+        check_out=parse_json(check_out),
+        number_of_haji=number_of_haji,  # TODO: Number of hajji is not updating
+        room_allocation=parse_json(room_allocation),
+        hotel_contact_person=parse_json(hotel_contact_person),
+        status=status,
+        nusuk_request_id=nusuk_request_id,
+        is_active=is_active,
+        pricing=parse_json(pricing),
+        price_per_hajji=parse_json(price_per_hajji),
+        grand_total=parse_json(grand_total),
+        nusuk_request_file_category=nusuk_request_file_category,
+        document=parse_json(document),
+        tasria_copy = parse_json(tasria_copy),
+        remarks=remarks,
+        tent=tent
+    )
+    return await hotel_request_service.update_hotel_request(db, hotel_request_update, agency_name)
 
 @private_router.get("/hotel-request/{request_id}", response_model=HotelRequestResponseSchema)
 async def get_request_by_id(
