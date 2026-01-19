@@ -43,6 +43,7 @@ class RouteRequestResponseSchema(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     is_active: Optional[bool] = None
+    cancellation_status : Optional[str] = None
 
 
     class Config:
