@@ -27,7 +27,7 @@ async def create_hotel_request(
         pricing: str = Form(None),
         price_per_hajji: str = Form(None),
         grand_total: str = Form(None),
-        tasria_copy: UploadFile = File(None),
+        tasria_copy: str = Form(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
@@ -49,13 +49,14 @@ async def create_hotel_request(
             pricing=parse_json(pricing),
             price_per_hajji=parse_json(price_per_hajji),
             grand_total=parse_json(grand_total),
-            tent = tent
+            tent = tent,
+            tasria_copy = parse_json(tasria_copy)
 
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    return await hotel_request_service.create_hotel_request(db, request, agency_name, tasria_copy)
+    return await hotel_request_service.create_hotel_request(db, request, agency_name)
 
 
 @private_router.get("/hotel-request", response_model=HotelRequestListResponseSchema)

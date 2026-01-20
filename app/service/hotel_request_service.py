@@ -11,7 +11,7 @@ from infrastructure.schema.hotel_request_schema import HotelRequestBase, HotelRe
     HotelRequestListResponseSchema, HotelRequestUpdateSchema
 
 
-async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str, tasria_copy:Optional[UploadFile]):
+async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str):
     try:
         agency = await admin_repository.get_agency_by_agency_name(db,agency_name)
         if agency is None:
@@ -37,15 +37,6 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
 
         if request.tent == 'Tent A':
             request_dict['rfq_no'] = 7276
-
-        document_data = []
-        if tasria_copy:
-            try:
-                document_resp = await file_repository.upload_file(file=tasria_copy, name="tasria_copy_files")
-                document_data.append(document_resp.model_dump())
-                request_dict['tasria_copy'] = document_data
-            except Exception as e:
-                raise e
 
 
         result = await hotel_request_repository.create_hotel_request(db=db, request_dict=request_dict)

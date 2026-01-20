@@ -36,7 +36,7 @@ class HotelRequestBase(BaseModel):
     price_per_hajji: Optional[HotelPricingSchema] = None
     grand_total: Optional[HotelRequestGrandTotal] = None
     cancel_request_status : Optional[str] = None
-    tasria_copy: Optional[List[Dict[str, Any]]] = None
+    tasria_copy: Optional[Any] = None
     tent: Optional[str] = None
     rfq_no : Optional[int] = None
 
