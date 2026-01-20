@@ -32,13 +32,12 @@ class HotelRequestBase(BaseModel):
     room_allocation: Optional[List[HotelRequestRoomAllocationSchema]] = None
     hotel_contact_person: Optional[Dict[str, Any]] = None
     pricing: Optional[HotelPricingSchema] = None
-    document: Optional[List[Dict[str, Any]]] = None
+    document: Optional[Any] = None
     price_per_hajji: Optional[HotelPricingSchema] = None
     grand_total: Optional[HotelRequestGrandTotal] = None
     cancel_request_status : Optional[str] = None
     tasria_copy: Optional[Any] = None
     tent: Optional[str] = None
-    rfq_no : Optional[int] = None
 
 class HotelRequestResponseSchema(HotelRequestBase):
     id: int
@@ -80,4 +79,3 @@ class HotelRequestUpdateSchema(BaseModel):
     nusuk_request_file_category : Optional[str] = None
     remarks: Optional[str] = None
     tent : Optional[str] = None
-    rfq_no : Optional[int] = None
