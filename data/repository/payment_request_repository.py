@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, desc
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +27,7 @@ async def get_payment_requests(db:AsyncSession, agency_names:List[str]):
         stmt = (
             select(PaymentRequestModel)
             .where(PaymentRequestModel.agency_name.in_(agency_names))
+            .order_by(desc(PaymentRequestModel.id))
         )
         result = await db.execute(stmt)
         return result.scalars().all()
