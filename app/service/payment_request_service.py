@@ -1,28 +1,21 @@
-from typing import Optional
-
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
-from data.repository import payment_request_repository, file_repository
+from data.repository import payment_request_repository, admin_repository
 from infrastructure.schema.payment_request_schema import PaymentRequestResponse, \
-    PaymentRequestListResponseSchema
+    PaymentRequestListResponseSchema, PaymentRequestCreateSchema, PaymentRequestUpdateSchema
 
 
-async def create_payment_request(db: AsyncSession, request_dict: dict,
-                                 money_receipt_payment_slip_file: Optional[UploadFile]):
+async def create_payment_request(db: AsyncSession, request: PaymentRequestCreateSchema, agency_name: str):
     try:
-        document_data = []
-        if money_receipt_payment_slip_file:
-            try:
-                document_resp = await file_repository.upload_file(file=money_receipt_payment_slip_file,
-                                                                  name="payment_request_slip")
-                document_data.append(document_resp.model_dump())
-                request_dict['money_receipt_payment_slip_file'] = document_data
-            except Exception as e:
-                raise e
+        request_dict = request.model_dump(exclude_none=True)
+        request_dict['status'] = 'PENDING'
+        request_dict['agency_name'] = agency_name
+        request_dict['updated_by'] = agency_name
+        request_dict['created_by'] = agency_name
 
         result = await payment_request_repository.create_payment_request(db=db, request_dict=request_dict)
         return PaymentRequestResponse.model_validate(result)
@@ -70,33 +63,41 @@ async def get_payment_request_by_id(db: AsyncSession, payment_request_id: int, a
         raise e
 
 
-async def update_payment_request(db: AsyncSession, request_dict: dict,
-                                 money_receipt_payment_slip_file: Optional[UploadFile]):
+async def update_payment_request(db: AsyncSession, request: PaymentRequestUpdateSchema, agency_name: str):
     try:
         result = await payment_request_repository.get_payment_request_by_id(db=db,
-                                                                            payment_request_id=request_dict.get('id'))
+                                                                            payment_request_id=request.id)
         if not result:
             raise HTTPException(status_code=400, detail='Payment request not found')
 
-        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=request_dict.get('agency_name'))
-        child_agencies.append(request_dict.get('agency_name'))
+        child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
+        child_agencies.append(agency_name)
         child_agencies = list(set(child_agencies))
 
         if result.agency_name not in child_agencies:
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
-        document_data = []
-        if money_receipt_payment_slip_file:
-            try:
-                document_resp = await file_repository.upload_file(file=money_receipt_payment_slip_file,
-                                                                  name="payment_request_slip")
-                document_data.append(document_resp.model_dump())
-                request_dict['money_receipt_payment_slip_file'] = document_data
-            except Exception as e:
-                raise e
+        agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=result.agency_name)
+        if not agency:
+            raise HTTPException(status_code=400, detail='No Agency Found')
 
-        request_dict = {k: v for k, v in request_dict.items() if v is not None}
+        request_dict = request.model_dump(exclude_none=True)
 
+        is_lead_agency = await admin_repository.check_lead_agency(db=db, agency_name=agency_name)
+        status = request.status
+        if not is_lead_agency and status in ['APPROVED', 'REJECTED']:
+            raise HTTPException(status_code=400, detail='You are not lead agency')
+
+        if is_lead_agency and request.status == 'APPROVED':
+            if request.purpose == 'BDT':
+                new_bdt = agency.bdt + request.amount
+                request_dict['bdt'] = new_bdt
+            elif request.purpose == 'SAR':
+                new_sar = agency.sar + request.exchanged_amount
+                request_dict['sar'] = new_sar
+
+        request_dict['agency_name'] = result.agency_name
+        request_dict['updated_by'] = agency_name
         request_dict['updated_at'] = get_current_time()
 
         result = await payment_request_repository.update_payment_request(db=db, request_dict=request_dict)

@@ -4,6 +4,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from data.model.admin_model import AdminModel
 from data.model.payment_request_model import PaymentRequestModel
 
 
@@ -45,6 +46,12 @@ async def get_payment_request_by_id(db:AsyncSession, payment_request_id: int):
 
 async def update_payment_request(db:AsyncSession, request_dict: dict):
     try:
+        admin_update_data = {}
+        if "bdt" in request_dict:
+            admin_update_data["bdt"] = request_dict.pop("bdt")
+        if "sar" in request_dict:
+            admin_update_data["sar"] = request_dict.pop("sar")
+
         stmt = (
             update(PaymentRequestModel)
             .where(PaymentRequestModel.id == request_dict['id'])
@@ -52,6 +59,15 @@ async def update_payment_request(db:AsyncSession, request_dict: dict):
             .returning(PaymentRequestModel)
         )
         result = await db.execute(stmt)
+
+        if admin_update_data:
+            admin_stmt = (
+                update(AdminModel)
+                .where(AdminModel.agency_name == request_dict["agency_name"])
+                .values(**admin_update_data)
+            )
+            await db.execute(admin_stmt)
+
         await db.commit()
         return result.scalar_one_or_none()
     except Exception as e:

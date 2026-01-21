@@ -24,3 +24,4 @@ class PaymentRequestModel(Base, BaseMixinModel):
     sector = Column(String, nullable=True)
     remarks = Column(String, nullable=True)
     nusuk_request_id = Column(String, nullable=True)
+    exchanged_amount = Column(Float, nullable=True)
