@@ -17,8 +17,8 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
         if agency is None:
             raise HTTPException(status_code=400, detail="Agency not found")
 
-        if agency.sar < request.pricing.with_vat:
-            raise HTTPException(status_code=400, detail="You have not enough amount in SAR")
+        # if agency.sar < request.pricing.with_vat:
+        #     raise HTTPException(status_code=400, detail="You have not enough amount in SAR")
 
         # if request.city == 'Madinah':
         #     madinah_hotel_allocated_and_total_seat = await hotel_request_repository.get_madinah_allocated_and_total_seat(db, agency_name)

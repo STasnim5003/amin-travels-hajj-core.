@@ -43,8 +43,8 @@ async def create_route_request(db: AsyncSession, request: RouteRequestCreateSche
 
 
         agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
-        if agency.sar < request.total_price:
-            raise HTTPException(status_code=400, detail="You have not enough money in SAR")
+        # if agency.sar < request.total_price:
+        #     raise HTTPException(status_code=400, detail="You have not enough money in SAR")
 
         new_sar = agency.sar - request.total_price
 
