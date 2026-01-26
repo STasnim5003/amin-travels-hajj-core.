@@ -59,3 +59,28 @@ class PaymentRequestUpdateSchema(BaseModel):
     amount : Optional[float] = None
     exchange_rate: Optional[float] = None
     exchanged_amount : Optional[float] = None
+
+class SubAgencyBillCreateSchema(BaseModel):
+    purpose: Optional[str] = None
+    details: Optional[str] = None
+    payment_date: Optional[str] = None
+    amount: float
+    exchange_rate: Optional[float] = None
+    sector: Optional[str] = None
+    remarks: Optional[str] = None
+    nusuk_request_id: Optional[str] = None
+    exchanged_amount: Optional[float] = None
+    agency_name : str
+
+class SubAgencyBillUpdateSchema(BaseModel):
+    id : int
+    purpose: Optional[str] = None
+    details: Optional[str] = None
+    payment_date: Optional[str] = None
+    amount: Optional[float] = None
+    exchange_rate: Optional[float] = None
+    sector: Optional[str] = None
+    remarks: Optional[str] = None
+    nusuk_request_id: Optional[str] = None
+    exchanged_amount: Optional[float] = None
+    agency_name : Optional[str] = None
