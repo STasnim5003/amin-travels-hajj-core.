@@ -1,31 +1,19 @@
-from typing import Optional, List
-
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
-from data.repository import hotel_request_repository, file_repository, admin_repository
+from data.repository import hotel_request_repository, admin_repository
 from infrastructure.schema.hotel_request_schema import HotelRequestBase, HotelRequestResponseSchema, \
     HotelRequestListResponseSchema, HotelRequestUpdateSchema
 
 
 async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str):
     try:
-        agency = await admin_repository.get_agency_by_agency_name(db,agency_name)
+        agency = await admin_repository.get_agency_by_agency_name(db, agency_name)
         if agency is None:
             raise HTTPException(status_code=400, detail="Agency not found")
-
-        # if agency.sar < request.pricing.with_vat:
-        #     raise HTTPException(status_code=400, detail="You have not enough amount in SAR")
-
-        # if request.city == 'Madinah':
-        #     madinah_hotel_allocated_and_total_seat = await hotel_request_repository.get_madinah_allocated_and_total_seat(db, agency_name)
-        #     allocated_seat = madinah_hotel_allocated_and_total_seat.get('hotel_allocated_hajji')
-        #     total_seat = madinah_hotel_allocated_and_total_seat.get('total_pilgrims')
-        #     if allocated_seat + request.number_of_haji > total_seat:
-        #         raise HTTPException(status_code=400, detail="Number of Haji exceeds total seat")
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict["agency_name"] = agency_name
@@ -33,11 +21,11 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
         request_dict["updated_by"] = agency_name
         request_dict["status"] = "SEND_TO_LEAD"
         request_dict["sar"] = agency.sar - request.pricing.with_vat
+        request_dict["hotel_requested"] = agency.hotel_requested + request.number_of_haji
         request_dict['rfq_no'] = agency.rfq_no
 
         if request.tent == 'Tent A':
             request_dict['rfq_no'] = 7276
-
 
         result = await hotel_request_repository.create_hotel_request(db=db, request_dict=request_dict)
         return HotelRequestResponseSchema.model_validate(result)
@@ -106,6 +94,15 @@ async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSche
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = agency_name
         request_dict['updated_at'] = get_current_time()
+        request_dict['agency_name'] = result.agency_name
+
+        if result.pricing['with_vat'] != request.pricing.with_vat:
+            agency = await admin_repository.get_agency_by_agency_name(db, agency_name)
+            request_dict["sar"] = agency.sar - request.pricing.with_vat + result.pricing['with_vat']
+
+        if result.number_of_haji != request.number_of_haji:
+            agency = await admin_repository.get_agency_by_agency_name(db, agency_name)
+            request_dict["hotel_requested"] = agency.hotel_requested + request.number_of_haji - result.number_of_haji
 
         result = await hotel_request_repository.update_hotel_request(db=db, request_dict=request_dict)
         return HotelRequestResponseSchema.model_validate(result)
@@ -123,13 +120,16 @@ async def delete_hotel_request(db: AsyncSession, request_id: int, agency_name: s
 
         price = result.pricing.get('with_vat') or 0
         new_sar = admin.sar + price
+        new_hotel_requested = admin.hotel_requested - result.number_of_haji
 
         request_dict = {
             'agency_name': agency_name,
             'sar': new_sar,
+            'hotel_requested': new_hotel_requested
         }
 
-        result = await hotel_request_repository.delete_hotel_request(db=db, request_id=request_id, request_dict=request_dict)
+        result = await hotel_request_repository.delete_hotel_request(db=db, request_id=request_id,
+                                                                     request_dict=request_dict)
         if not result:
             raise HTTPException(status_code=400, detail="Delete Hotel Request failed")
         return result
@@ -137,7 +137,7 @@ async def delete_hotel_request(db: AsyncSession, request_id: int, agency_name: s
         raise e
 
 
-async def cancel_request(db:AsyncSession, request_id:int, agency_name:str):
+async def cancel_request(db: AsyncSession, request_id: int, agency_name: str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if not result:
@@ -148,13 +148,13 @@ async def cancel_request(db:AsyncSession, request_id:int, agency_name:str):
             raise HTTPException(status_code=400, detail="Agency name does not match")
 
         request_dict = {
-            'cancel_request_status' : "REQUEST_FOR_CANCELLATION",
-            'id' : request_id,
-            'updated_by' : agency_name,
-            'updated_at' : get_current_time()
+            'cancel_request_status': "REQUEST_FOR_CANCELLATION",
+            'id': request_id,
+            'updated_by': agency_name,
+            'updated_at': get_current_time()
         }
 
-        result = await hotel_request_repository.cancel_hotel_request(db=db, request_dict = request_dict)
+        result = await hotel_request_repository.cancel_hotel_request(db=db, request_dict=request_dict)
         if not result:
             raise HTTPException(status_code=400, detail="Update Hotel Request failed")
         return result
@@ -162,7 +162,7 @@ async def cancel_request(db:AsyncSession, request_id:int, agency_name:str):
         raise e
 
 
-async def cancel_request_lead_agency_action(db:AsyncSession, request_id:int, agency_name:str, status:str):
+async def cancel_request_lead_agency_action(db: AsyncSession, request_id: int, agency_name: str, status: str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if not result:
@@ -170,15 +170,17 @@ async def cancel_request_lead_agency_action(db:AsyncSession, request_id:int, age
         if result.cancel_request_status != 'REQUEST_FOR_CANCELLATION':
             raise HTTPException(status_code=400, detail="Can't Approved or Rejected")
 
-        is_lead_agency = await admin_repository.check_lead_agency_for_specific_sub_agency(db=db, sub_agency=result.agency_name, lead_agency=agency_name)
+        is_lead_agency = await admin_repository.check_lead_agency_for_specific_sub_agency(db=db,
+                                                                                          sub_agency=result.agency_name,
+                                                                                          lead_agency=agency_name)
         if not is_lead_agency:
             raise HTTPException(status_code=400, detail="This is not your sub agency")
 
         request_dict = {
-            'id' : request_id,
-            'updated_by' : agency_name,
-            'updated_at' : get_current_time(),
-            'cancel_request_status' : status if status == "REJECTED" else None,
+            'id': request_id,
+            'updated_by': agency_name,
+            'updated_at': get_current_time(),
+            'cancel_request_status': status if status == "REJECTED" else None,
         }
 
         result = await hotel_request_repository.cancel_request_lead_agency_action(db=db, request_dict=request_dict)

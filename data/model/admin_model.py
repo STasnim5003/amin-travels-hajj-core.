@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, String, BigInteger, Boolean, Float
+from sqlalchemy import Column, String, BigInteger, Boolean, Float, Integer
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -27,3 +27,6 @@ class AdminModel(Base, BaseMixinModel):
     bdt = Column(Float, nullable=True)
     sar = Column(Float, nullable=True)
     rfq_no = Column(BigInteger, nullable=True)
+    flight_requested = Column(Integer, nullable=True)
+    route_requested = Column(Integer, nullable=True)
+    hotel_requested = Column(Integer, nullable=True)

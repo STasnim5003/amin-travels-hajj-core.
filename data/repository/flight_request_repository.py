@@ -2,14 +2,28 @@ from sqlalchemy import update, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
+from data.model.admin_model import AdminModel
 from data.model.flight_request_model import FlightRequestModel
 from data.model.route_model import RouteModel
 
 
 async def create(db: AsyncSession, data: dict):
     try:
+        flight_requested = data.pop('flight_requested', None)
+
+        updated_dict = {}
+        if flight_requested:
+            updated_dict['flight_requested'] = flight_requested
+
         new_flight = FlightRequestModel(**data)
         db.add(new_flight)
+
+        updated_stmt = (
+            update(AdminModel)
+            .where(AdminModel.agency_name == data['agency_name'])
+            .values(flight_requested=AdminModel.flight_requested + flight_requested)
+        )
+        await db.execute(updated_stmt)
         await db.commit()
         await db.refresh(new_flight)
         return new_flight
@@ -47,6 +61,12 @@ async def get_by_id(db:AsyncSession, flight_request_id:int):
 
 async def update_flight_request(db: AsyncSession, flight_request_id: int, data: dict):
     try:
+        flight_requested = data.pop('flight_requested', None)
+
+        updated_dict = {}
+        if flight_requested:
+            updated_dict['flight_requested'] = flight_requested
+
         stmt = (
             update(FlightRequestModel)
             .where(FlightRequestModel.id == flight_request_id)
@@ -54,6 +74,14 @@ async def update_flight_request(db: AsyncSession, flight_request_id: int, data: 
             .returning(FlightRequestModel)
         )
         result = await db.execute(stmt)
+
+        updated_stmt = (
+            update(AdminModel)
+            .where(AdminModel.agency_name == data['agency_name'])
+            .values(flight_requested=AdminModel.flight_requested + flight_requested)
+        )
+        await db.execute(updated_stmt)
+
         await db.commit()
         return result.scalar_one_or_none()
     except Exception as e:

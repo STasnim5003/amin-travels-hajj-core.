@@ -13,6 +13,7 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
     try:
         hotel_request_data = request_dict.copy()
         sar_value = hotel_request_data.pop("sar", None)
+        hotel_requested = hotel_request_data.pop("hotel_requested", None)
 
         stmt = (
             insert(HotelRequestModel)
@@ -25,6 +26,9 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
 
         if sar_value is not None:
             update_values["sar"] = sar_value
+
+        if hotel_requested is not None:
+            update_values["hotel_requested"] = hotel_requested
 
         if update_values:
             await db.execute(
@@ -61,11 +65,32 @@ async def get_hotel_request_by_id(db:AsyncSession, request_id:int):
 
 async def update_hotel_request(db:AsyncSession, request_dict: dict):
     try:
+        sar_value = request_dict.pop("sar", None)
+        hotel_requested = request_dict.pop("hotel_requested", None)
+        agency_name = request_dict.pop("agency_name", None)
+
         stmt = (update(HotelRequestModel)
                 .where(HotelRequestModel.id == request_dict['id'])
                 .values(**request_dict)
                 .returning(HotelRequestModel))
         result = await db.execute(stmt)
+
+        update_values = {}
+
+        if sar_value is not None:
+            update_values["sar"] = sar_value
+
+        if hotel_requested is not None:
+            update_values["hotel_requested"] = hotel_requested
+
+        if update_values:
+            await db.execute(
+                update(AdminModel)
+                .where(AdminModel.agency_name == agency_name)
+                .values(**update_values)
+            )
+
+
         await db.commit()
         return result.scalar_one_or_none()
     except Exception as e:
@@ -78,7 +103,12 @@ async def delete_hotel_request(db:AsyncSession, request_id:int, request_dict:dic
         stmt = delete(HotelRequestModel).where(HotelRequestModel.id == request_id)
         await db.execute(stmt)
 
-        update_stmt = update(AdminModel).values(sar=request_dict['sar']).where(AdminModel.agency_name == request_dict["agency_name"])
+        update_stmt = (update(AdminModel)
+                       .values(
+                            sar=request_dict.get("sar"),
+                            hotel_requested=request_dict.get("hotel_requested"),
+                        )
+                       .where(AdminModel.agency_name == request_dict["agency_name"]))
         await db.execute(update_stmt)
 
         await db.commit()
