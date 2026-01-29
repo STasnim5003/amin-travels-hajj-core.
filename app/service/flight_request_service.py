@@ -90,10 +90,16 @@ async def get_flight_request_by_id(db: AsyncSession, flight_request_id: int, age
 
 
 async def delete_flight_request(db: AsyncSession, flight_request_id: int, agency_name: str):
+    result = await flight_request_repository.get_by_id(db=db, flight_request_id=flight_request_id)
+
+    if not result:
+        raise HTTPException(status_code=400, detail='Flight request not found')
+
     success = await flight_request_repository.delete_flight_request(
         db=db,
         flight_request_id=flight_request_id,
-        agency_name=agency_name
+        agency_name=agency_name,
+        total_seat=result.total_seat
     )
 
     if not success:

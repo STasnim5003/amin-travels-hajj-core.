@@ -110,25 +110,18 @@ async def get_all_flight_requests(db, agency_names):
     except Exception as e:
         raise e
 
-async def delete_flight_request(db: AsyncSession, flight_request_id: int, agency_name: str) -> bool:
+async def delete_flight_request(db: AsyncSession, flight_request_id: int, agency_name: str, total_seat:int) -> bool:
     try:
-        # Check if the flight request exists
-        result = await db.execute(
-            select(FlightRequestModel).where(
-                FlightRequestModel.id == flight_request_id,
-                FlightRequestModel.agency_name == agency_name
-            )
-        )
-        flight_request = result.scalar_one_or_none()
-        if not flight_request:
-            return False
-
-        # Delete the flight request
         await db.execute(
             delete(FlightRequestModel).where(
                 FlightRequestModel.id == flight_request_id,
                 FlightRequestModel.agency_name == agency_name
             )
+        )
+        await db.execute(
+            update(AdminModel)
+            .where(AdminModel.agency_name == agency_name)
+            .values(flight_requested=AdminModel.flight_requested - total_seat)
         )
         await db.commit()
         return True
