@@ -20,7 +20,7 @@ async def find_route_by_route_mapping_id(db:AsyncSession, route_mapping_id:str, 
         raise e
 
 
-async def create_route_request(db:AsyncSession, request_dict:dict, sar_update_dict:dict):
+async def create_route_request(db:AsyncSession, request_dict:dict, admin_update_dict:dict):
     try:
         stmt = (
             insert(RouteRequestModel)
@@ -31,8 +31,10 @@ async def create_route_request(db:AsyncSession, request_dict:dict, sar_update_di
 
         sar_update_stmt = (
             update(AdminModel)
-            .where(AdminModel.agency_name == sar_update_dict['agency_name'])
-            .values(sar =sar_update_dict['sar'])
+            .where(AdminModel.agency_name == admin_update_dict['agency_name'])
+            .values(
+                sar =AdminModel.sar - admin_update_dict['sar'],
+                route_requested = AdminModel.route_requested + admin_update_dict['route_requested'])
         )
         await db.execute(sar_update_stmt)
         await db.commit()

@@ -21,14 +21,9 @@ class RouteRequestCreateSchema(BaseModel):
 
 class RouteRequestUpdateSchema(BaseModel):
     id : int
-    route_type: Optional[str] = None
-    route_name: Optional[str] = None
-    route_price: Optional[float] = None
-    number_of_pax: Optional[int] = None
-    total_price: Optional[float] = None
+    route_requests: List[RouteRequestBaseSchema]
+    total_price: float
     status: Optional[str] = None
-    route_mapping_id: Optional[str] = None
-    cancellation_status: Optional[str] = None
 
 class RouteRequestResponseSchema(BaseModel):
     id:int

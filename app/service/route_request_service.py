@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,53 +10,63 @@ from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, R
     RouteRequestListResponseSchema, RouteRequestUpdateSchema, RouteRequestCreateSchema
 
 
+def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_name : str, flag:str):
+    total_hajji = 0
+    route_type_map = {
+        "ARRIVAL": "arrival",
+        "DEPARTURE": "departure",
+        "BETWEEN_CITIES_UP": "between_cities_up",
+        "BETWEEN_CITIES_DOWN": "between_cities_down",
+        "MASHAER": "mashaer",
+    }
 
-async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str):
-    try:
-        route_type_map = {
-            "ARRIVAL": "arrival",
-            "DEPARTURE": "departure",
-            "BETWEEN_CITIES_UP": "between_cities_up",
-            "BETWEEN_CITIES_DOWN": "between_cities_down",
-            "MASHAER": "mashaer",
-        }
+    final_request_dict = {
+        "arrival": [],
+        "departure": [],
+        "between_cities_up": [],
+        "between_cities_down": [],
+        "mashaer": [],
+        "total_price": request.total_price,
+        "status": request.status,
+    }
 
-        # initialize all buckets
-        final_request_dict = {
-            "arrival": [],
-            "departure": [],
-            "between_cities_up": [],
-            "between_cities_down": [],
-            "mashaer": [],
-            "total_price": request.total_price,
-            "status": request.status,
+    if flag.lower() == "post":
+        final_request_dict.update({
             "agency_name": agency_name,
             "created_by": agency_name,
             "updated_by": agency_name,
-        }
+        })
 
-        for route in request.route_requests:
-            route_dict = route.model_dump(exclude_none=True)
-            bucket_key = route_type_map.get(route.route_type)
+    elif flag.lower() == "put":
+        final_request_dict.update({
+            "updated_by": agency_name,
+            "updated_at":get_current_time(),
+        })
 
-            if bucket_key:
-                final_request_dict[bucket_key].append(route_dict)
+    for route in request.route_requests:
+        route_dict = route.model_dump(exclude_none=True)
+        bucket_key = route_type_map.get(route.route_type)
+        if bucket_key == 'arrival':
+            total_hajji += route.number_of_pax
+
+        if bucket_key:
+            final_request_dict[bucket_key].append(route_dict)
+
+    return total_hajji, final_request_dict
 
 
+async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str):
+    try:
+        total_hajji, final_request_dict = make_final_route_request_dict(request=request, agency_name=agency_name,flag="POST")
 
-        agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
-        # if agency.sar < request.total_price:
-        #     raise HTTPException(status_code=400, detail="You have not enough money in SAR")
-
-        new_sar = agency.sar - request.total_price
-
-        sar_update_dict = {
-            'sar': new_sar,
+        admin_update_dict = {
+            'sar': request.total_price,
             'agency_name': agency_name,
+            'route_requested':total_hajji
         }
 
         result = await route_request_repository.create_route_request(db=db, request_dict=final_request_dict,
-                                                                     sar_update_dict=sar_update_dict)
+                                                                     admin_update_dict=admin_update_dict)
         return RouteRequestResponseSchema.model_validate(result)
     except Exception as e:
         raise e
@@ -109,6 +121,7 @@ async def get_route_request_by_id(db:AsyncSession, request_id:int, agency_name:s
     except Exception as e:
         raise e
 
+#TODO: start from here
 
 async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema, agency_name:str):
     try:
@@ -133,9 +146,6 @@ async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema
                 'agency_name': agency_name,
             }
 
-        request_dict = request.model_dump(exclude_none=True)
-        request_dict['updated_by'] = agency_name
-        request_dict['updated_at'] = get_current_time()
 
         result = await route_request_repository.update_route_requests(db=db, request_dict=request_dict, sar_update_dict=sar_update_dict)
         return RouteRequestResponseSchema.model_validate(result)

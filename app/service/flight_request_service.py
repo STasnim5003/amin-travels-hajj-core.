@@ -99,7 +99,7 @@ async def delete_flight_request(db: AsyncSession, flight_request_id: int, agency
         db=db,
         flight_request_id=flight_request_id,
         agency_name=agency_name,
-        total_seat=result.total_seat
+        total_seat=result['total_seat']
     )
 
     if not success:
