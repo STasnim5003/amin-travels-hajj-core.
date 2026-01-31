@@ -376,3 +376,20 @@ async def available_family_codes(db: AsyncSession):
         return result.scalars().all()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+async def replace_pilgrim(db:AsyncSession, request_dict:dict):
+    try:
+        stmt = (
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.id == request_dict['id'])
+            .values(**request_dict)
+            .returning(PilgrimDataModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e

@@ -9,7 +9,8 @@ from app.core.middleware.middleware import get_current_user, get_current_pilgrim
 from app.service import pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
-    BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, PilgrimFamilyGroupAssign
+    BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, PilgrimFamilyGroupAssign, \
+    PilgrimDataBaseSchema, PilgrimReplaceSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -62,6 +63,18 @@ async def update_pilgrim_data(
         return await pilgrim_service.update_pilgrim_data_approval_status(db, pilgrim_request_schema, username)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@private_router.put("/pilgrim-data/replace", response_model=PilgrimDataResponseSchema, tags=["Pilgrim"])
+async def replace_pilgrim(
+        request: PilgrimReplaceSchema,
+        db:AsyncSession = Depends(get_async_db),
+        current_user:dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await pilgrim_service.replace_pilgrim(db=db, request=request, agency_name=agency_name)
 
 
 @public_router.post("/pilgrim/login", response_model=PilgrimLoginResponseSchema, tags=["Pilgrim"])

@@ -137,3 +137,27 @@ class PilgrimResponseForAdminUser(BaseModel):
 class PilgrimFamilyGroupAssign(BaseModel):
     tracking_ids : List[str]
     family_code: str
+
+class PilgrimReplaceSchema(BaseModel):
+    id : int
+    name_bn: str
+    name_en: str
+    father_name : Optional[str] = None
+    mother_name : Optional[str] = None
+    spouse_name : Optional[str] = None
+    occupation: Optional[str] = None
+    nid: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: str
+    mobile_no : str
+    passport_address: Optional[str] = None
+    present_address: Optional[str] = None
+    permanent_address : Optional[str] = None
+    tracking_id: str
+    serial_no : Optional[str] = None
+    passport_no : str
+    passport_expiry_date: Optional[str] = None
+    passport_dob : Optional[str] = None
+    passport_type : Optional[str] = None
+    pre_reg_voucher : Optional[str] = None
+    reg_voucher : Optional[str] = None

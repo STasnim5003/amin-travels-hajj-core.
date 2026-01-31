@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
 
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
+from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import verify_pilgrim_password, create_access_token_for_pilgrim, \
     create_refresh_token_for_pilgrim
 from app.service import view_field_service
@@ -15,7 +16,7 @@ from data.repository import pilgrim_repository, file_repository
 from data.repository.pilgrim_repository import fetch_pilgrim_data_json
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
-    PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign
+    PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign, PilgrimDataBaseSchema, PilgrimReplaceSchema
 
 
 async def get_pilgrim_data(db: AsyncSession,
@@ -174,3 +175,35 @@ async def assign_family_code(db:AsyncSession, request_body:PilgrimFamilyGroupAss
 
     result = await pilgrim_repository.assign_family_code(db, request_body)
     return [PilgrimDataResponseSchema.model_validate(r) for r in result]
+
+
+async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_name:str):
+    try:
+        pilgrim = await pilgrim_repository.get_pilgrim_by_id(db=db, pilgrim_id = request.id)
+
+        if pilgrim.group_name != agency_name:
+            raise HTTPException(status_code=400, detail="Pilgrim group name does not match.")
+
+        request_dict = request.model_dump()
+
+        request_dict.update({
+            "total_payment": 0,
+            "total_payable": 0,
+            "total_due": 0,
+            "total_available_amount": 0,
+            "package_price_discount": 0,
+            "actual_payable": 0,
+            "is_package_assigned": False,
+            "allocation_status": "ASSIGNED",
+            "registration_status": "REGISTERED",
+            "is_assigned": True,
+            "created_by": agency_name,
+            "updated_by": agency_name,
+            "created_at": get_current_time(),
+            "updated_at": get_current_time(),
+        })
+
+        result = await pilgrim_repository.replace_pilgrim(db=db, request_dict=request_dict)
+        return PilgrimDataResponseSchema.model_validate(result)
+    except Exception as e:
+        raise e
