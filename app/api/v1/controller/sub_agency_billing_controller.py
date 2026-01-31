@@ -54,7 +54,7 @@ async def get_bill_by_id(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await sub_agency_billing_service.get_sub_agency_bill_by_id(db=db, agency_name=agency_name, bill_id:int)
+    return await sub_agency_billing_service.get_sub_agency_bill_by_id(db=db, agency_name=agency_name, bill_id=bill_id)
 
 @private_router.delete("/sub-agency-billing/{bill_id}")
 async def delete_sub_agency_bill(
