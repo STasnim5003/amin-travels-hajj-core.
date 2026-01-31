@@ -94,3 +94,13 @@ async def delete_sub_agency_bill(db:AsyncSession, bill_id:int, agency_name:str):
 
     except Exception as e:
         raise e
+
+
+async def get_sub_agency_bill_by_id(db:AsyncSession, agency_name:str, bill_id:int):
+    try:
+        response = await sub_agency_billing_repository.get_sub_agency_bill_by_id(db=db, bill_id=bill_id)
+        if not response:
+            raise HTTPException(status_code=400, detail="Sub agency bill not found")
+        return PaymentRequestResponse.model_validate(response)
+    except Exception as e:
+        raise e
