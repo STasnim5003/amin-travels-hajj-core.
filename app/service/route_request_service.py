@@ -10,7 +10,7 @@ from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, R
     RouteRequestListResponseSchema, RouteRequestUpdateSchema, RouteRequestCreateSchema
 
 
-def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_name : str, flag:str):
+def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_name : str, method:str):
     total_hajji = 0
     route_type_map = {
         "ARRIVAL": "arrival",
@@ -30,14 +30,14 @@ def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_nam
         "status": request.status,
     }
 
-    if flag.lower() == "post":
+    if method.lower() == "post":
         final_request_dict.update({
             "agency_name": agency_name,
             "created_by": agency_name,
             "updated_by": agency_name,
         })
 
-    elif flag.lower() == "put":
+    elif method.lower() == "put":
         final_request_dict.update({
             "updated_by": agency_name,
             "updated_at":get_current_time(),
@@ -57,7 +57,7 @@ def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_nam
 
 async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str):
     try:
-        total_hajji, final_request_dict = make_final_route_request_dict(request=request, agency_name=agency_name,flag="POST")
+        total_hajji, final_request_dict = make_final_route_request_dict(request=request, agency_name=agency_name,method="POST")
 
         admin_update_dict = {
             'sar': request.total_price,
@@ -121,8 +121,6 @@ async def get_route_request_by_id(db:AsyncSession, request_id:int, agency_name:s
     except Exception as e:
         raise e
 
-#TODO: start from here
-
 async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema, agency_name:str):
     try:
         response = await route_request_repository.get_route_request_by_id(db=db, request_id=request.id)
@@ -136,18 +134,29 @@ async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema
         if agency_name not in child_agencies:
             raise HTTPException(status_code=400, detail="Agency name mismatches")
 
-        sar_update_dict = {}
-        if request.total_price and response.total_price != request.total_price:
-            agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
+        existing_hajji = 0
+        for r in response.arrival:
+            existing_hajji += r['number_of_pax']
 
-            new_sar = agency.sar + response.total_price - request.total_price
-            sar_update_dict = {
-                'sar': new_sar,
-                'agency_name': agency_name,
-            }
+        request_create_schema = RouteRequestCreateSchema(
+            route_requests = request.route_requests,
+            total_price = request.total_price,
+            status = request.status
+        )
+
+        total_hajji, final_request_dict = make_final_route_request_dict(request=request_create_schema, agency_name=agency_name,method="PUT")
+
+        admin_update_dict = {}
+        if existing_hajji != total_hajji:
+            admin_update_dict['route_requested'] = total_hajji - existing_hajji
+            admin_update_dict['agency_name'] = response.agency_name
+
+        if response.total_price != request.total_price:
+            admin_update_dict['sar'] = response.total_price - request.total_price
+            admin_update_dict['agency_name'] = response.agency_name
 
 
-        result = await route_request_repository.update_route_requests(db=db, request_dict=request_dict, sar_update_dict=sar_update_dict)
+        result = await route_request_repository.update_route_requests(db=db, request_dict=final_request_dict, admin_update_dict=admin_update_dict, request_id = request.id)
         return RouteRequestResponseSchema.model_validate(result)
     except Exception as e:
         raise e
@@ -166,14 +175,16 @@ async def delete_route_request(db:AsyncSession, requisition_id:int, agency_name:
         if agency_name not in child_agencies:
             raise HTTPException(status_code=400, detail="Agency name mismatches")
 
-        agency = await admin_repository.get_agency_by_agency_name(db=db, agency_name=agency_name)
+        existing_hajji = 0
+        for r in response.arrival:
+            existing_hajji += r['number_of_pax']
 
-        new_sar = agency.sar + response.total_price
-        sar_update_dict = {
-            'sar': new_sar,
+        admin_update_dict = {
+            'existing_price': response.total_price,
             'agency_name': agency_name,
+            'existing_hajji' : existing_hajji
         }
-        return await route_request_repository.delete_route_request(db=db, request_id=requisition_id, sar_update_dict=sar_update_dict)
+        return await route_request_repository.delete_route_request(db=db, request_id=requisition_id, admin_update_dict=admin_update_dict)
     except Exception as e:
         raise e
 

@@ -100,23 +100,26 @@ async def get_route_request_by_id(db:AsyncSession, request_id:int):
         raise e
 
 
-async def update_route_requests(db:AsyncSession, request_dict:dict, sar_update_dict:dict):
+async def update_route_requests(db:AsyncSession, request_dict:dict, admin_update_dict:dict, request_id:int):
     try:
         stmt = (
             update(RouteRequestModel)
-            .where(RouteRequestModel.id == request_dict['id'])
+            .where(RouteRequestModel.id == request_id)
             .values(**request_dict)
             .returning(RouteRequestModel)
         )
         result = await db.execute(stmt)
 
-        if sar_update_dict:
-            sar_update_stmt = (
+        if admin_update_dict:
+            admin_update_stmt = (
                 update(AdminModel)
-                .where(AdminModel.agency_name == sar_update_dict['agency_name'])
-                .values(sar =sar_update_dict['sar'])
+                .where(AdminModel.agency_name == admin_update_dict['agency_name'])
+                .values(
+                    sar =AdminModel.sar + admin_update_dict['sar'],
+                    route_requested = AdminModel.route_requested + admin_update_dict['route_requested']
+                )
             )
-            await db.execute(sar_update_stmt)
+            await db.execute(admin_update_stmt)
         await db.commit()
         return result.scalar_one_or_none()
     except Exception as e:
@@ -124,7 +127,7 @@ async def update_route_requests(db:AsyncSession, request_dict:dict, sar_update_d
         raise e
 
 
-async def delete_route_request(db:AsyncSession, request_id:int, sar_update_dict:dict):
+async def delete_route_request(db:AsyncSession, request_id:int, admin_update_dict:dict):
     try:
         stmt = (
             delete(RouteRequestModel)
@@ -134,8 +137,11 @@ async def delete_route_request(db:AsyncSession, request_id:int, sar_update_dict:
 
         sar_update_stmt = (
             update(AdminModel)
-            .where(AdminModel.agency_name == sar_update_dict['agency_name'])
-            .values(sar = sar_update_dict['sar'])
+            .where(AdminModel.agency_name == admin_update_dict['agency_name'])
+            .values(
+                sar = AdminModel.sar + admin_update_dict['existing_price'],
+                route_requested = AdminModel.route_requested - admin_update_dict['existing_hajji']
+            )
         )
 
         await db.execute(sar_update_stmt)
