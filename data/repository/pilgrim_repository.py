@@ -113,7 +113,7 @@ async def fetch_pilgrim_data_json(
                         p.serial_no, p.group_name, p.sub_group, p.registration_status, p.allocation_status,
                         p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
                         p.vaccination_center, p.passport_copy, p.package_id, p.group_leader, p.actual_payable, p.package_price_discount,
-                        p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment,
+                        p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment, p.total_due,
                         p.is_package_assigned, p.pre_reg_voucher, p.reg_voucher, p.passport_no, p.passport_dob,p.passport_expiry_date,
                          p.passport_type, p.family_code, COUNT(*) OVER() AS total_count
                     FROM core.pilgrim_data p
@@ -165,6 +165,7 @@ async def fetch_pilgrim_data_json(
                             'total_payment', total_payment,
                             'is_package_assigned', is_package_assigned,
                             'actual_payable', actual_payable,
+                            'total_due', max(total_payment - actual_payable, 0),
                             'package_price_discount', package_price_discount,
                             'pre_reg_voucher', pre_reg_voucher,
                             'reg_voucher', reg_voucher,
@@ -274,7 +275,9 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
                 p.group_name,p.sub_group, p.registration_status, p.tracking_id, p.mobile_no, p.is_assigned, 
                 p.updated_at,p.created_at, p.updated_by, p.created_by, p.id, p.passport_copy, p.allocation_status,
                 p.vaccination_center, p.comment_on_package, p.package_name, p.package_duration, p.package_bed_types,
-                p.total_payable, p.total_payment, p.total_available_amount, p.total_due, p.add_ons_services, p.is_package_assigned,
+                p.total_payable, p.total_payment, p.total_available_amount,
+                 GREATEST(p.total_payment - p.actual_payable, 0) AS total_due
+                 , p.add_ons_services, p.is_package_assigned,
                 p.payment_against, p.group_leader, p.actual_payable, p.package_price_discount
             FROM core.pilgrim_data p
             WHERE p.tracking_id = :tracking_id
