@@ -165,7 +165,7 @@ async def fetch_pilgrim_data_json(
                             'total_payment', total_payment,
                             'is_package_assigned', is_package_assigned,
                             'actual_payable', actual_payable,
-                            'total_due', max(total_payment - actual_payable, 0),
+                            'total_due', GREATEST(total_payment - actual_payable, 0),
                             'package_price_discount', package_price_discount,
                             'pre_reg_voucher', pre_reg_voucher,
                             'reg_voucher', reg_voucher,
