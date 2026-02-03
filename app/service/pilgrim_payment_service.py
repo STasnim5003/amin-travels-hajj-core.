@@ -350,7 +350,7 @@ async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
                 name=pilgrim.name_en,
                 mobile_no=pilgrim.mobile_no,
                 total_payable=pilgrim.total_payable,
-                total_due=max(pilgrim.total_payment - pilgrim.actual_payable, 0),
+                total_due=max(pilgrim.actual_payable - pilgrim.total_payment, 0),
                 total_available_amount=pilgrim.total_available_amount,
                 total_payment=pilgrim.total_payment,
                 actual_payable = pilgrim.actual_payable,

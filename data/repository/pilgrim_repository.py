@@ -165,7 +165,7 @@ async def fetch_pilgrim_data_json(
                             'total_payment', total_payment,
                             'is_package_assigned', is_package_assigned,
                             'actual_payable', actual_payable,
-                            'total_due', GREATEST(total_payment - actual_payable, 0),
+                            'total_due', GREATEST(actual_payable - total_payment, 0),
                             'package_price_discount', package_price_discount,
                             'pre_reg_voucher', pre_reg_voucher,
                             'reg_voucher', reg_voucher,
@@ -276,7 +276,7 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
                 p.updated_at,p.created_at, p.updated_by, p.created_by, p.id, p.passport_copy, p.allocation_status,
                 p.vaccination_center, p.comment_on_package, p.package_name, p.package_duration, p.package_bed_types,
                 p.total_payable, p.total_payment, p.total_available_amount,
-                 GREATEST(p.total_payment - p.actual_payable, 0) AS total_due
+                 GREATEST(p.actual_payable - p.total_payment, 0) AS total_due
                  , p.add_ons_services, p.is_package_assigned,
                 p.payment_against, p.group_leader, p.actual_payable, p.package_price_discount
             FROM core.pilgrim_data p
