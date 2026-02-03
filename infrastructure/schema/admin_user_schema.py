@@ -1,19 +1,22 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from pydantic import BaseModel, Field
 
 
 class AdminUserBase(BaseModel):
     name: str
-    email: str
+    email: Optional[str] = None
     mobile_no: str
     role: str
     passport_no: Optional[str] = None
     passport_expiry_date : Optional[str] = None
     passport_address : Optional[str] = None
     passport_dob: Optional[str] = None
-    password : str
+    password : Optional[str] = None
+    hotel_name : Optional[str] = None
+    ekama_file : Optional[Any] = None
+    others : Optional[str] = None
 
 
 class AdminUserCreate(AdminUserBase):

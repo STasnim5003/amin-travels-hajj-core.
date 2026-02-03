@@ -112,7 +112,7 @@ async def fetch_pilgrim_data_json(
                         p.passport_address, p.present_address, p.permanent_address, p.tracking_id,
                         p.serial_no, p.group_name, p.sub_group, p.registration_status, p.allocation_status,
                         p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
-                        p.vaccination_center, p.passport_copy, p.package_id, p.group_leader,
+                        p.vaccination_center, p.passport_copy, p.package_id, p.group_leader, p.actual_payable, p.package_price_discount,
                         p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment,
                         p.is_package_assigned, p.pre_reg_voucher, p.reg_voucher, p.passport_no, p.passport_dob,p.passport_expiry_date,
                          p.passport_type, p.family_code, COUNT(*) OVER() AS total_count
@@ -164,6 +164,8 @@ async def fetch_pilgrim_data_json(
                             'total_payable', total_payable,
                             'total_payment', total_payment,
                             'is_package_assigned', is_package_assigned,
+                            'actual_payable', actual_payable,
+                            'package_price_discount', package_price_discount,
                             'pre_reg_voucher', pre_reg_voucher,
                             'reg_voucher', reg_voucher,
                             'passport_no', passport_no,
