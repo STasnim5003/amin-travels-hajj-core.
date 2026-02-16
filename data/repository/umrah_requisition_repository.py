@@ -2,7 +2,7 @@ from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.model.umrah_requisition_model import UmrahRequisitionModel
+from data.model.umrah_requisition_model import UmrahRequisitionModel, UmrahVendorsPriceModel
 
 
 async def create(db: AsyncSession, data: dict):
@@ -91,4 +91,19 @@ async def update_umrah_requisition(db: AsyncSession, request_dict: dict):
 
     except Exception as e:
         await db.rollback()
+        raise e
+
+
+async def create_vendors_price(db:AsyncSession, request_dict: dict):
+    try:
+        stmt = (
+            insert(UmrahVendorsPriceModel)
+            .values(**request_dict)
+            .returning(UmrahVendorsPriceModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
         raise e

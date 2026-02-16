@@ -51,3 +51,18 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     child_service = Column(JSONB, nullable=True)
     infant_service = Column(JSONB, nullable=True)
 
+
+class UmrahVendorsPriceModel(Base, BaseMixinModel):
+    __tablename__ = "umrah_vendor_prices"
+    __table_args__ = {"schema": "core"}
+
+    id = Column(Integer, primary_key=True, index=True)
+    umrah_requisition_id = Column(Integer, nullable=False)
+    hotel_vendors_price = Column(JSONB, nullable=True)
+    transport_vendors_price = Column(JSONB, nullable=True)
+    air_ticket_vendors_price = Column(JSONB, nullable=True)
+    visa_vendors_price = Column(JSONB, nullable=True)
+    train_vendors_price = Column(JSONB, nullable=True)
+    ziara_vendors_price = Column(JSONB, nullable=True)
+    food_vendors_price = Column(JSONB, nullable=True)
+    others_vendors_price = Column(JSONB, nullable=True)

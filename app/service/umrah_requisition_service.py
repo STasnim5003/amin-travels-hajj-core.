@@ -7,7 +7,7 @@ from app.core.utils.get_current_time import get_current_time
 from data.repository import umrah_requisition_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema, \
-    UmrahRequisitionUpdateSchema
+    UmrahRequisitionUpdateSchema, UmrahVendorsPriceCreateSchema, UmrahVendorsPriceResponseSchema
 
 
 async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, agency_name: str):
@@ -44,9 +44,7 @@ async def get_umrah_requisition_by_id(db, requisition_id, agency_name):
 async def umrah_requisition_assign_service(db: AsyncSession, request: UmrahRequisitionAssignedService,
                                            agency_name: str):
     try:
-        requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
-        if not requisition:
-            raise HTTPException(status_code=400, detail='Umrah Requisition not found')
+        await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = agency_name
@@ -60,9 +58,7 @@ async def umrah_requisition_assign_service(db: AsyncSession, request: UmrahRequi
 
 async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUpdateSchema, agency_name: str):
     try:
-        requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
-        if not requisition:
-            raise HTTPException(status_code=400, detail='Umrah Requisition not found')
+        await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = agency_name
@@ -77,10 +73,7 @@ async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUp
 async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisitionConfirmationSchema,
                                          agency_name: str):
     try:
-        requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
-
-        if not requisition:
-            raise HTTPException(status_code=400, detail='Umrah Requisition not found')
+        await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = agency_name
@@ -88,6 +81,30 @@ async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisi
 
         result = await umrah_requisition_repository.umrah_requisition_confirmation(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(result)
+
+    except Exception as e:
+        raise e
+
+
+async def create_vendors_price(db: AsyncSession, request: UmrahVendorsPriceCreateSchema, agency_name:str):
+    try:
+        await requisition_availability_check(db=db, requisition_id=request.umrah_requisition_id, agency_name=agency_name)
+        request_dict = request.model_dump(exclude_none=True)
+        request_dict['created_by'] = agency_name
+        request_dict['updated_by'] = agency_name
+
+        result = await umrah_requisition_repository.create_vendors_price(db=db, request_dict=request_dict)
+        return UmrahVendorsPriceResponseSchema.model_validate(result)
+    except Exception as e:
+        raise e
+
+
+async def requisition_availability_check(db: AsyncSession, requisition_id:int ,agency_name: str):
+    try:
+        requisition = await umrah_requisition_repository.get_requisition_by_id(db, requisition_id, agency_name)
+
+        if not requisition:
+            raise HTTPException(status_code=400, detail='Umrah Requisition not found')
 
     except Exception as e:
         raise e

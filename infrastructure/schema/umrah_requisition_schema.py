@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional, Any, List
-
 from pydantic import BaseModel
 
 class UmrahRequisitionVendorPrice(BaseModel):
@@ -12,15 +11,18 @@ class UmrahRequisitionVendorPrice(BaseModel):
     per_head_price_child: Optional[float] = None
     per_head_price_infant: Optional[float] = None
 
+class UmrahRequisitionHotelType(BaseModel):
+    food: str
+    hotel_name: Optional[str] = None
+    type: str
 class UmrahRequisitionHotelSchema(BaseModel):
     city: str
-    hotel_name : str
-    type : str
+    hotels: List[UmrahRequisitionHotelType]
     distance : str
     room_type : Any
     check_in : Any
     check_out : Any
-    food: str
+
     price : Optional[UmrahRequisitionVendorPrice] = None
 
 class UmrahRequisitionTransportSchema(BaseModel):
@@ -147,3 +149,25 @@ class UmrahRequisitionResponseSchema(UmrahRequisitionAssignedService):
 
 class UmrahRequisitionListResponseSchema(BaseModel):
     umrah_requisitions: List[UmrahRequisitionResponseSchema]
+
+
+class UmrahVendorsPriceCreateSchema(BaseModel):
+    umrah_requisition_id : int
+    hotel_vendors_price : Optional[Any] = None
+    transport_vendors_price : Optional[Any] = None
+    air_ticket_vendors_price : Optional[Any] = None
+    visa_vendors_price : Optional[Any] = None
+    train_vendors_price : Optional[Any] = None
+    ziara_vendors_price : Optional[Any] = None
+    food_vendors_price : Optional[Any] = None
+    others_vendors_price : Optional[Any] = None
+
+class UmrahVendorsPriceResponseSchema(UmrahVendorsPriceCreateSchema):
+    id : int
+    created_at : Optional[datetime] = None
+    updated_at : Optional[datetime] = None
+    created_by : Optional[str] = None
+    updated_by : Optional[str] = None
+
+    class Config:
+        from_attributes = True
