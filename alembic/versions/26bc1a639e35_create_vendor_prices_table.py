@@ -31,6 +31,7 @@ def upgrade() -> None:
         sa.Column("ziara_vendors_price", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("food_vendors_price", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("others_vendors_price", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('exchange_rate', sa.Float(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(), nullable=True, server_default=sa.func.now()),
         sa.Column("created_by", sa.String(), nullable=True),

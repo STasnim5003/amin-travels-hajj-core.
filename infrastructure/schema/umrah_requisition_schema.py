@@ -153,6 +153,7 @@ class UmrahRequisitionListResponseSchema(BaseModel):
 
 class UmrahVendorsPriceCreateSchema(BaseModel):
     umrah_requisition_id : int
+    exchange_rate : float
     hotel_vendors_price : Optional[Any] = None
     transport_vendors_price : Optional[Any] = None
     air_ticket_vendors_price : Optional[Any] = None
