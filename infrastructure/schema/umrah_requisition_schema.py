@@ -171,3 +171,7 @@ class UmrahVendorsPriceResponseSchema(UmrahVendorsPriceCreateSchema):
 
     class Config:
         from_attributes = True
+
+class UmrahRequisitionWithVendorsPrice(BaseModel):
+    requisition : Optional[UmrahRequisitionResponseSchema] = None
+    vendors_price : Optional[UmrahVendorsPriceResponseSchema] = None

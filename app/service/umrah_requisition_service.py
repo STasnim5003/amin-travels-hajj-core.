@@ -7,7 +7,8 @@ from app.core.utils.get_current_time import get_current_time
 from data.repository import umrah_requisition_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema, \
-    UmrahRequisitionUpdateSchema, UmrahVendorsPriceCreateSchema, UmrahVendorsPriceResponseSchema
+    UmrahRequisitionUpdateSchema, UmrahVendorsPriceCreateSchema, UmrahVendorsPriceResponseSchema, \
+    UmrahRequisitionWithVendorsPrice
 
 
 async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, agency_name: str):
@@ -106,5 +107,20 @@ async def requisition_availability_check(db: AsyncSession, requisition_id:int ,a
         if not requisition:
             raise HTTPException(status_code=400, detail='Umrah Requisition not found')
 
+    except Exception as e:
+        raise e
+
+
+async def get_requisitions_with_vendors_price(db:AsyncSession, requisition_id:int, agency_name:str):
+    try:
+        requisition, vendors_price = await umrah_requisition_repository.get_requisition_with_vendor_price(db=db, requisition_id=requisition_id)
+
+        return UmrahRequisitionWithVendorsPrice(
+            requisition = UmrahRequisitionResponseSchema.model_validate(requisition),
+            vendors_price=(
+                UmrahVendorsPriceResponseSchema.model_validate(vendors_price)
+                if vendors_price else None
+            )
+        )
     except Exception as e:
         raise e

@@ -107,3 +107,24 @@ async def create_vendors_price(db:AsyncSession, request_dict: dict):
         return result.scalar_one_or_none()
     except Exception as e:
         raise e
+
+
+async def get_requisition_with_vendor_price(db:AsyncSession, requisition_id:int):
+    try:
+        stmt = (
+            select(UmrahRequisitionModel, UmrahVendorsPriceModel)
+            .join(
+                UmrahVendorsPriceModel,
+                UmrahVendorsPriceModel.umrah_requisition_id == UmrahRequisitionModel.id,
+                isouter=True  # LEFT JOIN (so requisition still returns if no price)
+            )
+            .where(UmrahRequisitionModel.id == requisition_id)
+        )
+
+        result = await db.execute(stmt)
+        row = result.first()
+
+        requisition, vendors_price = row
+        return requisition, vendors_price
+    except Exception as e:
+        raise e

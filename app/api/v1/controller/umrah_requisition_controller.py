@@ -8,7 +8,8 @@ from app.service import umrah_requisition_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionResponseSchema, UmrahRequisitionBase, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema, \
-    UmrahRequisitionUpdateSchema, UmrahVendorsPriceResponseSchema, UmrahVendorsPriceCreateSchema
+    UmrahRequisitionUpdateSchema, UmrahVendorsPriceResponseSchema, UmrahVendorsPriceCreateSchema, \
+    UmrahRequisitionWithVendorsPrice
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -91,3 +92,14 @@ async def create_vendors_price(
     agency_name = current_user['agency_name']
 
     return await umrah_requisition_service.create_vendors_price(db=db, request=request, agency_name=agency_name)
+
+@private_router.get("/umrah-requisition-with-vendors-price/{umrah_requisition_id}", response_model=UmrahRequisitionWithVendorsPrice,tags=['Umrah Requisition'])
+async def get_vendors_price_by_umrah_requisition_id(
+        umrah_requisition_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user : dict = Depends(get_current_user)
+):
+    if current_user['role'] != 'AGENCY':
+        raise HTTPException(status_code=403, detail='Unauthorized')
+    agency_name = current_user['agency_name']
+    return await umrah_requisition_service.get_requisitions_with_vendors_price(db=db, requisition_id=umrah_requisition_id, agency_name=agency_name)
