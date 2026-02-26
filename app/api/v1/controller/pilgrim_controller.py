@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import fastapi
 from fastapi import Depends, Query, HTTPException, UploadFile, File, Form
@@ -10,7 +10,7 @@ from app.service import pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, PilgrimFamilyGroupAssign, \
-    PilgrimDataBaseSchema, PilgrimReplaceSchema
+    PilgrimDataBaseSchema, PilgrimReplaceSchema, PilgrimArchiveSchema, ReplacedPilgrimListResponseSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -76,6 +76,28 @@ async def replace_pilgrim(
     agency_name = current_user["agency_name"]
     return await pilgrim_service.replace_pilgrim(db=db, request=request, agency_name=agency_name)
 
+@private_router.get("/pilgrim-data/replace", response_model=ReplacedPilgrimListResponseSchema, tags=["Pilgrim"])
+async def get_replaced_pilgrims(
+        db:AsyncSession = Depends(get_async_db),
+        current_user:dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await pilgrim_service.get_replaced_pilgrims(db=db, agency_name=agency_name)
+
+@private_router.put("/pilgrim-data/archive", response_model=List[PilgrimDataResponseSchema],tags=["Pilgrim"])
+async def archive_pilgrim(
+        request: PilgrimArchiveSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    agency_name = current_user["agency_name"]
+    return await pilgrim_service.archive_pilgrim(db=db, request=request, agency_name=agency_name)
 
 @public_router.post("/pilgrim/login", response_model=PilgrimLoginResponseSchema, tags=["Pilgrim"])
 async def pilgrim_login(

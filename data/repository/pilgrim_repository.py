@@ -1,11 +1,11 @@
 import json
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import HTTPException
-from sqlalchemy import text, case, update, func, select, distinct
+from sqlalchemy import text, case, update, func, select, distinct, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.model.pilgrim_data_model import PilgrimDataModel
+from data.model.pilgrim_data_model import PilgrimDataModel, ReplacedPilgrimModel
 from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema, PilgrimRegistrationRequestSchema, \
     PilgrimFamilyGroupAssign
 
@@ -383,18 +383,62 @@ async def available_family_codes(db: AsyncSession):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def replace_pilgrim(db:AsyncSession, request_dict:dict):
+async def replace_pilgrim(db:AsyncSession, request_dict:dict, replaced_dict:dict, replaced_details_dict:dict):
+    try:
+        update_stmt = (
+            update(PilgrimDataModel)
+            .where(PilgrimDataModel.id == replaced_dict['id'])
+            .values(**replaced_dict)
+            .returning(PilgrimDataModel)
+        )
+
+        result = await db.execute(update_stmt)
+
+        insert_stmt = (
+            insert(PilgrimDataModel)
+            .values(**request_dict)
+        )
+
+        await db.execute(insert_stmt)
+
+        replaced_details_insert_stmt = (
+            insert(ReplacedPilgrimModel)
+            .values(**replaced_details_dict)
+        )
+
+        await db.execute(replaced_details_insert_stmt)
+
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+async def archive_pilgrims(db:AsyncSession, tracking_ids:List[str], update_data:dict):
     try:
         stmt = (
             update(PilgrimDataModel)
-            .where(PilgrimDataModel.id == request_dict['id'])
-            .values(**request_dict)
+            .where(PilgrimDataModel.tracking_id.in_(tracking_ids))
+            .values(**update_data)
             .returning(PilgrimDataModel)
         )
 
         result = await db.execute(stmt)
         await db.commit()
-        return result.scalar_one_or_none()
+        return result.scalars().all()
     except Exception as e:
         await db.rollback()
+        raise e
+
+
+async def get_replaced_pilgrims(db:AsyncSession, agency_name:str):
+    try:
+        stmt = (
+            select(ReplacedPilgrimModel)
+            .where(ReplacedPilgrimModel.agency_name == agency_name)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
         raise e

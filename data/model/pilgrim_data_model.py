@@ -60,3 +60,14 @@ class PilgrimDataModel(Base, BaseMixinModel):
     passport_type = Column(String, nullable=True)
     family_code = Column(String, nullable=True)
     sub_group = Column(String, nullable=True)
+
+class ReplacedPilgrimModel(Base, BaseMixinModel):
+    __tablename__ = 'replaced_pilgrim'
+    __table_args__ = {'schema': 'core'}
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    tracking_id = Column(String, nullable=False)
+    name_en = Column(String, nullable=False)
+    replaced_tracking_id = Column(String, nullable=False)
+    replaced_name_en = Column(String, nullable=False)
+    agency_name = Column(String, nullable=False)

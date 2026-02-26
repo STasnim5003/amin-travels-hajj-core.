@@ -12,11 +12,13 @@ from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import verify_pilgrim_password, create_access_token_for_pilgrim, \
     create_refresh_token_for_pilgrim
 from app.service import view_field_service
+from data.model.pilgrim_data_model import ReplacedPilgrimModel
 from data.repository import pilgrim_repository, file_repository
 from data.repository.pilgrim_repository import fetch_pilgrim_data_json
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
-    PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign, PilgrimDataBaseSchema, PilgrimReplaceSchema
+    PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign, PilgrimDataBaseSchema, PilgrimReplaceSchema, \
+    PilgrimArchiveSchema, ReplacedPilgrimResponseSchema, ReplacedPilgrimListResponseSchema
 
 
 async def get_pilgrim_data(db: AsyncSession,
@@ -184,7 +186,7 @@ async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_
         if pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="Pilgrim group name does not match.")
 
-        request_dict = request.model_dump()
+        request_dict = request.model_dump(exclude={"id"})
 
         request_dict.update({
             "total_payment": 0,
@@ -196,6 +198,8 @@ async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_
             "is_package_assigned": False,
             "allocation_status": "ASSIGNED",
             "registration_status": "REGISTERED",
+            "preliminary_password" : pilgrim.preliminary_password,
+            "password": pilgrim.password,
             "is_assigned": True,
             "created_by": agency_name,
             "updated_by": agency_name,
@@ -203,7 +207,57 @@ async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_
             "updated_at": get_current_time(),
         })
 
-        result = await pilgrim_repository.replace_pilgrim(db=db, request_dict=request_dict)
+        replaced_dict = {
+            "id" : request.id,
+            "registration_status" : "REPLACED"
+        }
+
+        replaced_details_dict = {
+            "tracking_id" : request.tracking_id,
+            "name_en" : request.name_en,
+            "replaced_tracking_id" : pilgrim.tracking_id,
+            "replaced_name_en" : pilgrim.name_en,
+            "agency_name" : agency_name,
+            "created_by" : agency_name,
+            "updated_by" : agency_name
+        }
+
+        result = await pilgrim_repository.replace_pilgrim(db=db, request_dict=request_dict, replaced_dict=replaced_dict, replaced_details_dict=replaced_details_dict)
         return PilgrimDataResponseSchema.model_validate(result)
+    except Exception as e:
+        raise e
+
+
+async def archive_pilgrim(db:AsyncSession, request:PilgrimArchiveSchema, agency_name:str):
+    try:
+        pilgrims = await pilgrim_repository.get_pilgrims_by_tracking_ids(db, request.tracking_ids)
+
+        if not pilgrims:
+            raise HTTPException(status_code=400, detail="No pilgrims found.")
+
+        update_data = request.model_dump(exclude={"tracking_ids"})
+
+        update_data["updated_by"] = agency_name
+        update_data["updated_at"] = get_current_time()
+
+        updated_pilgrims = await pilgrim_repository.archive_pilgrims(
+            db,
+            tracking_ids=request.tracking_ids,
+            update_data=update_data
+        )
+        return [PilgrimDataResponseSchema.model_validate(r) for r in updated_pilgrims]
+    except Exception as e:
+        raise e
+
+
+async def get_replaced_pilgrims(db, agency_name):
+    try:
+        replaced_pilgrims = await pilgrim_repository.get_replaced_pilgrims(db, agency_name)
+        return ReplacedPilgrimListResponseSchema(
+            replaced_pilgrims=[
+                ReplacedPilgrimResponseSchema.model_validate(r)
+                for r in replaced_pilgrims
+            ]
+        )
     except Exception as e:
         raise e
