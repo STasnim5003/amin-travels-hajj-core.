@@ -11,12 +11,20 @@ class AdminUserBase(BaseModel):
     role: str
     passport_no: Optional[str] = None
     passport_expiry_date : Optional[str] = None
-    passport_address : Optional[str] = None
     passport_dob: Optional[str] = None
     password : Optional[str] = None
     hotel_name : Optional[str] = None
     ekama_file : Optional[Any] = None
     others : Optional[str] = None
+    ekama_file : Optional[Any] = None
+    nid : Optional[str] = None
+    tracking_id : Optional[str] = None
+    dob : Optional[str] = None
+    ksa_mobile: Optional[str] = None
+    gender: Optional[str] = None
+
+    class Config:
+        from_attributes=True
 
 
 class AdminUserCreate(AdminUserBase):

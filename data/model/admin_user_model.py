@@ -1,5 +1,6 @@
 
 from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import BaseMixinModel, Base
 
@@ -26,3 +27,11 @@ class AdminUserModel(Base, BaseMixinModel):
     total_payment = Column(Integer, nullable=True)
     total_available_amount = Column(Integer, nullable=True)
     is_payment_distributed = Column(Boolean, nullable=True)
+    hotel_name = Column(String, nullable=True)
+    others = Column(String, nullable=True)
+    ekama_file = Column(JSONB, nullable=True)
+    nid = Column(String, nullable=True)
+    tracking_id = Column(String, nullable=True)
+    dob = Column(String, nullable=True)
+    ksa_mobile = Column(String, nullable=True)
+    gender = Column(String, nullable=True)

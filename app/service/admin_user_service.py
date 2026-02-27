@@ -22,22 +22,62 @@ async def get_user(db: AsyncSession, user_id: int, agency_name : str):
 
 
 async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:str):
-    hashed_password = hash_password(user_data.password)
-    user_data.password = hashed_password
+    try:
+        hashed_password = hash_password(user_data.password)
+        main_password = user_data.password
+        user_data.password = hashed_password
 
-    role_code_map = {
-        "GROUP_LEADER": "GL",
-        "STAFF": "ST",
-        "SAUDI_REPRESENTATIVE": "SR"
-    }
+        role_code_map = {
+            "GROUP_LEADER": "GL",
+            "STAFF": "ST",
+            "SAUDI_REPRESENTATIVE": "SR"
+        }
 
-    code_suffix = role_code_map.get(user_data.role, "GEN")
-    code = f"{agency_name}_{code_suffix}_{user_data.name.replace(' ', '').upper()}"
+        code_suffix = role_code_map.get(user_data.role, None)
+        code = None
+        if code_suffix:
+            code = f"{agency_name}_{code_suffix}_{user_data.name.replace(' ', '').upper()}"
 
-    existing_user = await admin_user_repository.get_by_mobile_passport(db, user_data)
-    if existing_user:
-        raise HTTPException(status_code=404, detail="Username already exists")
-    return await admin_user_repository.create_admin_user(db, user_data, agency_name, code)
+        existing_user = await admin_user_repository.get_by_mobile_passport(db, user_data)
+        if existing_user:
+            raise HTTPException(status_code=404, detail="User already exists")
+
+        user_data_dict = user_data.model_dump(exclude_none=True)
+        user_data_dict['agency_name'] = agency_name
+        user_data_dict['code'] = code
+
+        guide_data_dict = {}
+        if user_data.role == "GUIDE":
+            guide_data_dict.update({
+                'name_en' : user_data.name,
+                'tracking_id': user_data.tracking_id,
+                'date_of_birth': user_data.dob,
+                'mobile_no': user_data.mobile_no,
+                'gender': user_data.gender,
+                'nid': user_data.nid,
+                'passport_no': user_data.passport_no,
+                'group_name': agency_name,
+                "total_payment": 0,
+                "total_payable": 0,
+                "total_due": 0,
+                "total_available_amount": 0,
+                "package_price_discount": 0,
+                "actual_payable": 0,
+                "is_package_assigned": False,
+                "allocation_status": "ASSIGNED",
+                "registration_status": "REGISTERED",
+                "preliminary_password": main_password,
+                "password": hashed_password,
+                "is_assigned": True,
+                "created_by": agency_name,
+                "updated_by": agency_name,
+                'passport_dob': user_data.passport_dob,
+                'passport_expiry_date': user_data.passport_expiry_date,
+            })
+        result = await admin_user_repository.create_admin_user(db, user_data_dict, guide_data_dict)
+        return AdminUserResponse.model_validate(result)
+    except Exception as e:
+        raise e
 
 async def admin_user_login(db: AsyncSession, request_credential: OAuth2PasswordRequestForm):
     user = await admin_user_repository.get_admin_user_by_code(db, code=request_credential.username)

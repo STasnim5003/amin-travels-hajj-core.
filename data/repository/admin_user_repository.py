@@ -1,12 +1,12 @@
 from fastapi import HTTPException
-from sqlalchemy import select, or_, and_, update, func
+from sqlalchemy import select, or_, and_, update, func, insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
 from data.model.admin_user_model import AdminUserModel
 from data.model.pilgrim_data_model import PilgrimDataModel
-from infrastructure.schema.admin_user_schema import AdminUserCreate, GroupLeaderAssignSchema
+from infrastructure.schema.admin_user_schema import AdminUserCreate, GroupLeaderAssignSchema, AdminUserResponse
 from infrastructure.schema.pilgrim_data_schema import PilgrimMinimalResponseSchema, \
     PilgrimResponseForAdminUser
 
@@ -47,17 +47,26 @@ async def get_by_mobile_passport(db: AsyncSession, userdata: AdminUserCreate):
     return result.scalars().first()
 
 
-async def create_admin_user(db: AsyncSession, admin_user: AdminUserCreate, agency_name: str, code: str):
+async def create_admin_user(db: AsyncSession, user_data_dict: dict, guide_data_dict:dict):
     try:
-        user_data = admin_user.model_dump()
-        user_data['agency_name'] = agency_name
-        user_data["code"] = code
-        new_user = AdminUserModel(**user_data)
-        db.add(new_user)
+        stmt = (
+            insert(AdminUserModel)
+            .values(**user_data_dict)
+            .returning(AdminUserModel)
+        )
+        result = await db.execute(stmt)
+
+        if guide_data_dict:
+            stmt = (
+                insert(PilgrimDataModel)
+                .values(**guide_data_dict)
+            )
+            await db.execute(stmt)
+
         await db.commit()
-        await db.refresh(new_user)
-        return new_user
+        return result.scalar_one_or_none()
     except Exception as e:
+        await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
 
