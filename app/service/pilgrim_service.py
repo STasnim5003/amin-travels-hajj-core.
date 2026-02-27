@@ -203,6 +203,7 @@ async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_
             "is_assigned": True,
             "created_by": agency_name,
             "updated_by": agency_name,
+            "group_name": agency_name,
             "created_at": get_current_time(),
             "updated_at": get_current_time(),
         })
