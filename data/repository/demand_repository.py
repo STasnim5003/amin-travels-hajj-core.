@@ -5,10 +5,10 @@ async def get_flight_demand(db:AsyncSession, agency_name: str):
     try:
         query = text("""
             SELECT
-                (p.flight_date ->> 'english_calendar_start')::date AS english_start,
-                (p.flight_date ->> 'arabic_calendar_start')::date AS arabic_start,
-                (p.flight_date ->> 'arabic_calendar_end')::date AS arabic_end,
-                (p.flight_date ->> 'english_calendar_end')::date AS english_end,
+                (p.flight_date ->> 'english_calendar_start') AS english_start,
+                (p.flight_date ->> 'arabic_calendar_start') AS arabic_start,
+                (p.flight_date ->> 'arabic_calendar_end') AS arabic_end,
+                (p.flight_date ->> 'english_calendar_end') AS english_end,
                 COUNT(pd.id) AS pilgrim_count
             FROM core.pilgrim_data pd
             JOIN core.packages p
