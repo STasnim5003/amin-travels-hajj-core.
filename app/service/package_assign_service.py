@@ -3,7 +3,7 @@ import string
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import case
+from sqlalchemy import case, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
@@ -25,14 +25,6 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
 async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, duration: int, agency_name: str):
     return await package_assign_repository.get_bed_types_by_package_name(db, package_name, duration, agency_name)
 
-
-async def assign_package(db: AsyncSession, request: PackageAssignSchema, agency_name: str):
-    try:
-        return await package_assign_repository.assign_package(db, request, agency_name)
-    except Exception as e:
-        raise e
-
-
 async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdateSchema, agency_name: str):
     try:
         if request.total_payable <= 0 or request.package_price_discount < 0:
@@ -48,11 +40,12 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
 
         total_payable = request.total_payable
         total_payment = pilgrim.total_payment
+        discount = request.package_price_discount
 
         request_dict = request.model_dump(exclude_unset=True)
-        request_dict['total_available_amount'] = max(0, total_payment - total_payable)
-        request_dict['total_due'] = max(0, total_payable - total_payment)
-        request_dict['actual_payable'] = total_payable - request.package_price_discount
+        request_dict['total_available_amount'] = max(0, total_payment - (total_payable - discount))
+        request_dict['total_due'] = max(0, total_payable - discount - total_payment)
+        request_dict['actual_payable'] = total_payable - discount
         request_dict['updated_by'] = agency_name
         request_dict['updated_at'] = get_current_time()
 
@@ -62,7 +55,7 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
         pilgrim_payable_info = {
             "description": "Updated Package Bill",
             "date": datetime.today().strftime("%Y-%m-%d"),
-            "amount": request.total_payable,
+            "amount": request.total_payable - (request.package_price_discount or 0),
             "tracking_id": request.tracking_id,
             "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
             "updated_by": agency_name,
@@ -98,43 +91,66 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
             if pilgrim.group_name != agency_name:
                 raise HTTPException(status_code=403, detail=f"Agency name mismatched for {pilgrim.tracking_id}")
 
+        extra_payable = request.total_payable or 0
+        discount = request.package_price_discount or 0
+
         case_total_payable_for_pilgrims = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                pilgrim.total_payable + (request.total_payable or 0)
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_payable
-        )
-
-        case_total_due_for_pilgrims = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                max(0, (pilgrim.total_payable + (request.total_payable or 0)) - (pilgrim.total_payment or 0))
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_due
-        )
-
-        case_total_available_for_pilgrims = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                max(0, (pilgrim.total_payment or 0) - (pilgrim.total_payable + (request.total_payable or 0)))
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_available_amount
+            *(
+                (
+                    PilgrimDataModel.tracking_id == pilgrim.tracking_id,
+                    pilgrim.total_payable + extra_payable,
+                )
+                for pilgrim in pilgrims
+            ),
+            else_=PilgrimDataModel.total_payable,
         )
 
         case_actual_payable_for_pilgrims = case(
-            *((
-                PilgrimDataModel.tracking_id == pilgrim.tracking_id,
-                (pilgrim.total_payable + (request.total_payable or 0) - request.package_price_discount)
-            ) for pilgrim in pilgrims),
-            else_=PilgrimDataModel.total_payable
+            *(
+                (
+                    PilgrimDataModel.tracking_id == pilgrim.tracking_id,
+                    pilgrim.actual_payable + extra_payable - discount,
+                )
+                for pilgrim in pilgrims
+            ),
+            else_=PilgrimDataModel.actual_payable,
+        )
+
+        case_total_due_for_pilgrims = case(
+            *(
+                (
+                    PilgrimDataModel.tracking_id == pilgrim.tracking_id,
+                    func.greatest(
+                        0,
+                        (pilgrim.actual_payable + extra_payable - discount)
+                        - (pilgrim.total_payment or 0),
+                    ),
+                )
+                for pilgrim in pilgrims
+            ),
+            else_=PilgrimDataModel.total_due,
+        )
+
+        case_total_available_for_pilgrims = case(
+            *(
+                (
+                    PilgrimDataModel.tracking_id == pilgrim.tracking_id,
+                    func.greatest(
+                        0,
+                        (pilgrim.total_payment or 0)
+                        - (pilgrim.actual_payable + extra_payable - discount),
+                    ),
+                )
+                for pilgrim in pilgrims
+            ),
+            else_=PilgrimDataModel.total_available_amount,
         )
 
         pilgrim_payments_data = [
             {
                 "description": "Package Bill",
                 "date": datetime.today().strftime("%Y-%m-%d"),
-                "amount": request.total_payable,
+                "amount": request.total_payable - (request.package_price_discount or 0),
                 "tracking_id": tracking_id,
                 "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
                 "created_by": agency_name,
@@ -168,11 +184,11 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
             raise HTTPException(status_code=400, detail="Pilgrim Agency Name Mismatch")
 
         total_payment = pilgrim.total_payment or 0
-
         total_payable = request.total_payable
-        total_due = max(total_payable - total_payment, 0)
-        total_available_amount = max(total_payment - total_payable, 0)
         package_price_discount = request.package_price_discount or 0
+
+        total_due = max(total_payable - package_price_discount - total_payment, 0)
+        total_available_amount = max(total_payment - (total_payable - package_price_discount), 0)
         total_actual_payable = total_payable - package_price_discount
 
         # pilgrim package and finance info update
@@ -197,7 +213,7 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
         pilgrim_payable_info = {
             "description": "Updated Package Bill",
             "date": datetime.today().strftime("%Y-%m-%d"),
-            "amount": request.total_payable,
+            "amount": request.total_payable - (request.package_price_discount or 0),
             "tracking_id": request.tracking_id,
             "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
             "updated_by": agency_name,

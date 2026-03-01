@@ -86,7 +86,7 @@ async def create_payment_for_pilgrim(
         except Exception as e:
             raise e
 
-    prev_total_payable = pilgrim.total_payable or 0
+    prev_total_payable = pilgrim.actual_payable or 0
     prev_total_payment = pilgrim.total_payment or 0
 
     new_total_payment = prev_total_payment + payment_data.amount
@@ -279,7 +279,7 @@ async def update_payment(db: AsyncSession, payment_update_schema: PaymentUpdateS
         if payment_update_schema.amount and existing_payment.amount != payment_update_schema.amount and existing_payment.tracking_id:
             pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, existing_payment.tracking_id)
 
-            curr_payable = pilgrim.total_payable
+            curr_payable = pilgrim.actual_payable
             curr_payment = pilgrim.total_payment
 
             total_payment = curr_payment - existing_payment.amount + payment_update_schema.amount
@@ -350,7 +350,7 @@ async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
                 name=pilgrim.name_en,
                 mobile_no=pilgrim.mobile_no,
                 total_payable=pilgrim.total_payable,
-                total_due=max(pilgrim.actual_payable - pilgrim.total_payment, 0),
+                total_due=pilgrim.total_due,
                 total_available_amount=pilgrim.total_available_amount,
                 total_payment=pilgrim.total_payment,
                 actual_payable = pilgrim.actual_payable,
