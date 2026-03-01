@@ -75,6 +75,11 @@ async def create_payment_for_pilgrim(
         if not pilgrim or pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="Pilgrim with tracking id not found")
 
+        if payment_data.voucher_no:
+            is_voucher_num_exist = await pilgrim_payment_repository.is_voucher_no_exist(db=db, voucher_no = payment_data.voucher_no)
+            if is_voucher_num_exist:
+                raise HTTPException(status_code=400, detail="Voucher number already exists")
+
     except Exception as e:
         raise e
 

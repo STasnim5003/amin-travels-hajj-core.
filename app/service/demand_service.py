@@ -1,4 +1,5 @@
-from typing import List
+from collections import defaultdict
+from typing import List, Dict
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,7 +40,6 @@ async def get_route_demand(db: AsyncSession, agency_name: str):
         route_demands: List[RouteDemandResponse] = [
             RouteDemandResponse(
                 route_name=row["description"],
-                package_name=row["package_name"],
                 package_duration=row["package_duration"],
                 number_of_hajji=row["pilgrim_count"]
             )
@@ -64,5 +64,25 @@ async def get_food_demand(db: AsyncSession, agency_name: str):
         ]
 
         return FoodDemandListResponse(food_demands=food_demands)
+    except Exception as e:
+        raise e
+
+async def get_hotel_demand(db:AsyncSession, agency_name : str):
+    try:
+        rows = await demand_repository.get_hotel_demand(db=db, agency_name=agency_name)
+
+        response: Dict[str, List[dict]] = defaultdict(list)
+
+        for row in rows:
+            response[row["city"]].append({
+                "checkin": row["checkin"],
+                "checkout": row["checkout"],
+                "package_name": row["package_name"],
+                "package_duration": row["package_duration"],
+                "category": row["category"],
+                "room_and_number_of_hajji": row["room_and_number_of_hajji"],
+            })
+
+        return dict(response)
     except Exception as e:
         raise e

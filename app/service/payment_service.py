@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.utils import num_to_words
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.get_current_time import get_current_time
-from data.repository import payment_repository, admin_user_repository, pilgrim_repository, file_repository
+from data.repository import payment_repository, admin_user_repository, pilgrim_repository, file_repository, \
+    pilgrim_payment_repository
 from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGroupLeader, \
     PayableInfoUpdateSchema, \
     GroupLeaderPayableBaseSchema, GroupLeaderPaymentBaseSchema, OverallSummarySchema, \
@@ -69,6 +70,12 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
         existing_group_leader = await admin_user_repository.get_admin_user_by_code(db, request.group_leader)
         if not existing_group_leader or existing_group_leader.agency_name != agency_name:
             raise HTTPException(status_code=400, detail="Group leader does not exist")
+
+        if request.voucher_no:
+            is_voucher_num_exist = await pilgrim_payment_repository.is_voucher_no_exist(db=db,voucher_no=request.voucher_no)
+            if is_voucher_num_exist:
+                raise HTTPException(status_code=400, detail="Voucher number already exists")
+
     except Exception as e:
         raise e
 
@@ -194,12 +201,18 @@ async def get_agency_payments(
 
             name = payments[0].get("username")
             mobile_no = payments[0].get("mobile_no")
+            actual_payable = payments[0].get("actual_payable")
+            total_payment = payments[0].get("actual_payment")
+            total_due = payments[0].get("total_due")
 
             base_fields = {field: None for field in payment_fields}
             base_fields.update({
                 "name": key,
                 "username": name,
                 "mobile_no": mobile_no,
+                "actual_payable" : actual_payable,
+                "total_payment" : total_payment,
+                "total_due" : total_due,
                 "children": payments
             })
 

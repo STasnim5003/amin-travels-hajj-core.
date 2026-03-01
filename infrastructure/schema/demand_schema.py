@@ -15,7 +15,6 @@ class FlightDemandListResponse(BaseModel):
 
 class RouteDemandResponse(BaseModel):
     route_name : str
-    package_name : str
     package_duration : int
     number_of_hajji : int = 0
 

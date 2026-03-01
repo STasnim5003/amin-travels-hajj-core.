@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import insert, update, select, text, func
+from sqlalchemy import insert, update, select, text, func, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -270,3 +270,12 @@ async def get_pilgrim_payment_ledger(db: AsyncSession, tracking_id: str):
         return result.scalars().all()
     except Exception as e:
         raise e
+
+
+async def is_voucher_no_exist(db: AsyncSession, voucher_no: str) -> bool:
+    stmt = select(
+        exists().where(PaymentModel.voucher_no == voucher_no)
+    )
+
+    result = await db.execute(stmt)
+    return result.scalar()

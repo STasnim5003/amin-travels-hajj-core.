@@ -83,6 +83,9 @@ class GroupedPayment(BaseModel):
     name: Optional[str] = None
     username: Optional[str] = None
     mobile_no: Optional[str] = None
+    actual_payable : Optional[int] = None
+    total_payment : Optional[int] = None
+    total_due: Optional[int] = None
     id: Optional[int] = None
     tracking_id: Optional[str] = None
     group_leader: Optional[str] = None
