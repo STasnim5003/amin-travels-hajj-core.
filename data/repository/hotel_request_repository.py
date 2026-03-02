@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import HTTPException
-from sqlalchemy import insert, select, update, delete, func
+from sqlalchemy import insert, select, update, delete, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_model import AdminModel
@@ -45,13 +45,25 @@ async def create_hotel_request(db: AsyncSession, request_dict: dict):
         raise e
 async def get_hotel_requests(db: AsyncSession, agency_name: List[str]):
     try:
-        stmt = (
-            select(HotelRequestModel)
-            .where(HotelRequestModel.agency_name.in_(agency_name))
-        )
+        query = """
+            SELECT
+                tasria_number,
+                (t.check_in ->> 'english_calendar') AS check_in,
+                (t.check_out ->> 'english_calendar') AS check_out,
+                rfq_no,
+                COUNT(*) AS merge_count,
+                jsonb_agg(to_jsonb(t) ORDER BY id DESC) AS rows_json
+            FROM core.hotel_request t
+            WHERE t.agency_name = ANY(:agency_name)
+            GROUP BY tasria_number, check_in, check_out, rfq_no;
+        """
 
-        result = await db.execute(stmt)
-        return result.scalars().all()
+
+        result=await db.execute(
+            text(query),
+            {"agency_name": agency_name}
+        )
+        return result.mappings().all()
     except Exception as e:
         raise e
 

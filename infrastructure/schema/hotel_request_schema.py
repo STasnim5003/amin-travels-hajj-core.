@@ -54,8 +54,16 @@ class HotelRequestResponseSchema(HotelRequestBase):
     class Config:
         from_attributes = True
 
+class HotelRequestMergedResponseSchema(BaseModel):
+    tasria_number: int | None
+    check_in: str | None
+    check_out: str | None
+    rfq_no: int | None
+    merge_count: int
+    rows_json: List[Any]
+
 class HotelRequestListResponseSchema(BaseModel):
-    hotel_requests: List[HotelRequestResponseSchema]
+    hotel_requests: List[HotelRequestMergedResponseSchema]
 
 class HotelRequestUpdateSchema(BaseModel):
     id: int

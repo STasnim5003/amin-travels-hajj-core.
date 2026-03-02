@@ -22,7 +22,8 @@ async def create_zone_request(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]
-    return await zone_request_service.create_zone_request(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await zone_request_service.create_zone_request(db=db, request=request, agency_name=agency_name, username=username)
 
 
 @private_router.put("/zone-request", response_model=ZoneRequestResponseSchema, tags=["Zone Request"])
@@ -36,7 +37,8 @@ async def update_zone_request(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]
-    return await zone_request_service.update_zone_request(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await zone_request_service.update_zone_request(db=db, request=request, agency_name=agency_name, username=username)
 
 
 @private_router.get("/zone-request", response_model=ZoneRequestListResponseSchema, tags=["Zone Request"])

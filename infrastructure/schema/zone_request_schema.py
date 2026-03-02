@@ -1,13 +1,10 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
 
 class ZoneRequestBaseSchema(BaseModel):
     total_pilgrims: Optional[int] = 0
-    zone_wise_tent_in_mina: Optional[str] = None
-    zone_wise_pilgrims: Optional[int] = 0
-    service_company_in_mina_arafat: Optional[str] = None
-    package_in_mina_arafat: Optional[str] = None
+    details : Optional[Any] = None
     remarks: Optional[str] = None
 
 
@@ -16,10 +13,7 @@ class ZoneRequestCreateSchema(ZoneRequestBaseSchema):
 
 class ZoneRequestUpdateSchema(BaseModel):
     id: int
-    zone_wise_tent_in_mina: Optional[str] = None
-    zone_wise_pilgrims: Optional[int] = None
-    service_company_in_mina_arafat: Optional[str] = None
-    package_in_mina_arafat: Optional[str] = None
+    details: Optional[Any] = None
     remarks: Optional[str] = None
     total_pilgrims: Optional[int] = None
     is_active: Optional[bool] = None

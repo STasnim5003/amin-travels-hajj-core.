@@ -3,23 +3,24 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
 from data.repository import zone_request_repository, admin_repository
 from infrastructure.schema.zone_request_schema import ZoneRequestCreateSchema, ZoneRequestResponseSchema, \
     ZoneRequestUpdateSchema, ZoneRequestListResponseSchema
 
 
-async def create_zone_request(db: AsyncSession, request: ZoneRequestCreateSchema, agency_name: str):
+async def create_zone_request(db: AsyncSession, request: ZoneRequestCreateSchema, agency_name: str, username:str):
     request_dict = request.model_dump()
     request_dict['agency_name'] = agency_name
-    request_dict['updated_by'] = agency_name
-    request_dict['created_by'] = agency_name
+    request_dict['updated_by'] = username
+    request_dict['created_by'] = username
 
     result = await zone_request_repository.create(db, request_dict)
     return ZoneRequestResponseSchema.model_validate(result)
 
 
-async def update_zone_request(db: AsyncSession, request: ZoneRequestUpdateSchema, agency_name: str):
+async def update_zone_request(db: AsyncSession, request: ZoneRequestUpdateSchema, agency_name: str, username:str):
     try:
         zone_request = await zone_request_repository.get_by_id(db, request.id)
 
@@ -34,8 +35,8 @@ async def update_zone_request(db: AsyncSession, request: ZoneRequestUpdateSchema
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         update_data = request.model_dump(exclude_unset=True, exclude_none=True)
-        update_data["updated_by"] = agency_name
-        update_data["updated_at"] = datetime.utcnow() + timedelta(hours=6)  # Bangladesh time
+        update_data["updated_by"] = username
+        update_data["updated_at"] = get_current_time()
 
         result = await zone_request_repository.update_zone_request(db, request.id, update_data)
         return ZoneRequestResponseSchema.model_validate(result)

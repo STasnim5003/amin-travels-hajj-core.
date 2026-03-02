@@ -6,7 +6,7 @@ from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
 from data.repository import hotel_request_repository, admin_repository
 from infrastructure.schema.hotel_request_schema import HotelRequestBase, HotelRequestResponseSchema, \
-    HotelRequestListResponseSchema, HotelRequestUpdateSchema
+    HotelRequestListResponseSchema, HotelRequestUpdateSchema, HotelRequestMergedResponseSchema
 
 
 async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str):
@@ -41,7 +41,7 @@ async def get_hotel_requests(db: AsyncSession, agency_name: str):
 
         result = await hotel_request_repository.get_hotel_requests(db=db, agency_name=child_agencies)
         hotel_requests = [
-            HotelRequestResponseSchema.model_validate(item)
+            HotelRequestMergedResponseSchema.model_validate(item)
             for item in result
         ]
 
