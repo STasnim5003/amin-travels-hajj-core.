@@ -190,7 +190,7 @@ async def get_payment_summary_for_agency(
                     END AS mobile_no,
                     pd.actual_payable AS actual_payable,
                     pd.total_payment AS actual_payment,
-                    pd.total_due AS total_due
+                    pd.total_due AS actual_due
                 FROM core.payment p
                 LEFT JOIN core.bank_info b 
                     ON p.bank_info_id = b.id
@@ -231,7 +231,7 @@ async def get_payment_summary_for_agency(
                             'mobile_no', f.mobile_no,
                             'actual_payable', f.actual_payable,
                             'actual_payment', f.actual_payment,
-                            'total_due', f.total_due,
+                            'actual_due', f.actual_due,
                             'voucher_no', f.voucher_no,
                             'cheque_no', f.cheque_no,
                             'cheque_bank', f.cheque_bank,

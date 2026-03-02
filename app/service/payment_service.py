@@ -201,16 +201,16 @@ async def get_agency_payments(
 
             name = payments[0].get("username")
             mobile_no = payments[0].get("mobile_no")
-            actual_payable = payments[0].get("actual_payable")
+            total_payable = payments[0].get("actual_payable")
             total_payment = payments[0].get("actual_payment")
-            total_due = payments[0].get("total_due")
+            total_due = payments[0].get("actual_due")
 
             base_fields = {field: None for field in payment_fields}
             base_fields.update({
                 "name": key,
                 "username": name,
                 "mobile_no": mobile_no,
-                "actual_payable" : actual_payable,
+                "actual_payable" : total_payable,
                 "total_payment" : total_payment,
                 "total_due" : total_due,
                 "children": payments
