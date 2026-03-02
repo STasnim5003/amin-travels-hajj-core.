@@ -46,6 +46,20 @@ async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:
         user_data_dict['agency_name'] = agency_name
         user_data_dict['code'] = code
 
+        admin_dict = {}
+        if user_data.role == "STAFF":
+            admin_dict.update({
+                'user_name' : user_data.name,
+                'password' : hashed_password,
+                'role' : "AGENCY",
+                'agency_name' : agency_name,
+                'mobile_no' : user_data.mobile_no,
+                'email' : user_data.email,
+                'bdt' : 0,
+                'sar' : 0,
+                'license_number' : agency_name
+            })
+
         guide_data_dict = {}
         if user_data.role == "GUIDE":
             guide_data_dict.update({
@@ -74,7 +88,7 @@ async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:
                 'passport_dob': user_data.passport_dob,
                 'passport_expiry_date': user_data.passport_expiry_date,
             })
-        result = await admin_user_repository.create_admin_user(db, user_data_dict, guide_data_dict)
+        result = await admin_user_repository.create_admin_user(db, user_data_dict, guide_data_dict, admin_dict)
         return AdminUserResponse.model_validate(result)
     except Exception as e:
         raise e

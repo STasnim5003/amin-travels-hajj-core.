@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
+from data.model.admin_model import AdminModel
 from data.model.admin_user_model import AdminUserModel
 from data.model.pilgrim_data_model import PilgrimDataModel
 from infrastructure.schema.admin_user_schema import AdminUserCreate, GroupLeaderAssignSchema, AdminUserResponse
@@ -47,7 +48,7 @@ async def get_by_mobile_passport(db: AsyncSession, userdata: AdminUserCreate):
     return result.scalars().first()
 
 
-async def create_admin_user(db: AsyncSession, user_data_dict: dict, guide_data_dict:dict):
+async def create_admin_user(db: AsyncSession, user_data_dict: dict, guide_data_dict:dict, admin_dict:dict):
     try:
         stmt = (
             insert(AdminUserModel)
@@ -60,6 +61,12 @@ async def create_admin_user(db: AsyncSession, user_data_dict: dict, guide_data_d
             stmt = (
                 insert(PilgrimDataModel)
                 .values(**guide_data_dict)
+            )
+            await db.execute(stmt)
+        if admin_dict:
+            stmt = (
+                insert(AdminModel)
+                .values(**admin_dict)
             )
             await db.execute(stmt)
 

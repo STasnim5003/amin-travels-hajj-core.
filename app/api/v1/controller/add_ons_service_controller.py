@@ -19,7 +19,8 @@ async def create_add_ons(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await add_ons_service.create_add_ons(db, request, agency_name)
+    username = current_user["username"]
+    return await add_ons_service.create_add_ons(db, request, agency_name,username)
 
 @private_router.get("/add-ons-service", response_model=list[AddOnsServiceResponse], tags = ["Add-Ons"])
 async def list_add_on_services(
@@ -40,7 +41,8 @@ async def update_add_on_service(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await add_ons_service.update_add_ons_service(db, update_request, agency_name)
+    username = current_user["username"]
+    return await add_ons_service.update_add_ons_service(db, update_request, agency_name,username)
 
 @private_router.get("/add-ons-service/{service_id}", response_model=AddOnsServiceResponse, tags = ["Add-Ons"])
 async def get_add_on_service(

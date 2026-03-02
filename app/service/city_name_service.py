@@ -5,12 +5,12 @@ from infrastructure.schema.city_name_schema import CityNameCreateSchema, CityNam
     CityNameListResponseSchema
 
 
-async def create_city_name(db:AsyncSession, request : CityNameCreateSchema, agency_name : str):
+async def create_city_name(db:AsyncSession, request : CityNameCreateSchema, agency_name : str,username:str):
     try:
         request_dict = request.model_dump()
         request_dict['agency_name'] = agency_name
-        request_dict['created_by'] = agency_name
-        request_dict['updated_by'] = agency_name
+        request_dict['created_by'] = username
+        request_dict['updated_by'] = username
 
         result = await city_name_repository.create_city_name(db,request_dict)
         return CityNameResponseSchema.model_validate(result)

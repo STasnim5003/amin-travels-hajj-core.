@@ -20,8 +20,8 @@ async def create_city_name(
     if current_user['role'] != 'AGENCY':
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user['agency_name']
-
-    return await city_name_service.create_city_name(db, request,agency_name)
+    username = current_user["username"]
+    return await city_name_service.create_city_name(db, request,agency_name, username)
 
 @private_router.get("/city-name", response_model=CityNameListResponseSchema, tags=['City Name'])
 async def get_city_names(

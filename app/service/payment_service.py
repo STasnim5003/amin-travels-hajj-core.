@@ -16,7 +16,7 @@ from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGrou
 
 
 async def create_payable_for_group_leader(db: AsyncSession, payment_request: GroupLeaderPayableBaseSchema,
-                                          agency_name: str):
+                                          agency_name: str, username:str):
     if payment_request.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
@@ -34,8 +34,8 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
     payment_data = payment_request.model_dump(exclude_unset=True)
     payment_data.update({
         "transaction_id": transaction_id,
-        "created_by": agency_name,
-        "updated_by": agency_name,
+        "created_by": username,
+        "updated_by": username,
         "no_of_hajji": len(payment_request.pilgrims_tracking_id)
     })
 

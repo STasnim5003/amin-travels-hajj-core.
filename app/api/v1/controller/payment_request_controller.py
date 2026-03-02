@@ -20,7 +20,8 @@ async def payment_request(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await payment_request_service.create_payment_request(db=db, request=request, agency_name=agency_name)
+    username = current_user["username"]
+    return await payment_request_service.create_payment_request(db=db, request=request, agency_name=agency_name, username=username)
 
 
 @private_router.get("/payment-request", response_model=PaymentRequestListResponseSchema)

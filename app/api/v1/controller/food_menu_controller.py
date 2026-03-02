@@ -21,6 +21,7 @@ async def create_food_menu(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
+    username = current_user["username"]
 
     food_menu_schema = FoodMenuCreateSchema(
         name=food_menu.name,
@@ -28,8 +29,8 @@ async def create_food_menu(
         items=food_menu.items,
         is_publish=food_menu.is_publish,
         area = food_menu.area,
-        created_by=agency_name,
-        updated_by=agency_name,
+        created_by=username,
+        updated_by=username,
         is_active=food_menu.is_active
     )
 
@@ -52,7 +53,8 @@ async def update_food_menu(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await food_menu_service.update_food_menu(db=db, update_request=update_request, agency_name=agency_name)
+    username = current_user["username"]
+    return await food_menu_service.update_food_menu(db=db, update_request=update_request, agency_name=agency_name, username=username)
 
 @private_router.get("/food-menu/{food_menu_id}", tags=["Food Menu"])
 async def get_food_menu_by_id(

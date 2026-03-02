@@ -1,12 +1,13 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
 from data.repository import add_ons_repository
 from infrastructure.schema.add_ons_service_schema import AddOnsServiceBase, AddOnsServiceResponse, \
     AddOnsServiceUpdateSchema
 
 
-async def create_add_ons(db: AsyncSession, request: AddOnsServiceBase, agency_name: str):
+async def create_add_ons(db: AsyncSession, request: AddOnsServiceBase, agency_name: str,username:str):
     try:
         agency_name = agency_name
         created_by = agency_name
@@ -14,8 +15,8 @@ async def create_add_ons(db: AsyncSession, request: AddOnsServiceBase, agency_na
         service_data = request.model_dump()
         service_data.update({
             "agency_name": agency_name,
-            "created_by": created_by,
-            "updated_by": created_by,
+            "created_by": username,
+            "updated_by": username,
         })
 
         new_service = await add_ons_repository.create_add_on_service(db, service_data)
@@ -41,14 +42,15 @@ async def get_add_on_service_by_id(db: AsyncSession, service_id: int, agency_nam
         raise e
 
 
-async def update_add_ons_service(db:AsyncSession, update_request:AddOnsServiceUpdateSchema, agency_name:str):
+async def update_add_ons_service(db:AsyncSession, update_request:AddOnsServiceUpdateSchema, agency_name:str, username:str):
     try:
         result = await add_ons_repository.get_add_on_service_by_id(db, update_request.id, agency_name)
         if not result:
             raise HTTPException(status_code=400, detail=f'Add on service not found')
 
         update_request_dict = update_request.model_dump(exclude_unset=True)
-        update_request_dict['updated_by'] = agency_name
+        update_request_dict['updated_by'] = username
+        update_request_dict['updated_at'] = get_current_time()
 
         updated_add_ons = await add_ons_repository.update_add_ons_service(db, update_request_dict)
         return AddOnsServiceResponse.model_validate(updated_add_ons)

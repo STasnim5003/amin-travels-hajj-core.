@@ -43,13 +43,12 @@ async def get_bank_info_by_id(db: AsyncSession, bank_id: int):
     except Exception as e:
         raise HTTPException(status_code = 400, detail= str(e))
 
-async def update_bank_info(db: AsyncSession, update_request:BankInfoUpdateSchema):
+async def update_bank_info(db: AsyncSession, update_request:dict):
     try:
-        update_request_dict = update_request.model_dump(exclude_unset=True)
         stmt = (
             update(BankInfoModel)
-            .where(BankInfoModel.id == update_request.id)
-            .values(**update_request_dict)
+            .where(BankInfoModel.id == update_request['id'])
+            .values(**update_request)
             .returning(BankInfoModel)
         )
 

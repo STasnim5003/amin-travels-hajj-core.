@@ -9,13 +9,13 @@ from infrastructure.schema.payment_request_schema import PaymentRequestResponse,
     PaymentRequestListResponseSchema, PaymentRequestCreateSchema, PaymentRequestUpdateSchema
 
 
-async def create_payment_request(db: AsyncSession, request: PaymentRequestCreateSchema, agency_name: str):
+async def create_payment_request(db: AsyncSession, request: PaymentRequestCreateSchema, agency_name: str,username:str):
     try:
         request_dict = request.model_dump(exclude_none=True)
         request_dict['status'] = 'PENDING'
         request_dict['agency_name'] = agency_name
-        request_dict['updated_by'] = agency_name
-        request_dict['created_by'] = agency_name
+        request_dict['updated_by'] = username
+        request_dict['created_by'] = username
 
         result = await payment_request_repository.create_payment_request(db=db, request_dict=request_dict)
         return PaymentRequestResponse.model_validate(result)

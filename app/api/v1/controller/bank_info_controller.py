@@ -22,7 +22,8 @@ async def create_bank_info(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await bank_info_service.create_bank_info(db, request, agency_name)
+    username = current_user["username"]
+    return await bank_info_service.create_bank_info(db, request, agency_name,username)
 
 @private_router.get("/bank-info", tags=["payment"])
 async def get_bank_info(
@@ -43,7 +44,9 @@ async def update_bank_info(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await bank_info_service.update_bank_info(db, update_request, agency_name)
+    username = current_user["username"]
+
+    return await bank_info_service.update_bank_info(db, update_request, agency_name,username)
 
 
 @private_router.get("/bank-info/{bank_id}", tags=["payment"])

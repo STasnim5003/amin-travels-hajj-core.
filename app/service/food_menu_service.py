@@ -23,12 +23,12 @@ async def get_food_menu_by_id(db: AsyncSession, food_menu_id : int, agency_name 
     except Exception as e:
         raise
 
-async def update_food_menu(db:AsyncSession, update_request: FoodMenuUpdateSchema, agency_name:str):
+async def update_food_menu(db:AsyncSession, update_request: FoodMenuUpdateSchema, agency_name:str, username:str):
     try:
         food_menu = await food_menu_repository.get_food_menu_by_id(db, update_request.id, agency_name)
 
         update_request_dict = update_request.model_dump(exclude_unset=True)
-        update_request_dict['updated_by'] = agency_name
+        update_request_dict['updated_by'] = username
 
         updated_food_menu = await food_menu_repository.update_food_menu(db, update_request_dict)
         if not updated_food_menu:

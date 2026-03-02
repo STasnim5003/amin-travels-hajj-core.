@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from app.core.utils.get_current_time import get_current_time
 from data.repository import bank_info_repository
 from infrastructure.schema.bank_info_schema import BankInfoBaseSchema, BankInfoUpdateSchema, BankInfoResponseSchema
 
@@ -9,13 +10,14 @@ from infrastructure.schema.bank_info_schema import BankInfoBaseSchema, BankInfoU
 async def create_bank_info(
         db:AsyncSession,
         request: BankInfoBaseSchema,
-        agency_name : str
+        agency_name : str,
+        username:str
 ):
     try:
         request_dict = request.model_dump(exclude_unset=True)
         request_dict['agency_name'] = agency_name
-        request_dict['created_by'] = agency_name
-        request_dict['updated_by'] = agency_name
+        request_dict['created_by'] = username
+        request_dict['updated_by'] = username
 
         return await bank_info_repository.create_bank_info(db, request_dict)
     except Exception as e:
@@ -31,14 +33,17 @@ async def get_bank_info(
         raise e
 
 async def update_bank_info(
-        db: AsyncSession, update_request: BankInfoUpdateSchema, agency_name : str
+        db: AsyncSession, update_request: BankInfoUpdateSchema, agency_name : str, username:str
 ):
     try:
         bank = await bank_info_repository.get_bank_info_by_id(db, update_request.id)
         if not bank or bank.agency_name != agency_name:
             raise HTTPException(status_code=400, detail="Bank Not Found")
 
-        updated_bank = await bank_info_repository.update_bank_info(db, update_request)
+        updated_dict = update_request.model_dump(exclude_none=True)
+        updated_dict['updated_by'] = username
+        updated_dict['updated_at'] = get_current_time()
+        updated_bank = await bank_info_repository.update_bank_info(db, updated_dict)
         return BankInfoResponseSchema.model_validate(updated_bank)
     except Exception as e:
         raise e

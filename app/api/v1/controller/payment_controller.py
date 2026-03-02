@@ -25,8 +25,8 @@ async def create_payable_for_group_leader(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-
-    return await payment_service.create_payable_for_group_leader(db, request, agency_name)
+    username = current_user["username"]
+    return await payment_service.create_payable_for_group_leader(db, request, agency_name,username)
 
 
 @private_router.post("/group-leader/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
