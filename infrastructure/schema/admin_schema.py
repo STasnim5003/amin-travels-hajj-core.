@@ -107,3 +107,7 @@ class SubAgencyAmountUpdateSchema(BaseModel):
     bdt:float
     sar:float
     details: str
+
+class LogoUpdateSchema(BaseModel):
+    logo : Optional[List[Dict[str, Any]]] = None
+    passport_copy: Optional[List[Dict[str, Any]]] = None

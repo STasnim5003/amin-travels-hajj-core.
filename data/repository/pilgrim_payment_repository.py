@@ -279,3 +279,28 @@ async def is_voucher_no_exist(db: AsyncSession, voucher_no: str) -> bool:
 
     result = await db.execute(stmt)
     return result.scalar()
+
+async def get_pilgrims_payment_summary(db: AsyncSession, agency_name: str):
+    try:
+        query = text("""
+            SELECT 
+                tracking_id,
+                name_en,
+                mobile_no,
+                total_payable,
+                total_payment,
+                total_due,
+                family_code
+            FROM core.pilgrim_data
+            WHERE group_name = :agency_name
+            AND registration_status = 'REGISTERED'
+            ORDER BY family_code
+        """)
+
+        result = await db.execute(query, {"agency_name": agency_name})
+        rows = result.mappings().all()
+
+        return rows
+
+    except Exception as e:
+        raise e

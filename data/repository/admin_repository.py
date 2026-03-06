@@ -390,3 +390,18 @@ async def get_agency_amount(db:AsyncSession, agency_name:str):
         return result.mappings().one_or_none()
     except Exception as e:
         raise e
+
+
+async def update_log(db:AsyncSession, request_dict:dict):
+    try:
+        stmt = (
+            update(AdminModel)
+            .where(AdminModel.agency_name == request_dict.get("agency_name"))
+            .values(**request_dict)
+        )
+
+        await db.execute(stmt)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e

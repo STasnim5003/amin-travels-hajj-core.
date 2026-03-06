@@ -12,7 +12,7 @@ from app.service import admin_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_schema import AdminResponseSchema, TokenSchema, AdminListResponseSchema, \
     AdminProfileUpdateResponseSchema, AssignLeadAgencySchema, CheckLeadAssignResponseSchema, \
-    SubAgencyAmountUpdateSchema
+    SubAgencyAmountUpdateSchema, LogoUpdateSchema
 
 router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -229,3 +229,16 @@ async def update_sub_agency_amount(
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await admin_service.update_sub_agency_amount(db, agency_name, sub_agency_account_update)
+
+@private_router.put("/update-logo-passport",tags=['admin'])
+async def update_logo(
+        request: LogoUpdateSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "AGENCY":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    agency_name = current_user["agency_name"]
+    username = current_user["username"]
+    return await admin_service.update_logo(db=db, request=request, agency_name=agency_name, username=username)
+

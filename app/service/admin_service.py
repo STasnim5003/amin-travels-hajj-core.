@@ -10,7 +10,7 @@ from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
 from data.repository import admin_repository, file_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema, \
-    AdminProfileUpdateResponseSchema, SubAgencyAmountUpdateSchema
+    AdminProfileUpdateResponseSchema, SubAgencyAmountUpdateSchema, LogoUpdateSchema
 
 
 async def create_admin(db: AsyncSession,
@@ -262,5 +262,18 @@ async def get_agency_amount(db:AsyncSession, agency_name:str):
     try:
         agency_amount = await admin_repository.get_agency_amount(db, agency_name)
         return agency_amount
+    except Exception as e:
+        raise e
+
+
+async def update_logo(db:AsyncSession, request:LogoUpdateSchema, agency_name:str, username:str):
+    try:
+        request_dict = request.model_dump(exclude_none=True)
+        request_dict['agency_name'] = agency_name
+        request_dict['updated_by'] = username
+        request_dict['updated_at'] = get_current_time()
+
+        await admin_repository.update_log(db=db, request_dict=request_dict)
+        return True
     except Exception as e:
         raise e

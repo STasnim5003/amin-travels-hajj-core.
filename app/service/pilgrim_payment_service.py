@@ -13,7 +13,8 @@ from data.repository import pilgrim_payment_repository, pilgrim_repository, file
     admin_user_repository
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, PaymentResponseSchema, \
     PaginatedPaymentResponseForGroupLeader, PilgrimPayableBaseSchema, PilgrimPaymentBaseSchema, \
-    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema, PaymentLedgerSchema
+    PilgrimPayableReportSchema, GroupLeaderPayableReportSchema, PaymentUpdateSchema, PaymentLedgerSchema, \
+    PilgrimPaymentSummary, PilgrimsPaymentSummaryListSchema
 
 
 async def create_payable_for_pilgrim(
@@ -392,3 +393,29 @@ async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
             return payment_ledger
     except Exception as e:
         raise e
+
+
+async def get_pilgrims_payment_summary(db:AsyncSession, agency_name:str):
+    try:
+        result = await pilgrim_payment_repository.get_pilgrims_payment_summary(db=db, agency_name=agency_name)
+
+        payment_summary_list = []
+        for r in result:
+            row_dict = dict(r)
+            row_dict["name"] = row_dict.pop("name_en")
+            row_dict["mobile"] = row_dict.pop("mobile_no")
+            row_dict["payable"] = row_dict.pop("total_payable")
+            row_dict["payment"] = row_dict.pop("total_payment")
+            row_dict["due"] = row_dict.pop("total_due")
+
+            payment_summary_list.append(
+                PilgrimPaymentSummary.model_validate(row_dict)
+            )
+
+        return PilgrimsPaymentSummaryListSchema(
+            agency_name=agency_name,
+            payment_summary_list=payment_summary_list
+        )
+    except Exception as e:
+        raise e
+

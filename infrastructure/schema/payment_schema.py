@@ -262,3 +262,19 @@ class PaymentLedgerSchema(BaseModel):
 
     class config:
         from_attributes: True
+
+class PilgrimPaymentSummary(BaseModel):
+    tracking_id: Optional[str] = None
+    name : Optional[str] = None
+    mobile : Optional[str] = None
+    payable: Optional[int] = 0
+    payment: Optional[int] = 0
+    due: Optional[int] = 0
+    family_code : Optional[str] = None
+
+    class config:
+        from_attributes: True
+
+class PilgrimsPaymentSummaryListSchema(BaseModel):
+    agency_name : Optional[str] = None
+    payment_summary_list : List[PilgrimPaymentSummary]
