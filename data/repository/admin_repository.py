@@ -392,11 +392,11 @@ async def get_agency_amount(db:AsyncSession, agency_name:str):
         raise e
 
 
-async def update_log(db:AsyncSession, request_dict:dict):
+async def update_logo(db:AsyncSession, request_dict:dict):
     try:
         stmt = (
             update(AdminModel)
-            .where(AdminModel.agency_name == request_dict.get("agency_name"))
+            .where(AdminModel.user_name == request_dict.get("user_name"))
             .values(**request_dict)
         )
 

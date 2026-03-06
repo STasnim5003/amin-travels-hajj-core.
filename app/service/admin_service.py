@@ -272,8 +272,9 @@ async def update_logo(db:AsyncSession, request:LogoUpdateSchema, agency_name:str
         request_dict['agency_name'] = agency_name
         request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
+        request_dict['user_name'] = username
 
-        await admin_repository.update_log(db=db, request_dict=request_dict)
+        await admin_repository.update_logo(db=db, request_dict=request_dict)
         return True
     except Exception as e:
         raise e
