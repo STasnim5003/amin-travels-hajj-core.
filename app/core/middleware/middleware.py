@@ -20,7 +20,7 @@ def configure_middleware(app):
 def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username: str = payload.get("username")
         role: str = payload.get("role")
         agency_name: str = payload.get("agency_name")
         if username is None:

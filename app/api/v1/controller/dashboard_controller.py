@@ -15,6 +15,6 @@ async def get_dashboard_data(
         current_user: dict = Depends(get_current_user)
 ):
     if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await dashboard_service.get_dashboard_data(db=db, agency_name=agency_name)

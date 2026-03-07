@@ -38,27 +38,13 @@ async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:
         if code_suffix:
             code = f"{agency_name}_{code_suffix}_{user_data.name.replace(' ', '').upper()}"
 
-        existing_user = await admin_user_repository.get_by_mobile_passport(db, user_data)
+        existing_user = await admin_user_repository.get_by_mobile_passport_username(db, user_data)
         if existing_user:
             raise HTTPException(status_code=404, detail="User already exists")
 
         user_data_dict = user_data.model_dump(exclude_none=True)
         user_data_dict['agency_name'] = agency_name
         user_data_dict['code'] = code
-
-        admin_dict = {}
-        if user_data.role == "STAFF":
-            admin_dict.update({
-                'user_name' : user_data.name,
-                'password' : hashed_password,
-                'role' : "AGENCY",
-                'agency_name' : agency_name,
-                'mobile_no' : user_data.mobile_no,
-                'email' : user_data.email,
-                'bdt' : 0,
-                'sar' : 0,
-                'license_number' : agency_name
-            })
 
         guide_data_dict = {}
         if user_data.role == "GUIDE":
@@ -88,13 +74,13 @@ async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:
                 'passport_dob': user_data.passport_dob,
                 'passport_expiry_date': user_data.passport_expiry_date,
             })
-        result = await admin_user_repository.create_admin_user(db, user_data_dict, guide_data_dict, admin_dict)
+        result = await admin_user_repository.create_admin_user(db, user_data_dict, guide_data_dict)
         return AdminUserResponse.model_validate(result)
     except Exception as e:
         raise e
 
 async def admin_user_login(db: AsyncSession, request_credential: OAuth2PasswordRequestForm):
-    user = await admin_user_repository.get_admin_user_by_code(db, code=request_credential.username)
+    user = await admin_user_repository.get_admin_user_by_username(db, username=request_credential.username)
     if not user:
         raise HTTPException(
             status_code=400,
@@ -107,14 +93,8 @@ async def admin_user_login(db: AsyncSession, request_credential: OAuth2PasswordR
             detail="Incorrect username or password"
         )
 
-    access_token = create_access_token_for_admin_user(
-        subject=user.code, role=user.role,
-        mobile_no=user.mobile_no, email=user.email,
-        code=user.code, agency_name= user.agency_name)
-    refresh_token = create_refresh_token_for_admin_user(
-        subject=user.code, role=user.role,
-        mobile_no=user.mobile_no, email=user.email,
-        code=user.code, agency_name= user.agency_name)
+    access_token = create_access_token_for_admin_user(role=user.role,username=user.username, agency_name= user.agency_name)
+    refresh_token = create_refresh_token_for_admin_user(role=user.role,username=user.username, agency_name= user.agency_name)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token

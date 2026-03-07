@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 class AdminUserBase(BaseModel):
     name: str
+    username:Optional[str] = None
     email: Optional[str] = None
     mobile_no: str
     role: str

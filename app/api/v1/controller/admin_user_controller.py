@@ -66,7 +66,7 @@ async def create_admin_user(
     return await admin_user_service.create_user(db, user_data, agency_name)
 
 
-@public_router.post("/admin-user/login", tags=["Admin User"])
+@public_router.post("/login", tags=["Admin User"])
 async def admin_user_login(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: AsyncSession = Depends(get_async_db)

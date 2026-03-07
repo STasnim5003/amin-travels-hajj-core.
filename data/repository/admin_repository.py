@@ -6,8 +6,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_model import AdminModel
+from data.model.admin_user_model import AdminUserModel
 from data.model.payment_request_model import PaymentRequestModel
 from data.model.pilgrim_data_model import PilgrimDataModel
+from data.repository import admin_user_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AssignLeadAgencySchema
 
 
@@ -29,6 +31,23 @@ async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminRespons
     query = insert(AdminModel).values(**user_data).returning(AdminModel)
     try:
         result = await db.execute(query)
+        admin_user = await admin_user_repository.get_admin_user_by_username(db=db, username=admin.user_name)
+
+        if admin_user:
+            raise HTTPException(status_code=400, detail="User Already Exists")
+
+        stmt = (
+            insert(AdminUserModel)
+            .values(
+                name = user_data['user_name'],
+                username = user_data['user_name'],
+                password = user_data['password'],
+                role = user_data['role'],
+                agency_name = user_data['agency_name'],
+                mobile_no = user_data['mobile_no'],
+            )
+        )
+        await db.execute(stmt)
         await db.commit()
 
         row = result.fetchone()
@@ -40,14 +59,8 @@ async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminRespons
 
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise e
 
-
-# async def get_admin_by_username(db: AsyncSession, username: str):
-#     stmt = select(AdminModel).where(AdminModel.user_name == username)
-#     result = await db.execute(stmt)
-#     admin = result.scalar_one_or_none()
-#     return admin
 
 
 async def get_all_admin(db: AsyncSession, offset: int, limit: int):
@@ -168,33 +181,34 @@ async def update_admin_profile(
         passport_copy: List[Dict[str, Any]],
         agency_name: str
 ):
-    stmt = select(AdminModel).where(AdminModel.agency_name == agency_name)
-    result = await db.execute(stmt)
-    admin = result.scalar_one_or_none()
+    try:
+        request_dict = {
+            "location": location,
+            "google_map_location": google_map_location,
+            "logo": logo,
+            "passport_copy": passport_copy
+        }
 
-    if not admin:
-        raise HTTPException(status_code=404, detail="Admin not found")
+        request_dict = {k: v for k, v in request_dict.items() if v is not None}
 
-    stmt = (
-        update(AdminModel)
-        .where(AdminModel.agency_name == agency_name)
-        .values(
-            location=location,
-            google_map_location=google_map_location,
-            logo=logo,
-            passport_copy=passport_copy,
+        stmt = (
+            update(AdminModel)
+            .where(AdminModel.agency_name == agency_name)
+            .values(**request_dict)
+            .returning(AdminModel)
         )
-        .returning(AdminModel)
-    )
 
-    result = await db.execute(stmt)
-    await db.commit()
-    updated_admin = result.scalar_one_or_none()
+        result = await db.execute(stmt)
+        await db.commit()
+        updated_admin = result.scalar_one_or_none()
 
-    if not updated_admin:
-        raise HTTPException(status_code=400, detail="Update failed")
+        if not updated_admin:
+            raise HTTPException(status_code=400, detail="Update failed")
 
-    return AdminResponseSchema.model_validate(updated_admin)
+        return AdminResponseSchema.model_validate(updated_admin)
+    except Exception as e:
+        await db.rollback()
+        raise e
 
 
 async def get_agency_by_agency_name(db: AsyncSession, agency_name: str):

@@ -8,7 +8,7 @@ from starlette import status
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
-from data.repository import admin_repository, file_repository
+from data.repository import admin_repository, file_repository, admin_user_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema, \
     AdminProfileUpdateResponseSchema, SubAgencyAmountUpdateSchema, LogoUpdateSchema
 
@@ -276,5 +276,17 @@ async def update_logo(db:AsyncSession, request:LogoUpdateSchema, agency_name:str
 
         await admin_repository.update_logo(db=db, request_dict=request_dict)
         return True
+    except Exception as e:
+        raise e
+
+
+async def get_admin_profile(db:AsyncSession, username:str, agency_name:str):
+    try:
+        admin = await admin_user_repository.get_admin_profile(db=db, username=username, agency_name=agency_name)
+        if admin['passport_copy']:
+            admin['passport_copy'] = await generate_downloadable_urls(admin['passport_copy'])
+        if admin['logo']:
+            admin['logo'] = await generate_downloadable_urls(admin['logo'])
+        return AdminResponseSchema.model_validate(admin)
     except Exception as e:
         raise e

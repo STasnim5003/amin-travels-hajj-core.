@@ -52,12 +52,12 @@ async def create_admin_endpoint(
         return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
-@router.post("/login", summary="Admin login", response_model=TokenSchema, tags=["admin"])
-async def create_admin_login_endpoint(
-        form_data: OAuth2PasswordRequestForm = Depends(),
-        db: AsyncSession = Depends(get_async_db)
-):
-    return await admin_service.admin_login(db, form_data)
+# @router.post("/login", summary="Admin login", response_model=TokenSchema, tags=["admin"])
+# async def create_admin_login_endpoint(
+#         form_data: OAuth2PasswordRequestForm = Depends(),
+#         db: AsyncSession = Depends(get_async_db)
+# ):
+#     return await admin_service.admin_login(db, form_data)
 
 
 @private_router.get("/admin", response_model=AdminListResponseSchema, tags=["admin"])
@@ -86,12 +86,9 @@ async def get_admin_profile(
         current_user: dict = Depends(get_current_user)
 ) -> AdminResponseSchema:
     username = current_user["username"]
-    try:
-        return await admin_service.get_admin_by_username(db, username)
-    except HTTPException as http_exc:
-        raise http_exc
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An unexpected error occurred while processing your request.")
+    agency_name = current_user['agency_name']
+    return await admin_service.get_admin_profile(db=db, username=username, agency_name=agency_name)
+
 
 
 @private_router.get("/admin/{admin_id}", response_model=AdminResponseSchema, tags=["admin"])
@@ -141,12 +138,8 @@ async def update_admin_profile(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-
-    try:
-        return await admin_service.update_admin_profile(db, location, google_map_location, logo, passport_copy,
+    return await admin_service.update_admin_profile(db, location, google_map_location, logo, passport_copy,
                                                         agency_name)
-    except Exception as e:
-        raise
 
 
 @private_router.put("/admin/assign-lead-agency", tags=["admin"])
@@ -230,15 +223,15 @@ async def update_sub_agency_amount(
     agency_name = current_user["agency_name"]
     return await admin_service.update_sub_agency_amount(db, agency_name, sub_agency_account_update)
 
-@private_router.put("/update-logo-passport",tags=['admin'])
-async def update_logo(
-        request: LogoUpdateSchema,
-        db: AsyncSession = Depends(get_async_db),
-        current_user: dict = Depends(get_current_user)
-):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    agency_name = current_user["agency_name"]
-    username = current_user["username"]
-    return await admin_service.update_logo(db=db, request=request, agency_name=agency_name, username=username)
+# @private_router.put("/update-logo-passport",tags=['admin'])
+# async def update_logo(
+#         request: LogoUpdateSchema,
+#         db: AsyncSession = Depends(get_async_db),
+#         current_user: dict = Depends(get_current_user)
+# ):
+#     if current_user["role"] != "AGENCY":
+#         raise HTTPException(status_code=403, detail="Unauthorized")
+#     agency_name = current_user["agency_name"]
+#     username = current_user["username"]
+#     return await admin_service.update_logo(db=db, request=request, agency_name=agency_name, username=username)
 

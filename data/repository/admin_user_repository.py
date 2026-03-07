@@ -7,7 +7,7 @@ from sqlalchemy.orm import load_only
 from data.model.admin_model import AdminModel
 from data.model.admin_user_model import AdminUserModel
 from data.model.pilgrim_data_model import PilgrimDataModel
-from infrastructure.schema.admin_user_schema import AdminUserCreate, GroupLeaderAssignSchema, AdminUserResponse
+from infrastructure.schema.admin_user_schema import AdminUserCreate, GroupLeaderAssignSchema
 from infrastructure.schema.pilgrim_data_schema import PilgrimMinimalResponseSchema, \
     PilgrimResponseForAdminUser
 
@@ -33,22 +33,30 @@ async def get_by_id(db: AsyncSession, user_id: int, agency_name: str):
     return result.scalars().first()
 
 
-async def get_by_mobile_passport(db: AsyncSession, userdata: AdminUserCreate):
+async def get_by_mobile_passport_username(db: AsyncSession, userdata: AdminUserCreate):
     if userdata.passport_no:
         stmt = select(AdminUserModel).where(
             or_(
                 AdminUserModel.mobile_no == userdata.mobile_no,
-                AdminUserModel.passport_no == userdata.passport_no
+                AdminUserModel.passport_no == userdata.passport_no,
+                AdminUserModel.username == userdata.username,
             )
         )
     else:
-        stmt = select(AdminUserModel).where(AdminUserModel.mobile_no == userdata.mobile_no)
+        stmt = (
+            select(AdminUserModel)
+            .where(
+                or_(
+                AdminUserModel.mobile_no == userdata.mobile_no,
+                AdminUserModel.username == userdata.username,
+            ))
+        )
 
     result = await db.execute(stmt)
     return result.scalars().first()
 
 
-async def create_admin_user(db: AsyncSession, user_data_dict: dict, guide_data_dict:dict, admin_dict:dict):
+async def create_admin_user(db: AsyncSession, user_data_dict: dict, guide_data_dict:dict):
     try:
         stmt = (
             insert(AdminUserModel)
@@ -61,12 +69,6 @@ async def create_admin_user(db: AsyncSession, user_data_dict: dict, guide_data_d
             stmt = (
                 insert(PilgrimDataModel)
                 .values(**guide_data_dict)
-            )
-            await db.execute(stmt)
-        if admin_dict:
-            stmt = (
-                insert(AdminModel)
-                .values(**admin_dict)
             )
             await db.execute(stmt)
 
@@ -238,10 +240,48 @@ async def get_group_leader_with_pilgrim_count(db: AsyncSession, agency_name: str
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error fetching group leader data: {str(e)}")
 
-async def get_admin_user_by_code(db:AsyncSession, code : str):
+async def get_admin_user_by_username(db:AsyncSession, username : str):
     try:
-        query = select(AdminUserModel).where(AdminUserModel.code == code)
-        result = await db.execute(query)
+        stmt = (
+            select(AdminUserModel)
+            .where(AdminUserModel.username == username)
+        )
+
+        result = await db.execute(stmt)
         return result.scalar_one_or_none()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise e
+
+
+async def get_admin_profile(db:AsyncSession, username:str, agency_name:str):
+    try:
+        stmt = (
+            select(AdminModel, AdminUserModel.username)
+            .join(
+                AdminUserModel,
+                AdminUserModel.agency_name == AdminModel.agency_name
+            )
+            .where(
+                AdminModel.agency_name == agency_name,
+                AdminUserModel.username == username
+            )
+        )
+
+        result = await db.execute(stmt)
+        row = result.first()
+
+        if not row:
+            return None
+
+        admin, user_name = row
+
+        admin_dict = admin.__dict__
+        admin_dict["user_name"] = user_name
+
+        return admin_dict
+
+    except Exception as e:
+        raise e
+
+
+
