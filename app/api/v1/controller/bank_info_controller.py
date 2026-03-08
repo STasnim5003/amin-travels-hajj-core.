@@ -19,7 +19,7 @@ async def create_bank_info(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY","STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     username = current_user["username"]
@@ -30,7 +30,7 @@ async def get_bank_info(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY","STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await bank_info_service.get_bank_info(db, agency_name)
@@ -41,7 +41,7 @@ async def update_bank_info(
         db:AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user),
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY","STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     username = current_user["username"]
@@ -55,7 +55,7 @@ async def get_bank_info_by_id(
         db:AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY","STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await bank_info_service.get_bank_info_by_id(db=db, bank_id=bank_id, agency_name=agency_name)
@@ -68,7 +68,7 @@ async def delete_bank_info(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user),
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY","STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await bank_info_service.delete_bank_info(db=db, bank_id=bank_id, agency_name=agency_name)

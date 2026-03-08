@@ -18,7 +18,7 @@ async def create_food_menu(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     username = current_user["username"]
@@ -39,7 +39,7 @@ async def create_food_menu(
 
 @private_router.get("/food-menu", tags=["Food Menu"])
 async def get_food_menus(db: AsyncSession = Depends(get_async_db), current_user: dict = Depends(get_current_user)):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await food_menu_service.get_food_menus(db,agency_name)
@@ -50,7 +50,7 @@ async def update_food_menu(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     username = current_user["username"]
@@ -62,7 +62,7 @@ async def get_food_menu_by_id(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await food_menu_service.get_food_menu_by_id(db, food_menu_id, agency_name)
@@ -73,7 +73,7 @@ async def delete_food_menu(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await food_menu_service.delete_food_menu(db=db, food_menu_id=food_menu_id, agency_name=agency_name)

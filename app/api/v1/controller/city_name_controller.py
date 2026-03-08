@@ -17,7 +17,7 @@ async def create_city_name(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> CityNameResponseSchema:
-    if current_user['role'] != 'AGENCY':
+    if current_user["role"] not in ["AGENCY","STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user['agency_name']
     username = current_user["username"]
@@ -28,7 +28,7 @@ async def get_city_names(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> CityNameListResponseSchema:
-    if current_user['role'] != 'AGENCY':
+    if current_user["role"] not in ["AGENCY","STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user['agency_name']
 

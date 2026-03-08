@@ -17,10 +17,11 @@ async def create_flight_request(
         current_user: dict = Depends(get_current_user)
 ) -> FlightRequestResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await flight_request_service.create_flight_request(db=db, request=request ,agency_name=agency_name)
+    username = current_user["username"]
+    return await flight_request_service.create_flight_request(db=db, request=request ,agency_name=agency_name,username=username)
 
 @private_router.put("/flight-request", response_model=FlightRequestResponseSchema, tags=["Flight Request"])
 async def update_flight_request(
@@ -29,10 +30,11 @@ async def update_flight_request(
         current_user: dict = Depends(get_current_user)
 ) -> FlightRequestResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-    return await flight_request_service.update_flight_request(db=db, request=request, agency_name=agency_name)
+    username = current_user["username"]
+    return await flight_request_service.update_flight_request(db=db, request=request, agency_name=agency_name, username=username)
 
 @private_router.get("/flight-request", response_model=FlightRequestListResponseSchema, tags=["Flight Request"])
 async def get_flight_requests(
@@ -40,7 +42,7 @@ async def get_flight_requests(
         current_user: dict = Depends(get_current_user)
 ) -> FlightRequestListResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await flight_request_service.get_flight_requests(db=db, agency_name=agency_name)
@@ -53,7 +55,7 @@ async def get_flight_request_by_id(
         current_user: dict = Depends(get_current_user)
 )-> FlightRequestResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await flight_request_service.get_flight_request_by_id(db=db, flight_request_id=flight_request_id, agency_name=agency_name)
@@ -65,7 +67,7 @@ async def delete_flight_request(
         current_user: dict = Depends(get_current_user)
 ):
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]

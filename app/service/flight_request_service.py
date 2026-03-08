@@ -8,12 +8,12 @@ from infrastructure.schema.flight_request_schema import FlightRequestCreateSchem
     FlightRequestUpdateSchema, FlightRequestListResponseSchema
 
 
-async def create_flight_request(db: AsyncSession, request: FlightRequestCreateSchema, agency_name: str):
+async def create_flight_request(db: AsyncSession, request: FlightRequestCreateSchema, agency_name: str,username:str):
     try:
         request_dict = request.model_dump()
         request_dict['agency_name'] = agency_name
-        request_dict['updated_by'] = agency_name
-        request_dict['created_by'] = agency_name
+        request_dict['updated_by'] = username
+        request_dict['created_by'] = username
         request_dict['flight_requested'] = request.total_seat
 
         result = await flight_request_repository.create(db, request_dict)
@@ -22,7 +22,7 @@ async def create_flight_request(db: AsyncSession, request: FlightRequestCreateSc
         raise e
 
 
-async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSchema, agency_name: str):
+async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSchema, agency_name: str,username:str):
     try:
         flight_request = await flight_request_repository.get_by_id(db, request.id)
 
@@ -30,7 +30,7 @@ async def update_flight_request(db: AsyncSession, request: FlightRequestUpdateSc
             raise HTTPException(status_code=400, detail='Flight request not found')
 
         update_data = request.model_dump(exclude_unset=True, exclude_none=True)
-        update_data["updated_by"] = agency_name
+        update_data["updated_by"] = username
         update_data['updated_at'] = get_current_time()
         update_data['agency_name'] = flight_request['agency_name']
 

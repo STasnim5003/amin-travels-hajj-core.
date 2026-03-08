@@ -4,11 +4,12 @@ from fastapi import HTTPException
 from sqlalchemy import select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
 from data.model.pilgrim_data_model import PilgrimDataModel
 from infrastructure.schema.customer_schema import CustomerCreateSchema, CustomerAppliedForRegistrationSchema
 
 
-async def create_customer(db: AsyncSession, customer: CustomerCreateSchema, group_name: str):
+async def create_customer(db: AsyncSession, customer: CustomerCreateSchema, group_name: str, username:str):
     try:
         if customer.mobile_no:
             stmt = select(PilgrimDataModel).where(
@@ -36,8 +37,8 @@ async def create_customer(db: AsyncSession, customer: CustomerCreateSchema, grou
         pilgrim = PilgrimDataModel(
             **customer.model_dump(),
             group_name=group_name,
-            created_by=group_name,
-            updated_by=group_name,
+            created_by=username,
+            updated_by=username,
             allocation_status="WALK_IN",
             is_assigned=False,
             registration_status="WALK_IN",
@@ -58,7 +59,7 @@ async def create_customer(db: AsyncSession, customer: CustomerCreateSchema, grou
 
 
 async def customer_applied_for_registration(db: AsyncSession, tracking_ids: CustomerAppliedForRegistrationSchema,
-                                            group_name: str):
+                                            group_name: str, username:str):
     try:
         ids = tracking_ids.tracking_ids
 
@@ -82,8 +83,8 @@ async def customer_applied_for_registration(db: AsyncSession, tracking_ids: Cust
             .where(PilgrimDataModel.tracking_id.in_(ids))
             .values(
                 registration_status="APPLIED",
-                updated_by=group_name,
-                updated_at=datetime.now(),
+                updated_by=username,
+                updated_at=get_current_time(),
             )
             .returning(PilgrimDataModel)
         )

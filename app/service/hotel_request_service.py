@@ -9,7 +9,7 @@ from infrastructure.schema.hotel_request_schema import HotelRequestBase, HotelRe
     HotelRequestListResponseSchema, HotelRequestUpdateSchema, HotelRequestMergedResponseSchema
 
 
-async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str):
+async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agency_name: str, username:str):
     try:
         agency = await admin_repository.get_agency_by_agency_name(db, agency_name)
         if agency is None:
@@ -17,8 +17,8 @@ async def create_hotel_request(db: AsyncSession, request: HotelRequestBase, agen
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict["agency_name"] = agency_name
-        request_dict["created_by"] = agency_name
-        request_dict["updated_by"] = agency_name
+        request_dict["created_by"] = username
+        request_dict["updated_by"] = username
         request_dict["status"] = "SEND_TO_LEAD"
         request_dict["sar"] = agency.sar - request.pricing.with_vat
         request_dict["hotel_requested"] = agency.hotel_requested + request.number_of_haji
@@ -73,7 +73,7 @@ async def get_hotel_request_by_id(db: AsyncSession, request_id: int, agency_name
         raise e
 
 
-async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSchema, agency_name: str):
+async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSchema, agency_name: str, username:str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request.id)
         if not result:
@@ -92,7 +92,7 @@ async def update_hotel_request(db: AsyncSession, request: HotelRequestUpdateSche
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         request_dict = request.model_dump(exclude_none=True)
-        request_dict['updated_by'] = agency_name
+        request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
         request_dict['agency_name'] = result.agency_name
 
@@ -137,7 +137,7 @@ async def delete_hotel_request(db: AsyncSession, request_id: int, agency_name: s
         raise e
 
 
-async def cancel_request(db: AsyncSession, request_id: int, agency_name: str):
+async def cancel_request(db: AsyncSession, request_id: int, agency_name: str, username: str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if not result:
@@ -150,7 +150,7 @@ async def cancel_request(db: AsyncSession, request_id: int, agency_name: str):
         request_dict = {
             'cancel_request_status': "REQUEST_FOR_CANCELLATION",
             'id': request_id,
-            'updated_by': agency_name,
+            'updated_by': username,
             'updated_at': get_current_time()
         }
 
@@ -162,7 +162,7 @@ async def cancel_request(db: AsyncSession, request_id: int, agency_name: str):
         raise e
 
 
-async def cancel_request_lead_agency_action(db: AsyncSession, request_id: int, agency_name: str, status: str):
+async def cancel_request_lead_agency_action(db: AsyncSession, request_id: int, agency_name: str, status: str, username:str):
     try:
         result = await hotel_request_repository.get_hotel_request_by_id(db=db, request_id=request_id)
         if not result:
@@ -178,7 +178,7 @@ async def cancel_request_lead_agency_action(db: AsyncSession, request_id: int, a
 
         request_dict = {
             'id': request_id,
-            'updated_by': agency_name,
+            'updated_by': username,
             'updated_at': get_current_time(),
             'cancel_request_status': status if status == "REJECTED" else None,
         }

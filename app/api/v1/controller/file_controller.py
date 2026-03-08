@@ -25,7 +25,7 @@ async def upload_file(
         name: str = Form(...),
         current_user : dict = Depends(get_current_user)
 ):
-    if current_user["role"] not in ["SUPER_ADMIN", "AGENCY"]:
+    if current_user["role"] not in ["SUPER_ADMIN", "AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     response = await file_service.upload_file(name=name, file=file)
@@ -44,19 +44,4 @@ async def get_download_url(
     return JSONResponse(content=jsonable_encoder(response))
 
 
-#
-# @router.put("/update", response_model=FileUpdateResponseSchema ,tags=["files"])
-# async def update_file(
-#         new_file: upload_file = File(...),
-#         key: str = Form(...),
-# ):
-#     response = await file_service.update_file(key=key, new_file=new_file)
-#     return JSONResponse(content=jsonable_encoder(response))
-#
-#
-#
-# @router.delete("/delete" ,response_model=FileDeleteResponsesSchema,tags=["files"])
-# async def delete_image(key: str = Query(...)):
-#     response = await file_service.delete_file(key=key)
-#     return JSONResponse(content=jsonable_encoder(response))
 
