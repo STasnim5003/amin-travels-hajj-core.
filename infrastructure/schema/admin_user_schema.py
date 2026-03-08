@@ -17,7 +17,6 @@ class AdminUserBase(BaseModel):
     hotel_name : Optional[str] = None
     ekama_file : Optional[Any] = None
     others : Optional[str] = None
-    ekama_file : Optional[Any] = None
     nid : Optional[str] = None
     tracking_id : Optional[str] = None
     dob : Optional[str] = None

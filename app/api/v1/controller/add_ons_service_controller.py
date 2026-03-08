@@ -16,7 +16,7 @@ async def create_add_ons(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=400, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     username = current_user["username"]
@@ -27,7 +27,7 @@ async def list_add_on_services(
     db: AsyncSession = Depends(get_async_db),
     current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await add_ons_service.get_all_add_on_services(db, agency_name)
@@ -38,7 +38,7 @@ async def update_add_on_service(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     username = current_user["username"]
@@ -50,7 +50,7 @@ async def get_add_on_service(
     db: AsyncSession = Depends(get_async_db),
     current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await add_ons_service.get_add_on_service_by_id(db, service_id, agency_name)
@@ -61,7 +61,7 @@ async def delete_add_ons_service(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
     return await add_ons_service.delete_add_on_service(db, service_id, agency_name)

@@ -18,7 +18,7 @@ async def create_zone_request(
     current_user: dict = Depends(get_current_user)
 ) -> ZoneRequestResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]
@@ -33,7 +33,7 @@ async def update_zone_request(
     current_user: dict = Depends(get_current_user)
 ) -> ZoneRequestResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]
@@ -47,7 +47,7 @@ async def get_zone_requests(
     current_user: dict = Depends(get_current_user)
 ) -> ZoneRequestListResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]
@@ -61,7 +61,7 @@ async def get_zone_request_by_id(
     current_user: dict = Depends(get_current_user)
 ) -> ZoneRequestResponseSchema:
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]
@@ -78,7 +78,7 @@ async def delete_zone_request(
     current_user: dict = Depends(get_current_user)
 ):
 
-    if current_user["role"] != "AGENCY":
+    if current_user["role"] not in  ["AGENCY", "STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     agency_name = current_user["agency_name"]
