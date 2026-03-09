@@ -1,10 +1,11 @@
 import fastapi
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import has_required_permissions
 from app.service import program_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.program_schema import ProgramCreateSchema, \
@@ -20,8 +21,7 @@ async def create_get_together_by_admin(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "ADMIN", "AGENCY", "STAFF"])
     response = await  program_service.create_get_together_program(program_data, db)
     return JSONResponse(content=jsonable_encoder(response))
 
@@ -53,8 +53,7 @@ async def find_participants_by_program_id(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "ADMIN", "AGENCY", "STAFF"])
     return await program_service.fetch_participants_by_program_id(program_id, db, page, limit)
 
 
@@ -64,8 +63,7 @@ async def get_all_programs(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "ADMIN", "AGENCY", "STAFF"])
     return await program_service.get_all_programs(db, program_type)
 
 
@@ -76,8 +74,7 @@ async def update_program(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "ADMIN", "AGENCY", "STAFF"])
     response = await  program_service.update_program(db, program_id, program_data)
     return JSONResponse(content=jsonable_encoder(response))
 
@@ -88,7 +85,6 @@ async def delete_program(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "ADMIN" and current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Not authorized")
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "ADMIN", "AGENCY", "STAFF"])
     await program_service.delete_program(db, program_id)
     return JSONResponse(status_code=200, content={"message": "Program deleted successfully"})

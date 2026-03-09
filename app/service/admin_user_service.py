@@ -5,23 +5,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.utils.utils import hash_password, verify_password, create_access_token_for_admin_user, \
     create_refresh_token_for_admin_user
 from data.repository import admin_user_repository
-from infrastructure.schema.admin_schema import AdminResponseSchema
 from infrastructure.schema.admin_user_schema import AdminUserCreate, AdminUserResponse, GroupLeaderAssignSchema
 
 
-async def list_users(db: AsyncSession, agency_name : str):
+async def list_users(db: AsyncSession, agency_name: str):
     return await admin_user_repository.get_all(db, agency_name)
 
 
-
-async def get_user(db: AsyncSession, user_id: int, agency_name : str):
+async def get_user(db: AsyncSession, user_id: int, agency_name: str):
     user = await admin_user_repository.get_by_id(db, user_id, agency_name)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
-async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:str):
+async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name: str, username: str):
     try:
         hashed_password = hash_password(user_data.password)
         main_password = user_data.password
@@ -45,11 +43,13 @@ async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:
         user_data_dict = user_data.model_dump(exclude_none=True)
         user_data_dict['agency_name'] = agency_name
         user_data_dict['code'] = code
+        user_data_dict['created_by'] = username
+        user_data_dict['updated_by'] = username
 
         guide_data_dict = {}
         if user_data.role == "GUIDE":
             guide_data_dict.update({
-                'name_en' : user_data.name,
+                'name_en': user_data.name,
                 'tracking_id': user_data.tracking_id,
                 'date_of_birth': user_data.dob,
                 'mobile_no': user_data.mobile_no,
@@ -69,8 +69,8 @@ async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:
                 "preliminary_password": main_password,
                 "password": hashed_password,
                 "is_assigned": True,
-                "created_by": agency_name,
-                "updated_by": agency_name,
+                "created_by": username,
+                "updated_by": username,
                 'passport_dob': user_data.passport_dob,
                 'passport_expiry_date': user_data.passport_expiry_date,
             })
@@ -78,6 +78,7 @@ async def create_user(db: AsyncSession, user_data: AdminUserCreate, agency_name:
         return AdminUserResponse.model_validate(result)
     except Exception as e:
         raise e
+
 
 async def admin_user_login(db: AsyncSession, request_credential: OAuth2PasswordRequestForm):
     user = await admin_user_repository.get_admin_user_by_username(db, username=request_credential.username)
@@ -93,33 +94,39 @@ async def admin_user_login(db: AsyncSession, request_credential: OAuth2PasswordR
             detail="Incorrect username or password"
         )
 
-    access_token = create_access_token_for_admin_user(role=user.role,username=user.username, agency_name= user.agency_name)
-    refresh_token = create_refresh_token_for_admin_user(role=user.role,username=user.username, agency_name= user.agency_name)
+    access_token = create_access_token_for_admin_user(role=user.role, username=user.username,
+                                                      agency_name=user.agency_name)
+    refresh_token = create_refresh_token_for_admin_user(role=user.role, username=user.username,
+                                                        agency_name=user.agency_name)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token
     }
 
-async def get_admin_user_profile(db:AsyncSession, code:str):
+
+async def get_admin_user_profile(db: AsyncSession, code: str):
     try:
         return await admin_user_repository.get_admin_user_by_code(db, code)
     except Exception as e:
         raise e
 
-async def get_pilgrim_data_by_admin_user(db:AsyncSession, group_leader_code:str):
+
+async def get_pilgrim_data_by_admin_user(db: AsyncSession, group_leader_code: str):
     try:
         result = await admin_user_repository.get_pilgrim_by_admin_user(db, group_leader_code)
         return result
     except Exception as e:
         raise e
 
-async def assign_group_leader_to_pilgrims(db:AsyncSession, request: GroupLeaderAssignSchema, agency_name : str):
+
+async def assign_group_leader_to_pilgrims(db: AsyncSession, request: GroupLeaderAssignSchema, agency_name: str):
     try:
         return await admin_user_repository.assign_group_leader_to_pilgrims(db, request, agency_name)
     except Exception as e:
         raise e
 
-async def get_group_leader_with_pilgrim_count(db:AsyncSession, agency_name : str):
+
+async def get_group_leader_with_pilgrim_count(db: AsyncSession, agency_name: str):
     try:
         return await admin_user_repository.get_group_leader_with_pilgrim_count(db, agency_name)
     except Exception as e:

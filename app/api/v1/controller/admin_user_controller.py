@@ -1,11 +1,12 @@
 from typing import List
 
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user, get_current_admin_user
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import admin_user_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate, GroupLeaderAssignSchema
@@ -20,8 +21,7 @@ async def list_admin_user(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await admin_user_service.list_users(db, agency_name)
 
@@ -47,8 +47,7 @@ async def get_pilgrim_data_by_admin_user(
 @private_router.get("/admin-user/{admin_id}", response_model=AdminUserResponse, tags=["Admin User"])
 async def get_admin_user(admin_id: int, db: AsyncSession = Depends(get_async_db),
                          current_user: dict = Depends(get_current_user)):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await admin_user_service.get_user(db, admin_id, agency_name)
 
@@ -59,11 +58,11 @@ async def create_admin_user(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     # agency_name = "AMIN 26"
-    return await admin_user_service.create_user(db, user_data, agency_name)
+    username = current_user['username']
+    return await admin_user_service.create_user(db, user_data, agency_name, username)
 
 
 @public_router.post("/login", tags=["Admin User"])
@@ -73,23 +72,23 @@ async def admin_user_login(
 ):
     return await admin_user_service.admin_user_login(db, form_data)
 
+
 @private_router.put("/assign-group-leader", tags=["Admin User"])
 async def assign_group_leader(
-        request_body : GroupLeaderAssignSchema,
+        request_body: GroupLeaderAssignSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await admin_user_service.assign_group_leader_to_pilgrims(db, request_body, agency_name)
+
 
 @private_router.get("/group-leader-with-pilgrim-count", tags=["Admin User"])
 async def get_group_leader_with_pilgrim_count(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await admin_user_service.get_group_leader_with_pilgrim_count(db, agency_name)

@@ -1,8 +1,9 @@
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import payment_request_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.payment_request_schema import PaymentRequestResponse, PaymentRequestListResponseSchema, \
@@ -17,11 +18,11 @@ async def payment_request(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     username = current_user["username"]
-    return await payment_request_service.create_payment_request(db=db, request=request, agency_name=agency_name, username=username)
+    return await payment_request_service.create_payment_request(db=db, request=request, agency_name=agency_name,
+                                                                username=username)
 
 
 @private_router.get("/payment-request", response_model=PaymentRequestListResponseSchema)
@@ -29,8 +30,7 @@ async def get_payment_requests(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     return await payment_request_service.get_payment_requests(db, agency_name)
@@ -42,8 +42,7 @@ async def update_payment_request(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     return await payment_request_service.update_payment_request(db=db, request=request, agency_name=agency_name)
@@ -55,8 +54,7 @@ async def get_payment_request(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
 
     return await payment_request_service.get_payment_request_by_id(db, payment_request_id, agency_name)
@@ -68,8 +66,7 @@ async def delete_payment_request(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     return await payment_request_service.delete_payment_request(db, payment_request_id, agency_name)

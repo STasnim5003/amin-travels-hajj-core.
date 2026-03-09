@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.controller.pilgrim_controller import public_router
 from app.core.middleware.middleware import get_current_user, get_current_admin_user, get_current_pilgrim
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import payment_service, pilgrim_payment_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaginatedPaymentResponseForGroupLeader, \
@@ -23,11 +24,10 @@ async def create_payable_for_group_leader(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     username = current_user["username"]
-    return await payment_service.create_payable_for_group_leader(db, request, agency_name,username)
+    return await payment_service.create_payable_for_group_leader(db, request, agency_name, username)
 
 
 @private_router.post("/group-leader/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
@@ -48,8 +48,7 @@ async def create_payment_of_group_leader(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
 
     tracking_ids = []
@@ -108,8 +107,7 @@ async def get_agency_payment_info(
         size: int = Query(100, ge=1),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
 
@@ -124,8 +122,7 @@ async def update_payable(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     return await payment_service.update_payable(db, payable_request, agency_name)
@@ -186,8 +183,7 @@ async def create_payable_for_pilgrim(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     result = await pilgrim_payment_service.create_payable_for_pilgrim(db, request, agency_name)
@@ -211,8 +207,7 @@ async def create_payment_for_pilgrim(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaymentResponseSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     request = PilgrimPaymentBaseSchema(
@@ -268,8 +263,7 @@ async def get_payment_by_id(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     return await payment_service.get_payment_by_id_for_update(db, payment_id, agency_name)
@@ -281,8 +275,7 @@ async def get_payable_by_id(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await pilgrim_payment_service.get_payable_by_id(db, payable_id, agency_name)
 
@@ -293,8 +286,7 @@ async def get_payable_report_data(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user),
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     return await pilgrim_payment_service.get_payable_report_data(db=db, payable_id=payable_id, agency_name=agency_name)
@@ -307,23 +299,19 @@ async def get_payment_ledger(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-
 
     result = await pilgrim_payment_service.get_payment_ledger(db, tracking_id, group_leader, agency_name)
     return PaymentLedgerSchema.model_validate(result)
 
-@private_router.get("/pilgrim-payment-summary-list", response_model=PilgrimsPaymentSummaryListSchema,tags=["payment"])
+
+@private_router.get("/pilgrim-payment-summary-list", response_model=PilgrimsPaymentSummaryListSchema, tags=["payment"])
 async def get_pilgrim_payment_summary_list(
-        db:AsyncSession = Depends(get_async_db),
+        db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
 
     return await pilgrim_payment_service.get_pilgrims_payment_summary(db=db, agency_name=agency_name)
-

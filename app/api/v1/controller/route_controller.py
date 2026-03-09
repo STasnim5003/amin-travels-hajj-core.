@@ -1,10 +1,11 @@
 from typing import List
 
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import route_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.route_schema import RouteResponseSchema, RouteBaseSchema, \
@@ -16,16 +17,15 @@ private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/privat
 @private_router.post("/route", response_model=RouteResponseSchema, tags=["Route"])
 async def create_route(route: RouteBaseSchema, db: AsyncSession = Depends(get_async_db),
                        current_user: dict = Depends(get_current_user)):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await route_service.create_route_service(db, route, agency_name)
+    username = current_user["username"]
+    return await route_service.create_route_service(db, route, agency_name, username)
 
 
 @private_router.get("/route", response_model=List[RouteResponseSchema], tags=["Route"])
 async def get_routes(db: AsyncSession = Depends(get_async_db), current_user: dict = Depends(get_current_user)):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await route_service.get_all_routes_service(db, agency_name)
 
@@ -36,17 +36,16 @@ async def update_route(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await route_service.update_route(db, update_request, agency_name)
+    username = current_user['username']
+    return await route_service.update_route(db, update_request, agency_name, username)
 
 
 @private_router.get("/route/{route_id}", response_model=RouteResponseSchema, tags=["Route"])
 async def get_route_by_id(route_id: int, db: AsyncSession = Depends(get_async_db),
                           current_user: dict = Depends(get_current_user)):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await route_service.get_route_service(db, route_id, agency_name)
 
@@ -57,7 +56,6 @@ async def delete_route(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await route_service.delete_route(db, route_id, agency_name)

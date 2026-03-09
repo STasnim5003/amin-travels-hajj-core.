@@ -1,8 +1,9 @@
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import package_assign_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema, \
@@ -38,7 +39,8 @@ async def get_bed_types_by_package_name(
         current_user: dict = Depends(get_current_user)
 ):
     agency_name = current_user["agency_name"]
-    return await package_assign_service.get_bed_types_by_package_name(db, package_name, duration,  agency_name)
+    return await package_assign_service.get_bed_types_by_package_name(db, package_name, duration, agency_name)
+
 
 @private_router.put("/update-assigned-package", tags=["package-assign"])
 async def update_assign_package(
@@ -46,8 +48,8 @@ async def update_assign_package(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Not Authorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_assign_service.update_assigned_package(db, request, agency_name)
 
@@ -57,8 +59,8 @@ async def get_package_assigned_pilgrims(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Not Authorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_assign_service.get_package_assigned_pilgrims(db, agency_name)
 
@@ -69,10 +71,11 @@ async def assign_package_multiple_pilgrim(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Not Authorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_assign_service.assign_package_for_multiple_pilgrims(db, request, agency_name)
+
 
 @private_router.put("/change-package", tags=['package-assign'])
 async def change_package(
@@ -80,7 +83,7 @@ async def change_package(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Not Authorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_assign_service.change_assigned_package(db=db, request=request, agency_name=agency_name)

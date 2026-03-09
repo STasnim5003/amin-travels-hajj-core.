@@ -1,16 +1,14 @@
-from typing import List
-
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
 from app.service import admin_service
 from data.repository import route_request_repository, admin_repository
-from infrastructure.schema.route_request_schema import RouteRequestBaseSchema, RouteRequestResponseSchema, \
+from infrastructure.schema.route_request_schema import RouteRequestResponseSchema, \
     RouteRequestListResponseSchema, RouteRequestUpdateSchema, RouteRequestCreateSchema
 
 
-def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_name : str, method:str):
+def make_final_route_request_dict(request: RouteRequestCreateSchema, agency_name: str, method: str, username: str):
     total_hajji = 0
     route_type_map = {
         "ARRIVAL": "arrival",
@@ -33,14 +31,14 @@ def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_nam
     if method.lower() == "post":
         final_request_dict.update({
             "agency_name": agency_name,
-            "created_by": agency_name,
-            "updated_by": agency_name,
+            "created_by": username,
+            "updated_by": username,
         })
 
     elif method.lower() == "put":
         final_request_dict.update({
-            "updated_by": agency_name,
-            "updated_at":get_current_time(),
+            "updated_by": username,
+            "updated_at": get_current_time(),
         })
 
     for route in request.route_requests:
@@ -55,14 +53,15 @@ def make_final_route_request_dict(request : RouteRequestCreateSchema, agency_nam
     return total_hajji, final_request_dict
 
 
-async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str):
+async def create_route_request(db: AsyncSession, request: RouteRequestCreateSchema, agency_name: str, username: str):
     try:
-        total_hajji, final_request_dict = make_final_route_request_dict(request=request, agency_name=agency_name,method="POST")
+        total_hajji, final_request_dict = make_final_route_request_dict(request=request, agency_name=agency_name,
+                                                                        method="POST", username=username)
 
         admin_update_dict = {
             'sar': request.total_price,
             'agency_name': agency_name,
-            'route_requested':total_hajji
+            'route_requested': total_hajji
         }
 
         result = await route_request_repository.create_route_request(db=db, request_dict=final_request_dict,
@@ -80,7 +79,7 @@ async def get_route_wise_hajji_count(db: AsyncSession, agency_name: str):
         raise e
 
 
-async def get_route_requests(db:AsyncSession, agency_name:str):
+async def get_route_requests(db: AsyncSession, agency_name: str):
     try:
         is_lead_agency = False
         child_agencies = await admin_service.get_child_agencies(db=db, lead_agency_name=agency_name)
@@ -89,9 +88,8 @@ async def get_route_requests(db:AsyncSession, agency_name:str):
         child_agencies.append(agency_name)
         child_agencies = list(set(child_agencies))
 
-
-
-        result = await route_request_repository.get_route_requests(db=db, agency_names=child_agencies, is_lead_agency=is_lead_agency)
+        result = await route_request_repository.get_route_requests(db=db, agency_names=child_agencies,
+                                                                   is_lead_agency=is_lead_agency)
         route_requests = [
             RouteRequestResponseSchema.model_validate(item)
             for item in result
@@ -104,7 +102,7 @@ async def get_route_requests(db:AsyncSession, agency_name:str):
         raise e
 
 
-async def get_route_request_by_id(db:AsyncSession, request_id:int, agency_name:str):
+async def get_route_request_by_id(db: AsyncSession, request_id: int, agency_name: str):
     try:
         request = await route_request_repository.get_route_request_by_id(db=db, request_id=request_id)
         if not request:
@@ -121,7 +119,8 @@ async def get_route_request_by_id(db:AsyncSession, request_id:int, agency_name:s
     except Exception as e:
         raise e
 
-async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema, agency_name:str):
+
+async def update_route_request(db: AsyncSession, request: RouteRequestUpdateSchema, agency_name: str, username: str):
     try:
         response = await route_request_repository.get_route_request_by_id(db=db, request_id=request.id)
         if not response:
@@ -139,12 +138,14 @@ async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema
             existing_hajji += r['number_of_pax']
 
         request_create_schema = RouteRequestCreateSchema(
-            route_requests = request.route_requests,
-            total_price = request.total_price,
-            status = request.status
+            route_requests=request.route_requests,
+            total_price=request.total_price,
+            status=request.status
         )
 
-        total_hajji, final_request_dict = make_final_route_request_dict(request=request_create_schema, agency_name=agency_name,method="PUT")
+        total_hajji, final_request_dict = make_final_route_request_dict(request=request_create_schema,
+                                                                        agency_name=agency_name, method="PUT",
+                                                                        username=username)
 
         admin_update_dict = {}
         if existing_hajji != total_hajji:
@@ -155,14 +156,15 @@ async def update_route_request(db:AsyncSession, request:RouteRequestUpdateSchema
             admin_update_dict['sar'] = response.total_price - request.total_price
             admin_update_dict['agency_name'] = response.agency_name
 
-
-        result = await route_request_repository.update_route_requests(db=db, request_dict=final_request_dict, admin_update_dict=admin_update_dict, request_id = request.id)
+        result = await route_request_repository.update_route_requests(db=db, request_dict=final_request_dict,
+                                                                      admin_update_dict=admin_update_dict,
+                                                                      request_id=request.id)
         return RouteRequestResponseSchema.model_validate(result)
     except Exception as e:
         raise e
 
 
-async def delete_route_request(db:AsyncSession, requisition_id:int, agency_name:str):
+async def delete_route_request(db: AsyncSession, requisition_id: int, agency_name: str):
     try:
         response = await route_request_repository.get_route_request_by_id(db=db, request_id=requisition_id)
         if not response:
@@ -182,14 +184,15 @@ async def delete_route_request(db:AsyncSession, requisition_id:int, agency_name:
         admin_update_dict = {
             'existing_price': response.total_price,
             'agency_name': agency_name,
-            'existing_hajji' : existing_hajji
+            'existing_hajji': existing_hajji
         }
-        return await route_request_repository.delete_route_request(db=db, request_id=requisition_id, admin_update_dict=admin_update_dict)
+        return await route_request_repository.delete_route_request(db=db, request_id=requisition_id,
+                                                                   admin_update_dict=admin_update_dict)
     except Exception as e:
         raise e
 
 
-async def cancel_request(db, request_id, agency_name):
+async def cancel_request(db, request_id, agency_name, username):
     try:
         result = await route_request_repository.get_route_request_by_id(db=db, request_id=request_id)
         if not result:
@@ -202,7 +205,7 @@ async def cancel_request(db, request_id, agency_name):
         request_dict = {
             'cancellation_status': "REQUEST_FOR_CANCELLATION",
             'id': request_id,
-            'updated_by': agency_name,
+            'updated_by': username,
             'updated_at': get_current_time()
         }
 
@@ -214,7 +217,8 @@ async def cancel_request(db, request_id, agency_name):
         raise e
 
 
-async def cancel_request_lead_agency_action(db:AsyncSession, request_id:int, agency_name:str, status:str):
+async def cancel_request_lead_agency_action(db: AsyncSession, request_id: int, agency_name: str, status: str,
+                                            username: str):
     try:
         result = await route_request_repository.get_route_request_by_id(db=db, request_id=request_id)
         if not result:
@@ -230,7 +234,7 @@ async def cancel_request_lead_agency_action(db:AsyncSession, request_id:int, age
 
         request_dict = {
             'id': request_id,
-            'updated_by': agency_name,
+            'updated_by': username,
             'updated_at': get_current_time(),
             'cancellation_status': status if status == "REJECTED" else None,
         }

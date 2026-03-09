@@ -1,10 +1,11 @@
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import package_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.package_schema import PackagesResponseSchema, PackageMasterDataForFilterListSchema, \
@@ -49,8 +50,8 @@ async def get_packages_endpoint(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     response = await package_service.get_packages(name=name,
                                                   search=search,
@@ -78,8 +79,8 @@ async def create_package(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PackageResponseSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
 
     return await package_service.create_package(db, request_body, agency_name)
@@ -98,8 +99,8 @@ async def get_package_by_id_for_agency(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_service.get_package_by_id_for_agency(db, package_id, agency_name)
 
@@ -110,8 +111,8 @@ async def update_package(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PackageResponseSchema:
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_service.update_package(db, package_id, request_body, agency_name)
 
@@ -121,8 +122,8 @@ async def delete_package(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_service.delete_package_by_id(db, package_id, agency_name)
 
@@ -132,8 +133,8 @@ async def create_package_name(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_service.create_package_names(db, request, agency_name)
 
@@ -143,8 +144,8 @@ async def get_package_names(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_service.get_package_names(db, agency_name)
 
@@ -154,8 +155,8 @@ async def get_package_name_by_id(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
 
     return await package_service.get_package_name_by_id(db, package_name_id, agency_name)
@@ -165,8 +166,8 @@ async def delete_package_name(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_service.delete_package_name(db, package_name_id, agency_name)
 
@@ -176,8 +177,8 @@ async def update_package_name(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
+
     agency_name = current_user["agency_name"]
     return await package_service.update_package_name(db, request, agency_name)
 

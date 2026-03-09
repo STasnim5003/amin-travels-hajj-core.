@@ -2,13 +2,14 @@ from fastapi import HTTPException
 from sqlalchemy import insert, select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
 from data.model.payment_category_model import PaymentCategoryModel
 from infrastructure.schema.payment_category_schema import PaymentCategoryBase, PaymentCategoryUpdateSchema
 
 
 async def create_payment_category(
-    db: AsyncSession,
-    request: dict
+        db: AsyncSession,
+        request: dict
 ):
     try:
         stmt = (
@@ -24,8 +25,9 @@ async def create_payment_category(
         await db.rollback()
         raise e
 
+
 async def get_payment_categories(
-        db:AsyncSession,
+        db: AsyncSession,
         agency_name: str
 ):
     try:
@@ -37,8 +39,9 @@ async def get_payment_categories(
     except Exception as e:
         raise e
 
+
 async def get_payment_category_by_id(
-        db:AsyncSession, payment_category_id: int, agency_name: str
+        db: AsyncSession, payment_category_id: int, agency_name: str
 ):
     try:
         stmt = (
@@ -51,13 +54,13 @@ async def get_payment_category_by_id(
     except Exception as e:
         raise e
 
-async def update_payment_category(db:AsyncSession, update_request:PaymentCategoryUpdateSchema, agency_name: str):
+
+async def update_payment_category(db: AsyncSession, update_request_dict : dict):
     try:
-        update_request_dict = update_request.model_dump(exclude_unset=True)
-        update_request_dict["updated_by"] = agency_name
+
         stmt = (
             update(PaymentCategoryModel)
-            .where(PaymentCategoryModel.id == update_request.id)
+            .where(PaymentCategoryModel.id == update_request_dict['id'])
             .values(**update_request_dict)
             .returning(PaymentCategoryModel)
         )
@@ -75,7 +78,8 @@ async def update_payment_category(db:AsyncSession, update_request:PaymentCategor
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
-async def delete_payment_category(db:AsyncSession, payment_category_id:int):
+
+async def delete_payment_category(db: AsyncSession, payment_category_id: int):
     try:
         stmt = (
             delete(PaymentCategoryModel).where(PaymentCategoryModel.id == payment_category_id)

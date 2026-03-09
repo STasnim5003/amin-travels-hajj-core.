@@ -14,7 +14,7 @@ from infrastructure.schema.route_for_requistion_schema import RouteForRequisitio
     RouteForRequisitionCreateSchema
 
 
-async def create_route(db:AsyncSession, route:RouteForRequisitionCreateSchema, agency_name:str):
+async def create_route(db:AsyncSession, route:RouteForRequisitionCreateSchema, agency_name:str, username:str):
     try:
         # Check duplicate for route 1
         existing_route_1 = await route_for_requisition_repository.get_route_by_type_and_name(
@@ -52,8 +52,8 @@ async def create_route(db:AsyncSession, route:RouteForRequisitionCreateSchema, a
             "route_name": route.route_name_1,
             "route_price": route.route_price,
             "agency_name": agency_name,
-            "created_by": agency_name,
-            "updated_by": agency_name,
+            "created_by": username,
+            "updated_by": username,
             "route_mapping_id": route_mapping_id
         }
 
@@ -64,8 +64,8 @@ async def create_route(db:AsyncSession, route:RouteForRequisitionCreateSchema, a
                 "route_name": route.route_name_2,
                 "route_price": route.route_price,
                 "agency_name": agency_name,
-                "created_by": agency_name,
-                "updated_by": agency_name,
+                "created_by": username,
+                "updated_by": username,
                 "route_mapping_id": route_mapping_id
             }
 
@@ -111,7 +111,7 @@ async def get_routes_by_id(db:AsyncSession, requisition_id:int, agency_name:str)
         raise e
 
 
-async def update_route(db:AsyncSession, request:RouteForRequisitionUpdateSchema, agency_name:str):
+async def update_route(db:AsyncSession, request:RouteForRequisitionUpdateSchema, agency_name:str, username:str):
     try:
         child_agencies = await admin_repository.get_child_agencies(db=db, lead_agency_name=agency_name)
         child_agencies.append(agency_name)
@@ -122,7 +122,7 @@ async def update_route(db:AsyncSession, request:RouteForRequisitionUpdateSchema,
             raise HTTPException(status_code=400, detail='Route with this name and type does not exist')
 
         request_dict = request.model_dump(exclude_none=True)
-        request_dict['updated_by'] = agency_name
+        request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
 
         result = await route_for_requisition_repository.update_route(db=db, route_request=request_dict)

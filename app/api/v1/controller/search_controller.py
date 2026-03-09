@@ -1,8 +1,9 @@
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import has_required_permissions
 from app.service import search_service
 from data.db.db_config import get_async_db
 
@@ -15,10 +16,9 @@ async def get_pilgrim_search(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] not in ["SUPER_ADMIN", "ADMIN", "AGENCY"]:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "ADMIN", "AGENCY", "STAFF"])
 
     agency_name = None
-    if current_user["role"] == "AGENCY":
+    if current_user["role"] in ["AGENCY", "STAFF"]:
         agency_name = current_user["agency_name"]
     return await search_service.pilgrim_search_service(db, search_term, agency_name)

@@ -1,10 +1,11 @@
 from typing import Optional
 
 import fastapi
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import route_for_requisition_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.route_for_requistion_schema import RouteForRequisitionResponseSchema, \
@@ -20,10 +21,10 @@ async def create_route(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await route_for_requisition_service.create_route(db, route, agency_name)
+    username = current_user['username']
+    return await route_for_requisition_service.create_route(db, route, agency_name, username)
 
 
 @private_router.get("/route-for-requisition", response_model=RouteForRequisitionListResponseSchema)
@@ -32,8 +33,7 @@ async def get_route_for_requisition(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await route_for_requisition_service.get_routes(db, route_type, agency_name)
 
@@ -44,10 +44,10 @@ async def update_route_for_requisition(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await route_for_requisition_service.update_route(db, request, agency_name)
+    username = current_user['username']
+    return await route_for_requisition_service.update_route(db, request, agency_name, username)
 
 
 @private_router.get("/route-for-requisition/summary")
@@ -57,8 +57,7 @@ async def get_route_for_requisition_summary(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await route_for_requisition_service.get_route_summary(db, route_type, route_name, agency_name)
 
@@ -69,8 +68,7 @@ async def get_route_for_requisition(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await route_for_requisition_service.get_routes_by_id(db, requisition_id, agency_name)
 
@@ -81,7 +79,6 @@ async def delete_route_for_requisition(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await route_for_requisition_service.delete_routes(db, requisition_id, agency_name)

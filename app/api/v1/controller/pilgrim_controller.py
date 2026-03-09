@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user, get_current_pilgrim
+from app.core.utils.authorize_api import check_agency_or_staff_user, has_required_permissions
 from app.service import pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
@@ -54,8 +55,7 @@ async def update_pilgrim_data(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaginatedPilgrimDataListResponseSchema:
-    if current_user["role"] != "SUPER_ADMIN":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN"])
 
     username = current_user["username"]
 
@@ -70,8 +70,7 @@ async def replace_pilgrim(
         db:AsyncSession = Depends(get_async_db),
         current_user:dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
     return await pilgrim_service.replace_pilgrim(db=db, request=request, agency_name=agency_name)
@@ -81,8 +80,7 @@ async def get_replaced_pilgrims(
         db:AsyncSession = Depends(get_async_db),
         current_user:dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
     return await pilgrim_service.get_replaced_pilgrims(db=db, agency_name=agency_name)
@@ -162,8 +160,7 @@ async def assign_family_code_to_pilgrim(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     # agency_name = "Marvellous Air Travels Ltd"
     return await pilgrim_service.assign_family_code(db, request_body, agency_name)

@@ -1,10 +1,11 @@
 from typing import Optional
 
 import fastapi
-from fastapi import Depends, HTTPException, Form, UploadFile, File
+from fastapi import Depends, Form, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
+from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import customer_service, pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.customer_schema import CustomerCreateSchema, CustomerAppliedForRegistrationSchema
@@ -19,8 +20,7 @@ async def create_customer(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PilgrimDataResponseSchema:
-    if current_user["role"] not in ["AGENCY", "STAFF"]:
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
 
     group_name = current_user["agency_name"]
     username = current_user["username"]
@@ -34,8 +34,7 @@ async def applied_for_registration(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaginatedPilgrimDataListResponseSchema:
-    if current_user["role"] not in ["AGENCY", "STAFF"]:
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
 
     group_name = current_user["agency_name"]
     username = current_user['username']
@@ -59,8 +58,7 @@ async def customer_registration(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] not in ["AGENCY", "STAFF"]:
-        raise HTTPException(status_code=400, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
 
     return await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id,
                                                   comment_on_package)
