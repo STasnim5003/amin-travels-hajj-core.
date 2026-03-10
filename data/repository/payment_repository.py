@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytz
 from fastapi import HTTPException
-from sqlalchemy import insert, select, update, text, desc, func, case
+from sqlalchemy import insert, select, update, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.admin_user_model import AdminUserModel
@@ -104,6 +104,7 @@ async def get_payments_by_group_leader(
                 p.transaction_id,
                 p.created_at,
                 p.created_by,
+                p.agency_name,
                 p.updated_at,
                 p.updated_by,
                 a.total_payable AS admin_user_total_payable,
@@ -198,7 +199,7 @@ async def get_payment_summary_for_agency(
                     ON p.group_leader = au.code
                 LEFT JOIN core.pilgrim_data pd 
                     ON p.tracking_id = pd.tracking_id
-                WHERE p.created_by = :agency_name
+                WHERE p.agency_name = :agency_name
             ),
             filtered AS (
                 SELECT *
@@ -235,6 +236,7 @@ async def get_payment_summary_for_agency(
                             'voucher_no', f.voucher_no,
                             'cheque_no', f.cheque_no,
                             'cheque_bank', f.cheque_bank,
+                            'agency_name', f.agency_name,
                             'bank_info', json_build_object(
                                 'bank_info_id', f.bank_info_id,
                                 'bank_name', f.bank_name,
@@ -390,7 +392,6 @@ async def update_payable_payment(db: AsyncSession, update_data: dict, finance_in
             )
             await db.execute(query)
 
-
         updated_payment = result.scalar_one_or_none()
         await db.commit()
 
@@ -400,6 +401,7 @@ async def update_payable_payment(db: AsyncSession, update_data: dict, finance_in
         return updated_payment
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 async def get_payment_by_id(db: AsyncSession, payment_id: int):
     try:
@@ -438,6 +440,7 @@ async def get_payment_by_id(db: AsyncSession, payment_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 async def get_day_wise_payment(db: AsyncSession, agency_name: str):
     try:
         tz = pytz.timezone('Asia/Dhaka')
@@ -454,14 +457,14 @@ async def get_day_wise_payment(db: AsyncSession, agency_name: str):
                     FROM core.payment p
                     WHERE DATE(p.updated_at) = :today
                       AND p.category = 'Payment'
-                      AND p.created_by = :agency_name
+                      AND p.agency_name = :agency_name
                 ),
                 'yesterday', (
                     SELECT json_agg(p.*)
                     FROM core.payment p
                     WHERE DATE(p.updated_at) = :yesterday
                       AND p.category = 'Payment'
-                      AND p.created_by = :agency_name
+                      AND p.agency_name = :agency_name
                 ),
                 'last_7_days', (
                     SELECT json_agg(p.*)
@@ -469,7 +472,7 @@ async def get_day_wise_payment(db: AsyncSession, agency_name: str):
                     WHERE DATE(p.updated_at) >= :seven_days_ago
                       AND DATE(p.updated_at) <= :today
                       AND p.category = 'Payment'
-                      AND p.created_by = :agency_name
+                      AND p.agency_name = :agency_name
                 )
             ) AS payments_json;
         """
@@ -488,7 +491,8 @@ async def get_day_wise_payment(db: AsyncSession, agency_name: str):
     except Exception as e:
         raise e
 
-async def get_group_leader_ledger(db:AsyncSession, group_leader:str):
+
+async def get_group_leader_ledger(db: AsyncSession, group_leader: str):
     try:
         stmt = (
             select(PaymentModel)
@@ -498,5 +502,3 @@ async def get_group_leader_ledger(db:AsyncSession, group_leader:str):
         return result.scalars().all()
     except Exception as e:
         raise e
-
-

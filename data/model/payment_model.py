@@ -27,3 +27,4 @@ class PaymentModel(Base, BaseMixinModel):
     cheque_no = Column(String, nullable=True)
     cheque_bank = Column(String, nullable=True)
     voucher_no = Column(String, nullable=True)
+    agency_name = Column(String, nullable=True)

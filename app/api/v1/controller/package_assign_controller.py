@@ -51,7 +51,8 @@ async def update_assign_package(
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-    return await package_assign_service.update_assigned_package(db, request, agency_name)
+    username = current_user["username"]
+    return await package_assign_service.update_assigned_package(db, request, agency_name, username)
 
 
 @private_router.get("/package-assigned-pilgrims", tags=["package-assign"])
@@ -74,7 +75,8 @@ async def assign_package_multiple_pilgrim(
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-    return await package_assign_service.assign_package_for_multiple_pilgrims(db, request, agency_name)
+    username = current_user["username"]
+    return await package_assign_service.assign_package_for_multiple_pilgrims(db, request, agency_name, username)
 
 
 @private_router.put("/change-package", tags=['package-assign'])
@@ -86,4 +88,5 @@ async def change_package(
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-    return await package_assign_service.change_assigned_package(db=db, request=request, agency_name=agency_name)
+    username = current_user["username"]
+    return await package_assign_service.change_assigned_package(db=db, request=request, agency_name=agency_name, username=username)

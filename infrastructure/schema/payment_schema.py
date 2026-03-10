@@ -12,6 +12,7 @@ class PaymentSchema(BaseModel):
     pilgrims_tracking_id: Optional[List[str]] = None
     group_leader: Optional[str] = None
     tracking_id: Optional[str] = None
+    agency_name: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -30,7 +31,7 @@ class PaymentResponseSchema(PaymentSchema):
     transfer_no: Optional[str] = None
     cheque_no: Optional[str] = None
     cheque_bank: Optional[str] = None
-    voucher_no : Optional[str] = None
+    voucher_no: Optional[str] = None
     bank_info: Optional[Dict[str, Any]] = None
 
 
@@ -83,8 +84,8 @@ class GroupedPayment(BaseModel):
     name: Optional[str] = None
     username: Optional[str] = None
     mobile_no: Optional[str] = None
-    actual_payable : Optional[int] = None
-    total_payment : Optional[int] = None
+    actual_payable: Optional[int] = None
+    total_payment: Optional[int] = None
     total_due: Optional[int] = None
     id: Optional[int] = None
     tracking_id: Optional[str] = None
@@ -166,7 +167,6 @@ class GroupLeaderPaymentBaseSchema(PaymentPayableBaseSchema):
     cheque_bank: Optional[str] = None,
 
 
-
 class ReceiptPrintSchema(BaseModel):
     id: int
     description: Optional[str] = None
@@ -185,9 +185,10 @@ class ReceiptPrintSchema(BaseModel):
     bank_branch: Optional[str] = None
     bank_account_no: Optional[str] = None
     amount_in_words: Optional[str] = None
-    voucher_no : Optional[str] = None
-    cheque_no : Optional[str] = None
-    cheque_bank : Optional[str] = None
+    voucher_no: Optional[str] = None
+    cheque_no: Optional[str] = None
+    cheque_bank: Optional[str] = None
+
 
 class PilgrimPayableReportSchema(BaseModel):
     id: int
@@ -201,11 +202,12 @@ class PilgrimPayableReportSchema(BaseModel):
     amount: int
     tracking_id: Optional[str] = None
     amount_in_words: Optional[str] = None
-    package_name : Optional[str] = None
+    package_name: Optional[str] = None
     package_duration: Optional[int] = None
     package_bed_types: Optional[str] = None
     add_ons_services: Optional[Any] = None
-    agency_name : str
+    agency_name: str
+
 
 class GroupLeaderPayableReportSchema(BaseModel):
     id: int
@@ -216,8 +218,9 @@ class GroupLeaderPayableReportSchema(BaseModel):
     amount_in_words: Optional[str] = None
     summary: Optional[Any] = None
 
+
 class PayableUpdateSchema(BaseModel):
-    payable_id : int
+    payable_id: int
     tracking_id: Optional[str] = None
     group_leader: Optional[str] = None
     payment_category: Optional[str] = None
@@ -229,9 +232,10 @@ class PayableUpdateSchema(BaseModel):
     cheque_bank: Optional[str] = None
     category: Optional[str] = None
 
+
 class PaymentUpdateSchema(BaseModel):
-    payment_id : int
-    group_leader: Optional[str]= None
+    payment_id: int
+    group_leader: Optional[str] = None
     tracking_id: Optional[str] = None
     amount: Optional[int] = None
     description: Optional[str] = None
@@ -245,6 +249,7 @@ class PaymentUpdateSchema(BaseModel):
     cheque_bank: Optional[str] = None
     pilgrims_tracking_id: Optional[List[str]] = None,
 
+
 class PaymentLedgerSchema(BaseModel):
     tracking_id: Optional[str] = None
     group_leader: Optional[str] = None
@@ -254,8 +259,8 @@ class PaymentLedgerSchema(BaseModel):
     total_available_amount: Optional[int] = 0
     total_payment: Optional[int] = 0
     total_due: Optional[int] = 0
-    actual_payable : Optional[int]=0
-    package_price_discount : Optional[int] = 0
+    actual_payable: Optional[int] = 0
+    package_price_discount: Optional[int] = 0
     payable_list: Optional[List[PaymentResponseSchema]] = None
     payment_list: Optional[List[PaymentResponseSchema]] = None
     generated_on: Optional[datetime] = None
@@ -263,18 +268,20 @@ class PaymentLedgerSchema(BaseModel):
     class config:
         from_attributes: True
 
+
 class PilgrimPaymentSummary(BaseModel):
     tracking_id: Optional[str] = None
-    name : Optional[str] = None
-    mobile : Optional[str] = None
+    name: Optional[str] = None
+    mobile: Optional[str] = None
     payable: Optional[int] = 0
     payment: Optional[int] = 0
     due: Optional[int] = 0
-    family_code : Optional[str] = None
+    family_code: Optional[str] = None
 
     class config:
         from_attributes: True
 
+
 class PilgrimsPaymentSummaryListSchema(BaseModel):
-    agency_name : Optional[str] = None
-    payment_summary_list : List[PilgrimPaymentSummary]
+    agency_name: Optional[str] = None
+    payment_summary_list: List[PilgrimPaymentSummary]

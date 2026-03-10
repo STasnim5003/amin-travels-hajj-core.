@@ -16,7 +16,7 @@ from infrastructure.schema.payment_schema import PaginatedPaymentResponseForGrou
 
 
 async def create_payable_for_group_leader(db: AsyncSession, payment_request: GroupLeaderPayableBaseSchema,
-                                          agency_name: str, username:str):
+                                          agency_name: str, username: str):
     if payment_request.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
@@ -36,6 +36,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
         "transaction_id": transaction_id,
         "created_by": username,
         "updated_by": username,
+        "agency_name": agency_name,
         "no_of_hajji": len(payment_request.pilgrims_tracking_id)
     })
 
@@ -61,7 +62,7 @@ async def create_payable_for_group_leader(db: AsyncSession, payment_request: Gro
 
 
 async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaymentBaseSchema, agency_name: str,
-                                      receipt: UploadFile):
+                                      receipt: UploadFile, username: str):
     if request.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount should be positive")
 
@@ -72,7 +73,8 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
             raise HTTPException(status_code=400, detail="Group leader does not exist")
 
         if request.voucher_no:
-            is_voucher_num_exist = await pilgrim_payment_repository.is_voucher_no_exist(db=db,voucher_no=request.voucher_no)
+            is_voucher_num_exist = await pilgrim_payment_repository.is_voucher_no_exist(db=db,
+                                                                                        voucher_no=request.voucher_no)
             if is_voucher_num_exist:
                 raise HTTPException(status_code=400, detail="Voucher number already exists")
 
@@ -92,8 +94,9 @@ async def create_group_leader_payment(db: AsyncSession, request: GroupLeaderPaym
     payment_data = request.model_dump(exclude_unset=True)
     payment_data.update({
         "transaction_id": transaction_id,
-        "created_by": agency_name,
-        "updated_by": agency_name,
+        "created_by": username,
+        "updated_by": username,
+        "agency_name": agency_name,
         "no_of_hajji": len(request.pilgrims_tracking_id),
         "receipt": receipt_data
     })
@@ -210,9 +213,9 @@ async def get_agency_payments(
                 "name": key,
                 "username": name,
                 "mobile_no": mobile_no,
-                "actual_payable" : total_payable,
-                "total_payment" : total_payment,
-                "total_due" : total_due,
+                "actual_payable": total_payable,
+                "total_payment": total_payment,
+                "total_due": total_due,
                 "children": payments
             })
 
@@ -250,7 +253,8 @@ async def get_agency_payments(
 async def update_payable(
         db: AsyncSession,
         payable_data: PayableUpdateSchema,
-        agency_name: str
+        agency_name: str,
+        username: str
 ):
     try:
         if payable_data.amount is not None and payable_data.amount <= 0:
@@ -271,7 +275,7 @@ async def update_payable(
             raise HTTPException(status_code=400, detail="Group Leader does not match")
 
         payable_data_dict = payable_data.model_dump(exclude_none=True)
-        payable_data_dict['updated_by'] = agency_name
+        payable_data_dict['updated_by'] = username
         payable_data_dict['updated_at'] = get_current_time()
 
         finance_info = {}

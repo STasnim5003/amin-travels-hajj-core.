@@ -18,7 +18,7 @@ from infrastructure.schema.payment_schema import PayableInfoUpdateSchema, Paymen
 
 
 async def create_payable_for_pilgrim(
-        db: AsyncSession, payment_data: PilgrimPayableBaseSchema, agency_name: str
+        db: AsyncSession, payment_data: PilgrimPayableBaseSchema, agency_name: str, username: str
 ) -> PaymentResponseSchema:
     if payment_data.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than 0")
@@ -54,8 +54,9 @@ async def create_payable_for_pilgrim(
     payment_request_dict = payment_data.model_dump(exclude_unset=True)
     payment_request_dict.update({
         "transaction_id": transaction_id,
-        "created_by": agency_name,
-        "updated_by": agency_name
+        "created_by": username,
+        "updated_by": username,
+        "agency_name": agency_name,
     })
 
     try:
@@ -66,7 +67,7 @@ async def create_payable_for_pilgrim(
 
 
 async def create_payment_for_pilgrim(
-        db: AsyncSession, payment_data: PilgrimPaymentBaseSchema, agency_name: str, receipt: UploadFile
+        db: AsyncSession, payment_data: PilgrimPaymentBaseSchema, agency_name: str, receipt: UploadFile, username: str
 ):
     if payment_data.amount <= 0:
         raise HTTPException(status_code=400, detail="Amount must be greater than 0")
@@ -77,7 +78,8 @@ async def create_payment_for_pilgrim(
             raise HTTPException(status_code=400, detail="Pilgrim with tracking id not found")
 
         if payment_data.voucher_no:
-            is_voucher_num_exist = await pilgrim_payment_repository.is_voucher_no_exist(db=db, voucher_no = payment_data.voucher_no)
+            is_voucher_num_exist = await pilgrim_payment_repository.is_voucher_no_exist(db=db,
+                                                                                        voucher_no=payment_data.voucher_no)
             if is_voucher_num_exist:
                 raise HTTPException(status_code=400, detail="Voucher number already exists")
 
@@ -110,8 +112,9 @@ async def create_payment_for_pilgrim(
     payment_request_dict = payment_data.model_dump(exclude_unset=True)
     payment_request_dict.update({
         "transaction_id": transaction_id,
-        "created_by": agency_name,
-        "updated_by": agency_name,
+        "created_by": username,
+        "updated_by": username,
+        "agency_name": agency_name,
         "receipt": receipt_data
     })
 
@@ -247,7 +250,7 @@ async def get_payable_by_id(db: AsyncSession, payable_id: int, agency_name: str)
 
 
 async def update_payment(db: AsyncSession, payment_update_schema: PaymentUpdateSchema, agency_name: str,
-                         receipt: Optional[UploadFile]):
+                         receipt: Optional[UploadFile], username: str):
     try:
         if payment_update_schema.amount is not None and payment_update_schema.amount <= 0:
             raise HTTPException(status_code=400, detail="Amount must be greater than zero")
@@ -267,7 +270,7 @@ async def update_payment(db: AsyncSession, payment_update_schema: PaymentUpdateS
             raise HTTPException(status_code=400, detail="Group Leader does not match")
 
         payment_data_dict = payment_update_schema.model_dump(exclude_none=True)
-        payment_data_dict['updated_by'] = agency_name
+        payment_data_dict['updated_by'] = username
         payment_data_dict['updated_at'] = get_current_time()
 
         receipt_data = []
@@ -297,7 +300,7 @@ async def update_payment(db: AsyncSession, payment_update_schema: PaymentUpdateS
                 'total_available_amount': total_available_amount,
                 'total_due': total_due,
                 'tracking_id': pilgrim.tracking_id,
-                'updated_by': agency_name,
+                'updated_by': username,
                 'updated_at': get_current_time()
             }
 
@@ -317,7 +320,7 @@ async def update_payment(db: AsyncSession, payment_update_schema: PaymentUpdateS
                 'total_available_amount': total_available_amount,
                 'total_due': total_due,
                 'code': existing_payment.group_leader,
-                'updated_by': agency_name,
+                'updated_by': username,
                 'updated_at': get_current_time()
             }
 
@@ -359,8 +362,8 @@ async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
                 total_due=pilgrim.total_due,
                 total_available_amount=pilgrim.total_available_amount,
                 total_payment=pilgrim.total_payment,
-                actual_payable = pilgrim.actual_payable,
-                package_price_discount = pilgrim.package_price_discount,
+                actual_payable=pilgrim.actual_payable,
+                package_price_discount=pilgrim.package_price_discount,
                 payable_list=payable_list,
                 payment_list=payment_list,
                 generated_on=datetime.now(ZoneInfo("Asia/Dhaka"))
@@ -395,7 +398,7 @@ async def get_payment_ledger(db, tracking_id, group_leader_code, agency_name):
         raise e
 
 
-async def get_pilgrims_payment_summary(db:AsyncSession, agency_name:str):
+async def get_pilgrims_payment_summary(db: AsyncSession, agency_name: str):
     try:
         result = await pilgrim_payment_repository.get_pilgrims_payment_summary(db=db, agency_name=agency_name)
 
@@ -418,4 +421,3 @@ async def get_pilgrims_payment_summary(db:AsyncSession, agency_name:str):
         )
     except Exception as e:
         raise e
-

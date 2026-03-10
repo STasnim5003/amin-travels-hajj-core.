@@ -25,7 +25,7 @@ async def get_durations_by_package_name(db: AsyncSession, package_name: str, age
 async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, duration: int, agency_name: str):
     return await package_assign_repository.get_bed_types_by_package_name(db, package_name, duration, agency_name)
 
-async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdateSchema, agency_name: str):
+async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdateSchema, agency_name: str, username:str):
     try:
         if request.total_payable <= 0 or request.package_price_discount < 0:
             raise HTTPException(status_code=400, detail="Payment Amount Must be Positive")
@@ -46,7 +46,7 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
         request_dict['total_available_amount'] = max(0, total_payment - (total_payable - discount))
         request_dict['total_due'] = max(0, total_payable - discount - total_payment)
         request_dict['actual_payable'] = total_payable - discount
-        request_dict['updated_by'] = agency_name
+        request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
 
         await package_assign_repository.individual_pilgrim_package_change(db, request_dict)
@@ -58,7 +58,7 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
             "amount": request.total_payable - (request.package_price_discount or 0),
             "tracking_id": request.tracking_id,
             "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
-            "updated_by": agency_name,
+            "updated_by": username,
             "updated_at": get_current_time()
         }
         await pilgrim_payment_repository.create_payable_for_package_change(db, pilgrim_payable_info)
@@ -80,7 +80,7 @@ async def get_package_assigned_pilgrims(db: AsyncSession, agency_name: str):
 
 
 async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: PackageAssignForMultiplePilgrimSchema,
-                                               agency_name: str):
+                                               agency_name: str, username:str):
     try:
         pilgrims = await pilgrim_repository.get_pilgrims_by_tracking_ids(db, request.tracking_ids)
 
@@ -153,8 +153,9 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
                 "amount": request.total_payable - (request.package_price_discount or 0),
                 "tracking_id": tracking_id,
                 "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
-                "created_by": agency_name,
-                "updated_by": agency_name,
+                "created_by": username,
+                "updated_by": username,
+                "agency_name": agency_name,
                 "category": "Payable"
             }
             for tracking_id in request.tracking_ids
@@ -175,7 +176,7 @@ async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: Packag
         raise e
 
 
-async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema, agency_name: str):
+async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema, agency_name: str, username:str):
     try:
         pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, request.tracking_id)
         if not pilgrim:
@@ -203,7 +204,7 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
             "package_bed_types": request.package_bed_types,
             "tracking_id": request.tracking_id,
             "add_ons_services": request.add_ons_services,
-            "updated_by": agency_name,
+            "updated_by": username,
             "updated_at": get_current_time()
         }
 
@@ -216,7 +217,7 @@ async def change_assigned_package(db: AsyncSession, request: PackageAssignSchema
             "amount": request.total_payable - (request.package_price_discount or 0),
             "tracking_id": request.tracking_id,
             "transaction_id": ''.join(random.choices(string.ascii_uppercase + string.digits, k=8)),
-            "updated_by": agency_name,
+            "updated_by": username,
             "updated_at": get_current_time()
         }
         await pilgrim_payment_repository.create_payable_for_package_change(db, pilgrim_payable_info)

@@ -50,7 +50,7 @@ async def create_payment_of_group_leader(
 ) -> PaymentResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-
+    username = current_user['username']
     tracking_ids = []
     if pilgrims_tracking_id:
         tracking_ids = [tid.strip() for tid in pilgrims_tracking_id.split(',')]
@@ -70,7 +70,7 @@ async def create_payment_of_group_leader(
         cheque_no=cheque_no,
         cheque_bank=cheque_bank
     )
-    return await payment_service.create_group_leader_payment(db, request_schema, agency_name, receipt)
+    return await payment_service.create_group_leader_payment(db, request_schema, agency_name, receipt, username)
 
 
 @private_router.get("/group-leader/payment-info", response_model=PaginatedPaymentResponseForGroupLeader,
@@ -124,8 +124,8 @@ async def update_payable(
 ) -> PaymentResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-
-    return await payment_service.update_payable(db, payable_request, agency_name)
+    username = current_user['username']
+    return await payment_service.update_payable(db, payable_request, agency_name, username)
 
 
 @private_router.put("/update-payment", tags=["payment"])
@@ -151,7 +151,7 @@ async def update_payment(
     if current_user["role"] != "AGENCY":
         raise HTTPException(status_code=403, detail="Unauthorized")
     agency_name = current_user["agency_name"]
-
+    username = current_user['username']
     tracking_ids = []
     if pilgrims_tracking_id:
         tracking_ids = [tid.strip() for tid in pilgrims_tracking_id.split(',')]
@@ -174,7 +174,7 @@ async def update_payment(
     )
 
     return await pilgrim_payment_service.update_payment(db=db, payment_update_schema=payment_update_schema,
-                                                        agency_name=agency_name, receipt=receipt)
+                                                        agency_name=agency_name, receipt=receipt, username=username)
 
 
 @private_router.post("/pilgrim/create-payable", response_model=PaymentResponseSchema, tags=["payment"])
@@ -185,8 +185,8 @@ async def create_payable_for_pilgrim(
 ) -> PaymentResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-
-    result = await pilgrim_payment_service.create_payable_for_pilgrim(db, request, agency_name)
+    username = current_user['username']
+    result = await pilgrim_payment_service.create_payable_for_pilgrim(db, request, agency_name, username)
     return PaymentResponseSchema.model_validate(result)
 
 
@@ -209,7 +209,7 @@ async def create_payment_for_pilgrim(
 ) -> PaymentResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-
+    username = current_user['username']
     request = PilgrimPaymentBaseSchema(
         amount=amount,
         tracking_id=tracking_id,
@@ -225,7 +225,7 @@ async def create_payment_for_pilgrim(
         cheque_bank=cheque_bank
     )
 
-    return await pilgrim_payment_service.create_payment_for_pilgrim(db, request, agency_name, receipt)
+    return await pilgrim_payment_service.create_payment_for_pilgrim(db, request, agency_name, receipt, username)
 
 
 @private_router.get("/payment-info/pilgrim", response_model=PaginatedPaymentResponseForGroupLeader, tags=["payment"])

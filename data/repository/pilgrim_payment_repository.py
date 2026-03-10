@@ -2,7 +2,6 @@ from fastapi import HTTPException
 from sqlalchemy import insert, update, select, text, func, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.model.admin_user_model import AdminUserModel
 from data.model.payment_model import PaymentModel
 from data.model.pilgrim_data_model import PilgrimDataModel
 from infrastructure.schema.payment_schema import PayableInfoUpdateSchema
@@ -75,75 +74,6 @@ async def create_payment_for_pilgrim(
         raise e
 
 
-async def update_payment_info(db: AsyncSession, payment_info: PayableInfoUpdateSchema):
-    try:
-        # Determine which model and column to use
-        if payment_info.tracking_id:
-            model = PilgrimDataModel
-            id_column = PilgrimDataModel.tracking_id
-            identifier = payment_info.tracking_id
-        elif payment_info.group_leader_code:
-            model = AdminUserModel
-            id_column = AdminUserModel.code
-            identifier = payment_info.group_leader_code
-        else:
-            raise HTTPException(status_code=400, detail="Either tracking_id or group_leader_code must be provided")
-
-        # Build update statement dynamically
-        if payment_info.total_payable:
-            stmt = (
-                update(model)
-                .where(id_column == identifier)
-                .values(
-                    total_payable=payment_info.total_payable,
-                    total_available_amount=payment_info.total_available_amount,
-                    total_due=payment_info.total_due
-                )
-                .returning(model)
-            )
-        else:
-            stmt = (
-                update(model)
-                .where(id_column == identifier)
-                .values(
-                    total_payment=payment_info.total_payment,
-                    total_available_amount=payment_info.total_available_amount,
-                    total_due=payment_info.total_due
-                )
-                .returning(model)
-            )
-        result = await db.execute(stmt)
-        updated_record = result.scalar_one_or_none()
-
-        if not updated_record:
-            raise HTTPException(status_code=400, detail="Record not found")
-
-        await db.commit()
-        return updated_record
-
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error updating payment info: {str(e)}")
-
-
-async def get_payable_by_payable_id(db: AsyncSession, payable_id: int):
-    try:
-        stmt = select(PaymentModel).where(PaymentModel.id == payable_id)
-        result = await db.execute(stmt)
-        payable = result.scalar_one_or_none()
-
-        if not payable:
-            raise HTTPException(status_code=400, detail=f"Payable with ID {payable_id} not found")
-
-        return payable
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Error retrieving payable: {str(e)}")
-
-
 async def get_payments_by_tracking_id(
         db: AsyncSession,
         tracking_id: str,
@@ -167,6 +97,7 @@ async def get_payments_by_tracking_id(
                 p.created_by AS created_by,
                 p.updated_at AS updated_at,
                 p.updated_by AS updated_by,
+                p.agency_name AS agency_name,
                 pd.total_payable AS pilgrim_total_payable,
                 pd.total_payment AS pilgrim_total_payment,
                 pd.total_due AS pilgrim_total_due,
@@ -222,18 +153,7 @@ async def create_payable_for_package_change(db: AsyncSession, payable_info: dict
         raise e
 
 
-async def update_group_leader_payment_info(db: AsyncSession, group_leader_finance_info: dict):
-    try:
-        await db.execute(
-            update(AdminUserModel)
-            .where(AdminUserModel.code == group_leader_finance_info.get("code"))
-            .values(**group_leader_finance_info)
-        )
-    except Exception as e:
-        raise e
-
-
-async def get_group_leader_payable_report_data(db:AsyncSession, group_leader:str):
+async def get_group_leader_payable_report_data(db: AsyncSession, group_leader: str):
     try:
         stmt = (
             select(
@@ -259,6 +179,7 @@ async def get_group_leader_payable_report_data(db:AsyncSession, group_leader:str
     except Exception as e:
         raise e
 
+
 async def get_pilgrim_payment_ledger(db: AsyncSession, tracking_id: str):
     try:
         stmt = (
@@ -279,6 +200,7 @@ async def is_voucher_no_exist(db: AsyncSession, voucher_no: str) -> bool:
 
     result = await db.execute(stmt)
     return result.scalar()
+
 
 async def get_pilgrims_payment_summary(db: AsyncSession, agency_name: str):
     try:
