@@ -20,7 +20,8 @@ async def create_transport_service(
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user['agency_name']
-    return await transport_service.create_transport_service(db, request, agency_name)
+    username = current_user['username']
+    return await transport_service.create_transport_service(db, request, agency_name, username)
 
 
 @private_router.get("/transport-service", response_model=TransportServiceListResponseSchema)
@@ -43,4 +44,5 @@ async def update_transport_service(
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user['agency_name']
-    return await transport_service.update_transport_service(db, request, agency_name)
+    username = current_user['username']
+    return await transport_service.update_transport_service(db, request, agency_name, username)

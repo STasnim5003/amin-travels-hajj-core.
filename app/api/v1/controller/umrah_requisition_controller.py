@@ -22,7 +22,9 @@ async def create_umrah_requisition(
 ) -> UmrahRequisitionResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-    return await umrah_requisition_service.create_requisition(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await umrah_requisition_service.create_requisition(db=db, request=request, agency_name=agency_name,
+                                                              username=username)
 
 
 @private_router.get("/umrah-requisition", response_model=UmrahRequisitionListResponseSchema, tags=['Umrah Requisition'])
@@ -45,8 +47,9 @@ async def assign_service_umrah_requisition(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
+    username = current_user['username']
     return await umrah_requisition_service.umrah_requisition_assign_service(db=db, request=request,
-                                                                            agency_name=agency_name)
+                                                                            agency_name=agency_name, username=username)
 
 
 @private_router.put("/umrah-requisition/confirmation", response_model=UmrahRequisitionResponseSchema,
@@ -58,8 +61,9 @@ async def confirm_umrah_requisition(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
+    username = current_user['username']
     return await umrah_requisition_service.umrah_requisition_confirmation(db=db, request=request,
-                                                                          agency_name=agency_name)
+                                                                          agency_name=agency_name, username=username)
 
 
 @private_router.put("/umrah-requisition", response_model=UmrahRequisitionResponseSchema, tags=['Umrah Requisition'])
@@ -70,7 +74,8 @@ async def update_umrah_requisition(
 ) -> UmrahRequisitionResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-    return await umrah_requisition_service.umrah_requisition_update(db, request, agency_name)
+    username = current_user['username']
+    return await umrah_requisition_service.umrah_requisition_update(db, request, agency_name, username)
 
 
 @private_router.get("/umrah-requisition/{requisition_id}", response_model=UmrahRequisitionResponseSchema,
@@ -95,8 +100,9 @@ async def create_vendors_price(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-
-    return await umrah_requisition_service.create_vendors_price(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await umrah_requisition_service.create_vendors_price(db=db, request=request, agency_name=agency_name,
+                                                                username=username)
 
 
 @private_router.get("/umrah-requisition-with-vendors-price/{umrah_requisition_id}",

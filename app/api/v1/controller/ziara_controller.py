@@ -20,7 +20,8 @@ async def create_ziara(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await ziara_service.create_ziara_service(db, ziara, agency_name)
+    username = current_user["username"]
+    return await ziara_service.create_ziara_service(db, ziara, agency_name, username)
 
 
 @ziara_router.get("/ziara/{ziara_id}", response_model=ZiaraResponseSchema, tags=["Ziara"])
@@ -53,7 +54,8 @@ async def update_ziara(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await ziara_service.update_ziara(db, update_request, agency_name)
+    username = current_user['username']
+    return await ziara_service.update_ziara(db, update_request, agency_name, username)
 
 
 @ziara_router.delete("/ziara/{ziara_id}", tags=["Ziara"])

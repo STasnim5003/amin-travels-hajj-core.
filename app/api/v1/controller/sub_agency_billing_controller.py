@@ -20,7 +20,9 @@ async def create_sub_agency_bill(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await sub_agency_billing_service.create_sub_agency_bill(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await sub_agency_billing_service.create_sub_agency_bill(db=db, request=request, agency_name=agency_name,
+                                                                   username=username)
 
 
 @private_router.get("/sub-agency-billing", response_model=PaymentRequestListResponseSchema)
@@ -41,7 +43,9 @@ async def create_sub_agency_bill(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await sub_agency_billing_service.update_sub_agency_bill(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await sub_agency_billing_service.update_sub_agency_bill(db=db, request=request, agency_name=agency_name,
+                                                                   username=username)
 
 
 @private_router.get("/sub-agency-billing/{bill_id}", response_model=PaymentRequestResponse)

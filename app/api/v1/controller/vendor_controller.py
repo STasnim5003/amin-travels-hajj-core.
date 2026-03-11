@@ -22,8 +22,8 @@ async def create_vendor(
 ) -> VendorResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-
-    return await vendor_service.create_vendor(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await vendor_service.create_vendor(db=db, request=request, agency_name=agency_name, username=username)
 
 
 @private_router.get("/vendor", response_model=VendorListResponseSchema)
@@ -56,7 +56,8 @@ async def update_vendor(
 ) -> VendorResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-    return await vendor_service.update_vendor(db=db, request=request, agency_name=agency_name)
+    username = current_user['username']
+    return await vendor_service.update_vendor(db=db, request=request, agency_name=agency_name, username=username)
 
 
 @private_router.delete("/vendor/{vendor_id}")

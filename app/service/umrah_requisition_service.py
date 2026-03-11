@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,12 +9,12 @@ from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase,
     UmrahRequisitionWithVendorsPrice
 
 
-async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, agency_name: str):
+async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, agency_name: str, username: str):
     try:
         request_dict = request.model_dump()
         request_dict['agency_name'] = agency_name
-        request_dict['created_by'] = agency_name
-        request_dict['updated_by'] = agency_name
+        request_dict['created_by'] = username
+        request_dict['updated_by'] = username
 
         saved = await umrah_requisition_repository.create(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(saved)
@@ -43,12 +41,12 @@ async def get_umrah_requisition_by_id(db, requisition_id, agency_name):
 
 
 async def umrah_requisition_assign_service(db: AsyncSession, request: UmrahRequisitionAssignedService,
-                                           agency_name: str):
+                                           agency_name: str, username: str):
     try:
         await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
 
         request_dict = request.model_dump(exclude_none=True)
-        request_dict['updated_by'] = agency_name
+        request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
 
         result = await umrah_requisition_repository.umrah_requisition_assign_service(db, request_dict)
@@ -57,13 +55,14 @@ async def umrah_requisition_assign_service(db: AsyncSession, request: UmrahRequi
         raise e
 
 
-async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUpdateSchema, agency_name: str):
+async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUpdateSchema, agency_name: str,
+                                   username: str):
     try:
         await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
 
         request_dict = request.model_dump(exclude_none=True)
-        request_dict['updated_by'] = agency_name
-        request_dict['updated_at'] = datetime.now() + timedelta(hours=6)
+        request_dict['updated_by'] = username
+        request_dict['updated_at'] = get_current_time()
 
         new_requisition = await umrah_requisition_repository.update_umrah_requisition(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(new_requisition)
@@ -72,13 +71,13 @@ async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUp
 
 
 async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisitionConfirmationSchema,
-                                         agency_name: str):
+                                         agency_name: str, username: str):
     try:
         await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
 
         request_dict = request.model_dump(exclude_none=True)
-        request_dict['updated_by'] = agency_name
-        request_dict['updated_at'] = datetime.now() + timedelta(hours=6)
+        request_dict['updated_by'] = username
+        request_dict['updated_at'] = get_current_time()
 
         result = await umrah_requisition_repository.umrah_requisition_confirmation(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(result)
@@ -87,12 +86,14 @@ async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisi
         raise e
 
 
-async def create_vendors_price(db: AsyncSession, request: UmrahVendorsPriceCreateSchema, agency_name:str):
+async def create_vendors_price(db: AsyncSession, request: UmrahVendorsPriceCreateSchema, agency_name: str,
+                               username: str):
     try:
-        await requisition_availability_check(db=db, requisition_id=request.umrah_requisition_id, agency_name=agency_name)
+        await requisition_availability_check(db=db, requisition_id=request.umrah_requisition_id,
+                                             agency_name=agency_name)
         request_dict = request.model_dump(exclude_none=True)
-        request_dict['created_by'] = agency_name
-        request_dict['updated_by'] = agency_name
+        request_dict['created_by'] = username
+        request_dict['updated_by'] = username
 
         result = await umrah_requisition_repository.create_vendors_price(db=db, request_dict=request_dict)
         return UmrahVendorsPriceResponseSchema.model_validate(result)
@@ -100,7 +101,7 @@ async def create_vendors_price(db: AsyncSession, request: UmrahVendorsPriceCreat
         raise e
 
 
-async def requisition_availability_check(db: AsyncSession, requisition_id:int ,agency_name: str):
+async def requisition_availability_check(db: AsyncSession, requisition_id: int, agency_name: str):
     try:
         requisition = await umrah_requisition_repository.get_requisition_by_id(db, requisition_id, agency_name)
 
@@ -111,12 +112,13 @@ async def requisition_availability_check(db: AsyncSession, requisition_id:int ,a
         raise e
 
 
-async def get_requisitions_with_vendors_price(db:AsyncSession, requisition_id:int, agency_name:str):
+async def get_requisitions_with_vendors_price(db: AsyncSession, requisition_id: int, agency_name: str):
     try:
-        requisition, vendors_price = await umrah_requisition_repository.get_requisition_with_vendor_price(db=db, requisition_id=requisition_id)
+        requisition, vendors_price = await umrah_requisition_repository.get_requisition_with_vendor_price(db=db,
+                                                                                                          requisition_id=requisition_id)
 
         return UmrahRequisitionWithVendorsPrice(
-            requisition = UmrahRequisitionResponseSchema.model_validate(requisition),
+            requisition=UmrahRequisitionResponseSchema.model_validate(requisition),
             vendors_price=(
                 UmrahVendorsPriceResponseSchema.model_validate(vendors_price)
                 if vendors_price else None
