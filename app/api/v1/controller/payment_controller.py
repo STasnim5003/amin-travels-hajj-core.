@@ -148,8 +148,7 @@ async def update_payment(
         pilgrims_tracking_id: Optional[str] = Form(None),
         current_user: dict = Depends(get_current_user)
 ):
-    if current_user["role"] != "AGENCY":
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     username = current_user['username']
     tracking_ids = []
