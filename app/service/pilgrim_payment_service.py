@@ -407,7 +407,7 @@ async def get_pilgrims_payment_summary(db: AsyncSession, agency_name: str):
             row_dict = dict(r)
             row_dict["name"] = row_dict.pop("name_en")
             row_dict["mobile"] = row_dict.pop("mobile_no")
-            row_dict["payable"] = row_dict.pop("total_payable")
+            row_dict["payable"] = row_dict.pop("actual_payable")
             row_dict["payment"] = row_dict.pop("total_payment")
             row_dict["due"] = row_dict.pop("total_due")
 

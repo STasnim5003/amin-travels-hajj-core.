@@ -209,7 +209,7 @@ async def get_pilgrims_payment_summary(db: AsyncSession, agency_name: str):
                 tracking_id,
                 name_en,
                 mobile_no,
-                total_payable,
+                actual_payable,
                 total_payment,
                 total_due,
                 family_code
