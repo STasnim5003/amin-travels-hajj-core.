@@ -11,6 +11,7 @@ class UmrahRequisitionVendorPrice(BaseModel):
     per_head_price_child: Optional[float] = None
     per_head_price_infant: Optional[float] = None
 
+
 class UmrahRequisitionHotelType(BaseModel):
     food: str
     hotel_name: Optional[str] = None
@@ -94,6 +95,10 @@ class UmrahRequisitionAssignedService(BaseModel):
     number_of_traveller: Optional[int] = None
     adult_traveller: Optional[int] = None
     other_traveller: Optional[Any] = None
+    total_price: Optional[float] = None
+    total_payment: Optional[float] = None
+    total_due: Optional[float] = None
+    invoice_no: Optional[str] = None
     is_visa: Optional[bool] = None
     with_hotel_brn: Optional[bool] = None
     air_ticket: Optional[bool] = None
@@ -119,7 +124,6 @@ class UmrahRequisitionAssignedService(BaseModel):
     others_price: Optional[UmrahRequisitionVendorPrice] = None
     total_vendor_price: Optional[float] = None
     total_service_charge: Optional[float] = None
-    total_price: Optional[float] = None
     per_head_price_adult: Optional[float] = None
     per_head_price_child: Optional[float] = None
     per_head_price_infant: Optional[float] = None

@@ -43,11 +43,15 @@ async def get_umrah_requisition_by_id(db, requisition_id, agency_name):
 async def umrah_requisition_assign_service(db: AsyncSession, request: UmrahRequisitionAssignedService,
                                            agency_name: str, username: str):
     try:
-        await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
+        requisition = await umrah_requisition_repository.get_requisition_by_id(db, request.id, agency_name)
+
+        if not requisition:
+            raise HTTPException(status_code=400, detail='Umrah Requisition not found')
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
+        request_dict['total_due'] = max(0, request_dict['total_price'] - requisition.total_payment)
 
         result = await umrah_requisition_repository.umrah_requisition_assign_service(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(result)

@@ -50,6 +50,9 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     exchange_rate= Column(Float, nullable=True)
     child_service = Column(JSONB, nullable=True)
     infant_service = Column(JSONB, nullable=True)
+    total_due = Column(Float, nullable=False)
+    total_payment = Column(Float, nullable=False)
+    invoice_no = Column(String, nullable = False)
 
 
 class UmrahVendorsPriceModel(Base, BaseMixinModel):
