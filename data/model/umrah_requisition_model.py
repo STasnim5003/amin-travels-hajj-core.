@@ -53,6 +53,7 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     total_due = Column(Float, nullable=False)
     total_payment = Column(Float, nullable=False)
     invoice_no = Column(String, nullable = False)
+    umrah_requisition_code = Column(String, nullable=False)
 
 
 class UmrahVendorsPriceModel(Base, BaseMixinModel):

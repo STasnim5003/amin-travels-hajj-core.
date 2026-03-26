@@ -130,11 +130,11 @@ async def get_requisition_with_vendor_price(db:AsyncSession, requisition_id:int)
         raise e
 
 
-async def get_requisition_by_invoice_no(db:AsyncSession, invoice_no:str):
+async def get_requisition_by_requisition_code(db:AsyncSession, umrah_requisition_code:str):
     try:
         stmt = (
-            select(UmrahRequisitionModel.invoice_no, UmrahRequisitionModel.total_price, UmrahRequisitionModel.total_payment)
-            .where(UmrahRequisitionModel.invoice_no == invoice_no)
+            select(UmrahRequisitionModel.umrah_requisition_code, UmrahRequisitionModel.total_price, UmrahRequisitionModel.total_payment)
+            .where(UmrahRequisitionModel.umrah_requisition_code == umrah_requisition_code)
         )
         result = await db.execute(stmt)
         return result.first()

@@ -62,6 +62,7 @@ class UmrahRequisitionBase(BaseModel):
     passport_info : Optional[Any] = None
     ziara: Optional[bool] = None
 
+
 class UmrahRequisitionUpdateSchema(BaseModel):
     id :int
     name: Optional[str] = None
@@ -91,6 +92,7 @@ class UmrahRequisitionUpdateSchema(BaseModel):
 
 class UmrahRequisitionAssignedService(BaseModel):
     id : int
+    umrah_requisition_code: Optional[str] = None
     name: Optional[str] = None
     number_of_traveller: Optional[int] = None
     adult_traveller: Optional[int] = None
