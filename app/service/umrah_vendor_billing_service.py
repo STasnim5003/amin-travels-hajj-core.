@@ -53,8 +53,8 @@ async def get_umrah_vendor_billing(db: AsyncSession, agency_name: str):
                     food=data.get("food"),
                     others=data.get("others"),
 
-                    child_vendors=data.get("child_vendors"),
-                    infant_vendors=data.get("infant_vendors"),
+                    child_vendors=data.get("child_services"),
+                    infant_vendors=data.get("infant_services"),
 
                     payments=data.get("payments"),
                 )
