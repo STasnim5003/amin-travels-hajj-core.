@@ -28,6 +28,7 @@ class UmrahRequisitionHotelSchema(BaseModel):
 
 class UmrahRequisitionTransportSchema(BaseModel):
     route_id : int
+    route_description : Optional[str]
     transport: Any
     price : Optional[UmrahRequisitionVendorPrice] = None
 
