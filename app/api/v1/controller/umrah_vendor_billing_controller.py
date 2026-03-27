@@ -36,3 +36,13 @@ async def get_umrah_vendor_billing(
     agency_name = current_user["agency_name"]
 
     return await umrah_vendor_billing_service.get_umrah_vendor_billing(db=db, agency_name=agency_name)
+
+@private_router.get("/umrah/vendor-billing-summary/{vendor_name}", response_model=List[UmrahVendorBillingResponseSchema])
+async def get_umrah_vendor_billing_summary(
+        vendor_name: str,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+    agency_name = current_user["agency_name"]
+    return await umrah_vendor_billing_service.get_vendor_billing_summary(db=db, agency_name=agency_name, vendor_name=vendor_name)

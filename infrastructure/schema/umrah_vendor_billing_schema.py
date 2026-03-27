@@ -5,7 +5,6 @@ from typing import Optional, Any
 
 class UmrahVendorBillingCreateSchema(BaseModel):
     umrah_requisition_code: str
-    invoice_no: str
     guest_name: str
     vendor_name: str
     description: Optional[Any]
@@ -18,6 +17,7 @@ class UmrahVendorBillingCreateSchema(BaseModel):
 class UmrahVendorBillingResponseSchema(UmrahVendorBillingCreateSchema):
     id: int
     agency_name: Optional[str]
+    invoice_no: Optional[str]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     created_by: Optional[str]

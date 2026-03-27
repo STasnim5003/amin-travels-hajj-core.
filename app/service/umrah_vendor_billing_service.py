@@ -62,3 +62,12 @@ async def get_umrah_vendor_billing(db: AsyncSession, agency_name: str):
         return result
     except Exception as e:
         raise e
+
+
+async def get_vendor_billing_summary(db:AsyncSession, agency_name:str, vendor_name:str):
+    try:
+        result = await umrah_vendor_billing_repository.get_vendor_billing_summary(db=db, agency_name=agency_name, vendor_name=vendor_name)
+
+        return [UmrahVendorBillingResponseSchema.model_validate(r) for r in result]
+    except Exception as e:
+        raise e

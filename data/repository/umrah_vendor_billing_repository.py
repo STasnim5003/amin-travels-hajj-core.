@@ -1,4 +1,4 @@
-from sqlalchemy import insert, text
+from sqlalchemy import insert, text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.umrah_vendor_billing_model import UmrahVendorBillingModel
@@ -130,5 +130,18 @@ async def get_umrah_vendor_billing(db: AsyncSession, agency_name: str):
 
         result = await db.execute(query, {"agency_name": agency_name})
         return result.mappings().all()
+    except Exception as e:
+        raise e
+
+
+async def get_vendor_billing_summary(db:AsyncSession, agency_name:str, vendor_name:str):
+    try:
+        stmt = (
+            select(UmrahVendorBillingModel)
+            .where(UmrahVendorBillingModel.vendor_name == vendor_name, UmrahVendorBillingModel.agency_name==agency_name)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars()
     except Exception as e:
         raise e
