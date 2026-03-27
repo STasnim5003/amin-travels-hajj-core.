@@ -1,10 +1,12 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils import num_to_words
 from app.core.utils.get_current_time import get_current_time
 from data.repository import umrah_customer_billing_repository, umrah_requisition_repository
 from infrastructure.schema.umrah_customer_billing_schema import UmrahCustomerBillingBaseSchema, \
-    UmrahCustomerBillingResponseSchema, UmrahCustomerBillingListResponse, UmrahCustomerBillingUpdateSchema
+    UmrahCustomerBillingResponseSchema, UmrahCustomerBillingListResponse, UmrahCustomerBillingUpdateSchema, \
+    UmrahCustomerBillingInvoiceBuildSchema
 
 
 async def create_umrah_customer_billing(db: AsyncSession, request: UmrahCustomerBillingBaseSchema, agency_name: str,
@@ -88,8 +90,44 @@ async def delete_umrah_customer_billing(db: AsyncSession, agency_name: str, bill
         if umrah_customer_billing.agency_name != agency_name:
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
+        return await umrah_customer_billing_repository.delete_umrah_customer_billing(db=db, billing_id=billing_id,
+                                                                                     deleted_payment=umrah_customer_billing.amount,
+                                                                                     requisition_code=umrah_customer_billing.umrah_requisition_code)
+    except Exception as e:
+        raise e
 
-        return await umrah_customer_billing_repository.delete_umrah_customer_billing(db=db, billing_id=billing_id, deleted_payment = umrah_customer_billing.amount,
-                                                                                     requisition_code = umrah_customer_billing.umrah_requisition_code)
+
+async def get_umrah_customer_billing_invoice_data(db: AsyncSession, umrah_requisition_code: str, agency_name: str):
+    try:
+        invoice_data = await umrah_customer_billing_repository.get_umrah_customer_billing_invoice_data(db=db,
+                                                                                                       umrah_requisition_code=umrah_requisition_code)
+
+        if not invoice_data:
+            raise HTTPException(status_code=400, detail="Requisition Doesn't Exists")
+
+        if invoice_data['agency_name'] != agency_name:
+            raise HTTPException(status_code=400, detail='Agency name does not match')
+
+        return UmrahCustomerBillingInvoiceBuildSchema(
+            umrah_requisition_code=umrah_requisition_code,
+            invoice_no=invoice_data['invoice_no'],
+            name=invoice_data.get('name'),
+            mobile_no=invoice_data.get('mobile_no'),
+            total_price=invoice_data.get('total_price'),
+            total_due=invoice_data.get('total_due'),
+            total_payment=invoice_data.get('total_payment'),
+            no_of_adults=invoice_data.get('adult_traveller'),
+            no_of_children=invoice_data.get('other_traveller').get('child') if invoice_data.get(
+                'other_traveller') else None,
+            no_of_infants=invoice_data.get('other_traveller').get('infant') if invoice_data.get(
+                'other_traveller') else None,
+            per_head_price_adult=invoice_data.get('per_head_price_adult'),
+            per_head_price_children=invoice_data.get('per_head_price_child'),
+            per_head_price_infants=invoice_data.get('per_head_price_infant'),
+            agency_name=invoice_data.get('agency_name'),
+            total_price_in_words=num_to_words.amount_to_words(invoice_data.get('total_price')),
+            total_due_in_words=num_to_words.amount_to_words(invoice_data.get('total_due')),
+            total_payment_in_words=num_to_words.amount_to_words(invoice_data.get('total_payment'))
+        )
     except Exception as e:
         raise e

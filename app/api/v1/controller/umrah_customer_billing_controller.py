@@ -9,7 +9,8 @@ from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import umrah_customer_billing_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.umrah_customer_billing_schema import UmrahCustomerBillingResponseSchema, \
-    UmrahCustomerBillingBaseSchema, UmrahCustomerBillingListResponse, UmrahCustomerBillingUpdateSchema
+    UmrahCustomerBillingBaseSchema, UmrahCustomerBillingListResponse, UmrahCustomerBillingUpdateSchema, \
+    UmrahCustomerBillingInvoiceBuildSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private", tags=["Umrah Billing"])
 
@@ -63,3 +64,17 @@ async def delete_umrah_customer_billing(
     agency_name = current_user['agency_name']
     return await umrah_customer_billing_service.delete_umrah_customer_billing(db=db, agency_name=agency_name,
                                                                               billing_id=billing_id)
+
+
+@private_router.get("/umrah/customer-billing-invoice-data/{umrah_requisition_code}",
+                    response_model=UmrahCustomerBillingInvoiceBuildSchema)
+async def get_umrah_customer_billing_invoice_data(
+        umrah_requisition_code: str,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+    agency_name = current_user['agency_name']
+    return await umrah_customer_billing_service.get_umrah_customer_billing_invoice_data(db=db,
+                                                                                        umrah_requisition_code=umrah_requisition_code,
+                                                                                        agency_name=agency_name)

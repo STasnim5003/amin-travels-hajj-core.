@@ -137,3 +137,36 @@ async def delete_umrah_customer_billing(db: AsyncSession, billing_id: int, delet
     except Exception as e:
         await db.rollback()
         raise e
+
+
+async def get_umrah_customer_billing_invoice_data(db:AsyncSession, umrah_requisition_code:str):
+    try:
+        query = text("""
+                SELECT 
+                    ur.umrah_requisition_code,
+                    ur.invoice_no,
+                    ur.name,
+                    ur.mobile_no,
+                    ur.total_price,
+                    ur.total_due,
+                    ur.total_payment,
+                    ur.adult_traveller,
+                    ur.other_traveller,
+                    ur.per_head_price_adult,
+                    ur.per_head_price_child,
+                    ur.per_head_price_infant,
+                    ur.agency_name
+                FROM core.umrah_requisition ur
+                WHERE ur.umrah_requisition_code = :umrah_requisition_code
+            """)
+
+        result = await db.execute(
+            query,
+            {"umrah_requisition_code": umrah_requisition_code}
+        )
+
+        row = result.mappings().first()
+        return row
+
+    except Exception as e:
+        raise e

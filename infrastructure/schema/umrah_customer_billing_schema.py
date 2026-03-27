@@ -44,3 +44,22 @@ class UmrahCustomerBillingListResponse(BaseModel):
 
 class UmrahCustomerBillingUpdateSchema(UmrahCustomerBillingBaseSchema):
     id: int
+
+class UmrahCustomerBillingInvoiceBuildSchema(BaseModel):
+    umrah_requisition_code: str
+    invoice_no: str
+    name: Optional[str]
+    mobile_no: Optional[str]
+    total_price: Optional[float]
+    total_due: Optional[float]
+    total_payment: Optional[float]
+    no_of_adults: Optional[int]
+    no_of_children: Optional[int]
+    no_of_infants: Optional[int]
+    per_head_price_adult: Optional[float]
+    per_head_price_children: Optional[float]
+    per_head_price_infants: Optional[float]
+    total_price_in_words: Optional[str]
+    total_due_in_words: Optional[str]
+    total_payment_in_words: Optional[str]
+
