@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -11,7 +11,7 @@ class UmrahB2BPaymentCreate(BaseModel):
     way_of_payment: Optional[str] = None
     bill: int
     credit: int
-    payment_date: Optional[str] = None
+    payment_date: Optional[date] = None
     remarks: Optional[str] = None
 
 
@@ -23,7 +23,7 @@ class UmrahB2BPaymentUpdate(BaseModel):
     way_of_payment: Optional[str] = None
     bill: Optional[int] = None
     credit: Optional[int] = None
-    payment_date: Optional[str] = None
+    payment_date: Optional[date] = None
     remarks: Optional[str] = None
     is_active: Optional[bool] = None
 

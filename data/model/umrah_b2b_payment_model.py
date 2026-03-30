@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, BigInteger, Boolean, DateTime, text
+from sqlalchemy import Column, Integer, String, BigInteger, Date
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -19,7 +19,7 @@ class UmrahB2BPayment(BaseMixinModel, Base):
     bill = Column(BigInteger, nullable=False)
     credit = Column(BigInteger, nullable=False)
 
-    payment_date = Column(String, nullable=True)
+    payment_date = Column(Date, nullable=True)
     remarks = Column(String, nullable=True)
 
     agency_name = Column(String, nullable=True)

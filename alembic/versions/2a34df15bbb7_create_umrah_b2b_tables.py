@@ -53,7 +53,7 @@ def upgrade() -> None:
         sa.Column('way_of_payment', sa.String, nullable=True),
         sa.Column('bill', sa.BigInteger, nullable=False),
         sa.Column('credit', sa.BigInteger, nullable=False),
-        sa.Column('payment_date', sa.String, nullable=True),
+        sa.Column('payment_date', sa.Date, nullable=True),
         sa.Column('remarks', sa.String, nullable=True),
         sa.Column('agency_name', sa.String, nullable=True),
         sa.Column('created_at', sa.DateTime(),
@@ -70,6 +70,9 @@ def upgrade() -> None:
     op.create_index(
         'ix_umrah_b2b_agent_payments', 'umrah_b2b_payements', ['b2b_agent_name'], unique=False, schema='core'
     )
+    op.create_index(
+        'ix_umrah_b2b_agent_payment_date', 'umrah_b2b_payements', ['payment_date'], unique=False, schema='core'
+    )
 
 
 def downgrade() -> None:
@@ -77,4 +80,5 @@ def downgrade() -> None:
     op.drop_table('umrah_b2b_agents', schema='core')
 
     op.drop_index('ix_umrah_b2b_agent_payments', table_name='umrah_b2b_payements', schema='core')
+    op.drop_index('ix_umrah_b2b_agent_payment_date', table_name='umrah_b2b_payements', schema='core')
     op.drop_table('umrah_b2b_payements', schema='core')
