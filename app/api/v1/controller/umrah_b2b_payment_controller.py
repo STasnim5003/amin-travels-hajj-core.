@@ -40,18 +40,6 @@ async def get_payments(
     )
 
 
-@private_router.get("/umrah/b2b-payment/{payment_id}", response_model=UmrahB2BPaymentResponse)
-async def get_payment_by_id(
-        payment_id: int,
-        db: AsyncSession = Depends(get_async_db),
-        current_user: dict = Depends(get_current_user),
-):
-    check_agency_or_staff_user(current_user)
-    return await umrah_b2b_payment_service.get_umrah_b2b_payment_by_id(
-        db, current_user["agency_name"], payment_id
-    )
-
-
 @private_router.put("/umrah/b2b-payment", response_model=UmrahB2BPaymentResponse)
 async def update_payment(
         request: UmrahB2BPaymentUpdate,
@@ -65,6 +53,16 @@ async def update_payment(
         username=current_user["username"]
     )
 
+@private_router.get("/umrah/b2b-payment/{payment_id}", response_model=UmrahB2BPaymentResponse)
+async def get_payment_by_id(
+        payment_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user),
+):
+    check_agency_or_staff_user(current_user)
+    return await umrah_b2b_payment_service.get_umrah_b2b_payment_by_id(
+        db, current_user["agency_name"], payment_id
+    )
 
 @private_router.delete("/umrah/b2b-payment/{payment_id}")
 async def delete_payment(
