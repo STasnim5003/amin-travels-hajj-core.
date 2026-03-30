@@ -9,7 +9,8 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    transport_controller, vendor_controller, hotel_request_controller,
                                    payment_request_controller, route_for_request_controller, route_request_controller,
                                    sub_agency_billing_controller, dashboard_controller, demand_controller,
-                                   umrah_customer_billing_controller, umrah_vendor_billing_controller)
+                                   umrah_customer_billing_controller, umrah_vendor_billing_controller,
+                                   umrah_b2b_agent_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
 from app.api.v1.controller.admin_user_controller import public_router
 
@@ -71,3 +72,4 @@ router.include_router(dashboard_controller.private_router)
 router.include_router(demand_controller.private_router)
 router.include_router(umrah_customer_billing_controller.private_router)
 router.include_router(umrah_vendor_billing_controller.private_router)
+router.include_router(umrah_b2b_agent_controller.private_router)
