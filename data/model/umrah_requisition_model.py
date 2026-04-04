@@ -54,6 +54,8 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     total_payment = Column(Float, nullable=False)
     invoice_no = Column(String, nullable = False)
     umrah_requisition_code = Column(String, nullable=False)
+    train = Column(Boolean, nullable=True)
+    guide = Column(Boolean, nullable=True)
 
 
 class UmrahVendorsPriceModel(Base, BaseMixinModel):

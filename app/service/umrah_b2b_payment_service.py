@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +9,7 @@ from infrastructure.schema.umrah_b2b_payment_schema import (
     UmrahB2BPaymentCreate,
     UmrahB2BPaymentResponse,
     UmrahB2BPaymentListResponse,
-    UmrahB2BPaymentUpdate
+    UmrahB2BPaymentUpdate, B2BPaymentItem, B2BAgentPaymentResponse
 )
 
 
@@ -107,3 +109,32 @@ async def delete_umrah_b2b_payment(db: AsyncSession, agency_name: str, payment_i
     }
 
     return await umrah_b2b_payment_repository.delete_umrah_b2b_payment(db, payment_id, b2b_agent_finance_update_dict)
+
+
+async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str, start_date: date,
+                                           end_date: date):
+    try:
+        row = await umrah_b2b_payment_repository.get_umrah_payments_for_b2b_agent(db=db, agency_name=agency_name,
+                                                                                     b2b_agent_name=b2b_agent_name,
+                                                                                     start_date=start_date,
+                                                                                     end_date=end_date)
+        if not row:
+            return None
+
+        payment_list = []
+        if row.payment_list:
+            payment_list = [
+                B2BPaymentItem(**payment)
+                for payment in row.payment_list
+            ]
+
+        return B2BAgentPaymentResponse(
+            name=row.name,
+            agency_name=row.agency_name,
+            total_bill=row.total_bill,
+            total_credit=row.total_credit,
+            total_due=row.total_due,
+            payment_list=payment_list
+        )
+    except Exception as e:
+        raise e

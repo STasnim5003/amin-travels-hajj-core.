@@ -4,16 +4,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
 from app.core.utils.authorize_api import check_agency_or_staff_user
-from data.db.db_config import get_async_db
 from app.service import umrah_b2b_payment_service
+from data.db.db_config import get_async_db
 from infrastructure.schema.umrah_b2b_payment_schema import (
     UmrahB2BPaymentCreate,
     UmrahB2BPaymentResponse,
     UmrahB2BPaymentListResponse,
-    UmrahB2BPaymentUpdate
+    UmrahB2BPaymentUpdate, B2BAgentPaymentResponse, B2BAgentPaymentListQueryParameters
 )
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private", tags=["Umrah B2B Payment"])
+
 
 @private_router.post("/umrah/b2b-payment", response_model=UmrahB2BPaymentResponse)
 async def create_payment(
@@ -53,6 +54,7 @@ async def update_payment(
         username=current_user["username"]
     )
 
+
 @private_router.get("/umrah/b2b-payment/{payment_id}", response_model=UmrahB2BPaymentResponse)
 async def get_payment_by_id(
         payment_id: int,
@@ -64,6 +66,7 @@ async def get_payment_by_id(
         db, current_user["agency_name"], payment_id
     )
 
+
 @private_router.delete("/umrah/b2b-payment/{payment_id}")
 async def delete_payment(
         payment_id: int,
@@ -74,3 +77,17 @@ async def delete_payment(
     return await umrah_b2b_payment_service.delete_umrah_b2b_payment(
         db, current_user["agency_name"], payment_id, current_user['username']
     )
+
+
+@private_router.get("/umrah/b2b-payment-list", response_model=B2BAgentPaymentResponse)
+async def get_umrah_b2b_payment_list(
+        request: B2BAgentPaymentListQueryParameters,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+    agency_name = current_user['agency_name']
+    return await umrah_b2b_payment_service.get_umrah_payments_for_b2b_agent(db=db, agency_name=agency_name,
+                                                                            b2b_agent_name=request.b2b_agent_name,
+                                                                            start_date=request.payment_start_date,
+                                                                            end_date=request.payment_end_date)

@@ -1,4 +1,6 @@
-from sqlalchemy import insert, update, select, func, delete
+from datetime import date
+
+from sqlalchemy import insert, update, select, func, delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.umrah_b2b_agent_model import UmrahB2BAgentModel
@@ -54,7 +56,7 @@ async def get_umrah_b2b_payment_by_id(db: AsyncSession, payment_id: int):
     return result.scalars().first()
 
 
-async def update_umrah_b2b_payment(db: AsyncSession, request_dict: dict, b2b_agent_finance_update_dict:dict):
+async def update_umrah_b2b_payment(db: AsyncSession, request_dict: dict, b2b_agent_finance_update_dict: dict):
     try:
         stmt = (
             update(UmrahB2BPayment)
@@ -81,7 +83,7 @@ async def update_umrah_b2b_payment(db: AsyncSession, request_dict: dict, b2b_age
         raise e
 
 
-async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, b2b_agent_finance_update_dict:dict):
+async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, b2b_agent_finance_update_dict: dict):
     try:
         stmt = (
             delete(UmrahB2BPayment)
@@ -101,4 +103,50 @@ async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, b2b_agent_
         return True
     except Exception as e:
         await db.rollback()
+        raise e
+
+
+async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str, start_date: date,
+                                           end_date: date):
+    try:
+        query = text("""
+                    SELECT 
+                        ag.name, 
+                        ag.agency_name, 
+                        ag.total_bill, 
+                        ag.total_credit, 
+                        ag.total_due,
+                        COALESCE(
+                            (
+                                SELECT jsonb_agg(
+                                    jsonb_build_object(
+                                        'umrah_requisition_code', p.umrah_requisition_code,
+                                        'guest_name', p.guest_name,
+                                        'bill', p.bill,
+                                        'credit', p.credit,
+                                        'way_of_payment', p.way_of_payment,
+                                        'payment_date', p.payment_date
+                                    )
+                                )
+                                FROM core.umrah_b2b_payements p
+                                WHERE p.b2b_agent_name = :b2b_agent_name
+                                    AND p.agency_name = :agency_name
+                                  AND p.payment_date BETWEEN :start_date AND :end_date
+                            ),'[]'::jsonb
+                        ) AS payment_list
+                    FROM core.umrah_b2b_agents ag
+                    WHERE ag.agency_name = :agency_name
+                      AND ag.name = :b2b_agent_name
+                    GROUP BY ag.name, ag.agency_name, ag.total_bill, ag.total_credit, ag.total_due
+                """)
+
+        result = await db.execute(query, {
+            "agency_name": agency_name,
+            "b2b_agent_name": b2b_agent_name,
+            "start_date": start_date,
+            "end_date": end_date
+        })
+
+        return result.fetchone()
+    except Exception as e:
         raise e

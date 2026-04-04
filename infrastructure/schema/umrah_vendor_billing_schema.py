@@ -47,3 +47,6 @@ class UmrahVendorBillingDetailsResponseSchema(BaseModel):
     infant_vendors: Optional[Any]
 
     payments: Optional[Any]
+
+class UmrahVendorBillingSummaryQueryParams(BaseModel):
+    vendor_name: str

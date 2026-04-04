@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 
 class UmrahB2BPaymentCreate(BaseModel):
     b2b_agent_name: str
+    umrah_requisition_code: str
     guest_name: str
     description: Optional[Dict[str, Any]] = None
     way_of_payment: Optional[str] = None
@@ -18,6 +19,7 @@ class UmrahB2BPaymentCreate(BaseModel):
 class UmrahB2BPaymentUpdate(BaseModel):
     id: int
     b2b_agent_name: Optional[str] = None
+    umrah_requisition_code: Optional[str] = None
     guest_name: Optional[str] = None
     description: Optional[Dict[str, Any]] = None
     way_of_payment: Optional[str] = None
@@ -43,3 +45,25 @@ class UmrahB2BPaymentResponse(UmrahB2BPaymentCreate):
 
 class UmrahB2BPaymentListResponse(BaseModel):
     payment_list: List[UmrahB2BPaymentResponse]
+
+class B2BPaymentItem(BaseModel):
+    umrah_requisition_code: Optional[str]
+    guest_name: Optional[str]
+    bill: Optional[float]
+    credit: Optional[float]
+    way_of_payment: Optional[str]
+    payment_date: Optional[date]
+
+
+class B2BAgentPaymentResponse(BaseModel):
+    name: str
+    agency_name: str
+    total_bill: float
+    total_credit: float
+    total_due: float
+    payment_list: List[B2BPaymentItem] = []
+
+class B2BAgentPaymentListQueryParameters(BaseModel):
+    b2b_agent_name: str
+    payment_start_date: date
+    payment_end_date: date

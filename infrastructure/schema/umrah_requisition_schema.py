@@ -62,6 +62,8 @@ class UmrahRequisitionBase(BaseModel):
     return_date_final: Optional[Any] = None
     passport_info : Optional[Any] = None
     ziara: Optional[bool] = None
+    guide: Optional[bool] = None
+    train: Optional[bool] = None
 
 
 class UmrahRequisitionUpdateSchema(BaseModel):
@@ -80,6 +82,8 @@ class UmrahRequisitionUpdateSchema(BaseModel):
     transport: Optional[List[UmrahRequisitionTransportSchema]] = None
     remarks: Optional[str] = None
     food: Optional[bool] = None
+    train: Optional[bool] = None
+    guide: Optional[bool] = None
     mobile_no: Optional[str] = None
     flight_date_option_1: Optional[Any] = None
     flight_date_option_2: Optional[Any] = None
@@ -116,6 +120,8 @@ class UmrahRequisitionAssignedService(BaseModel):
     flight_date_final: Optional[Any] = None
     passport_info: Optional[Any] = None
     ziara: Optional[bool] = None
+    train: Optional[bool] = None
+    guide: Optional[bool] = None
     hotel_info: Optional[List[UmrahRequisitionHotelSchema]] = None
     transport: Optional[List[UmrahRequisitionTransportSchema]] = None
     visa_price: Optional[UmrahRequisitionVendorPrice] = None
