@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 
 class UmrahB2BPaymentCreate(BaseModel):
     b2b_agent_name: str
-    umrah_requisition_code: str
+    invoice_no: str
     guest_name: str
     description: Optional[Dict[str, Any]] = None
     way_of_payment: Optional[str] = None
@@ -19,7 +19,7 @@ class UmrahB2BPaymentCreate(BaseModel):
 class UmrahB2BPaymentUpdate(BaseModel):
     id: int
     b2b_agent_name: Optional[str] = None
-    umrah_requisition_code: Optional[str] = None
+    invoice_no: Optional[str] = None
     guest_name: Optional[str] = None
     description: Optional[Dict[str, Any]] = None
     way_of_payment: Optional[str] = None
@@ -47,7 +47,7 @@ class UmrahB2BPaymentListResponse(BaseModel):
     payment_list: List[UmrahB2BPaymentResponse]
 
 class B2BPaymentItem(BaseModel):
-    umrah_requisition_code: Optional[str]
+    invoice_no: Optional[str]
     guest_name: Optional[str]
     bill: Optional[float]
     credit: Optional[float]

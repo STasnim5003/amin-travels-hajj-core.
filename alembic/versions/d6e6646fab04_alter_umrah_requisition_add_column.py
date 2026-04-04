@@ -21,9 +21,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column('umrah_requisition', sa.Column('train', sa.Boolean(), nullable=True), schema='core')
     op.add_column('umrah_requisition', sa.Column('guide', sa.Boolean(), nullable=True), schema='core')
-    op.add_column('umrah_b2b_payements', sa.Column('umrah_requisition_code', sa.String(), nullable=True), schema='core')
+    op.add_column('umrah_b2b_payements', sa.Column('invoice_no', sa.String(), nullable=True), schema='core')
 
 def downgrade() -> None:
     op.drop_column('umrah_requisition', 'guide', schema='core')
     op.drop_column('umrah_requisition', 'train', schema='core')
-    op.drop_column('umrah_b2b_payments', 'umrah_requisition_code', schema='core')
+    op.drop_column('umrah_b2b_payements', 'invoice_no', schema='core')

@@ -23,4 +23,4 @@ class UmrahB2BPayment(BaseMixinModel, Base):
     remarks = Column(String, nullable=True)
 
     agency_name = Column(String, nullable=True)
-    umrah_requisition_code = Column(String, nullable=True)
+    invoice_no = Column(String, nullable=True)
