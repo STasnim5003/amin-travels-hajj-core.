@@ -27,11 +27,14 @@ async def create_umrah_b2b_payment(db: AsyncSession, request: UmrahB2BPaymentCre
 
 
 async def get_umrah_b2b_payments(db: AsyncSession, agency_name: str):
-    results = await umrah_b2b_payment_repository.get_umrah_b2b_payments(db, agency_name)
+    try:
+        results = await umrah_b2b_payment_repository.get_umrah_b2b_payments(db, agency_name)
 
-    return UmrahB2BPaymentListResponse(
-        payment_list=[UmrahB2BPaymentResponse.model_validate(r) for r in results]
-    )
+        return UmrahB2BPaymentListResponse(
+            payment_list=[UmrahB2BPaymentResponse.model_validate(r) for r in results]
+        )
+    except Exception as e:
+        raise e
 
 
 async def get_umrah_b2b_payment_by_id(db: AsyncSession, agency_name: str, payment_id: int):
