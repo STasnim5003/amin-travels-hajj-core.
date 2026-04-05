@@ -120,7 +120,7 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
                             (
                                 SELECT jsonb_agg(
                                     jsonb_build_object(
-                                        'umrah_requisition_code', p.umrah_requisition_code,
+                                        'invoice_no', p.invoice_no,
                                         'guest_name', p.guest_name,
                                         'bill', p.bill,
                                         'credit', p.credit,
