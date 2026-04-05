@@ -79,7 +79,7 @@ async def delete_payment(
     )
 
 
-@private_router.get("/umrah/b2b-payment-list", response_model=B2BAgentPaymentResponse)
+@private_router.post("/umrah/b2b-payment-list", response_model=B2BAgentPaymentResponse)
 async def get_umrah_b2b_payment_list(
         request: B2BAgentPaymentListQueryParameters,
         db: AsyncSession = Depends(get_async_db),

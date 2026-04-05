@@ -37,7 +37,7 @@ async def get_umrah_vendor_billing(
 
     return await umrah_vendor_billing_service.get_umrah_vendor_billing(db=db, agency_name=agency_name)
 
-@private_router.get("/umrah/vendor-billing-summary", response_model=List[UmrahVendorBillingResponseSchema])
+@private_router.post("/umrah/vendor-billing-summary", response_model=List[UmrahVendorBillingResponseSchema])
 async def get_umrah_vendor_billing_summary(
         request: UmrahVendorBillingSummaryQueryParams,
         db: AsyncSession = Depends(get_async_db),
