@@ -4,17 +4,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user
 from app.core.utils.authorize_api import check_agency_or_staff_user
-from app.service import umrah_requisition_service
+from app.service import umrah_requisition_service, umrah_confirmed_pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionResponseSchema, UmrahRequisitionBase, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionUpdateSchema, \
     UmrahVendorsPriceResponseSchema, UmrahVendorsPriceCreateSchema, \
-    UmrahRequisitionWithVendorsPrice, UmrahRequisitionConfirmedPilgrimsInfoSchema, UmrahConfirmedPilgrimsResponseSchema
+    UmrahRequisitionWithVendorsPrice, UmrahRequisitionConfirmedPilgrimsInfoSchema, UmrahConfirmedPilgrimsResponseSchema, \
+    UmrahConfirmedPilgrimItemSchema
 
-private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
+private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private", tags=['Umrah Requisition'])
 
 
-@private_router.post("/umrah-requisition", response_model=UmrahRequisitionResponseSchema, tags=['Umrah Requisition'])
+@private_router.post("/umrah-requisition", response_model=UmrahRequisitionResponseSchema)
 async def create_umrah_requisition(
         request: UmrahRequisitionBase,
         db: AsyncSession = Depends(get_async_db),
@@ -27,7 +28,7 @@ async def create_umrah_requisition(
                                                               username=username)
 
 
-@private_router.get("/umrah-requisition", response_model=UmrahRequisitionListResponseSchema, tags=['Umrah Requisition'])
+@private_router.get("/umrah-requisition", response_model=UmrahRequisitionListResponseSchema)
 async def get_umrah_requisitions(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
@@ -38,8 +39,7 @@ async def get_umrah_requisitions(
     return await umrah_requisition_service.get_umrah_requisitions(db=db, agency_name=agency_name)
 
 
-@private_router.put("/umrah-requisition/assigned-service", response_model=UmrahRequisitionResponseSchema,
-                    tags=['Umrah Requisition'])
+@private_router.put("/umrah-requisition/assigned-service", response_model=UmrahRequisitionResponseSchema)
 async def assign_service_umrah_requisition(
         request: UmrahRequisitionAssignedService,
         db: AsyncSession = Depends(get_async_db),
@@ -52,8 +52,7 @@ async def assign_service_umrah_requisition(
                                                                             agency_name=agency_name, username=username)
 
 
-@private_router.put("/umrah-requisition/confirmation", response_model=UmrahRequisitionResponseSchema,
-                    tags=['Umrah Requisition'])
+@private_router.put("/umrah-requisition/confirmation", response_model=UmrahRequisitionResponseSchema)
 async def confirm_umrah_requisition(
         request: UmrahRequisitionConfirmedPilgrimsInfoSchema,
         db: AsyncSession = Depends(get_async_db),
@@ -62,11 +61,11 @@ async def confirm_umrah_requisition(
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
     username = current_user['username']
-    return await umrah_requisition_service.umrah_requisition_confirmation(db=db, request=request,
+    return await umrah_confirmed_pilgrim_service.umrah_requisition_confirmation(db=db, request=request,
                                                                           agency_name=agency_name, username=username)
 
 
-@private_router.put("/umrah-requisition", response_model=UmrahRequisitionResponseSchema, tags=['Umrah Requisition'])
+@private_router.put("/umrah-requisition", response_model=UmrahRequisitionResponseSchema)
 async def update_umrah_requisition(
         request: UmrahRequisitionUpdateSchema,
         db: AsyncSession = Depends(get_async_db),
@@ -78,8 +77,7 @@ async def update_umrah_requisition(
     return await umrah_requisition_service.umrah_requisition_update(db, request, agency_name, username)
 
 
-@private_router.get("/umrah-requisition/{requisition_id}", response_model=UmrahRequisitionResponseSchema,
-                    tags=['Umrah Requisition'])
+@private_router.get("/umrah-requisition/{requisition_id}", response_model=UmrahRequisitionResponseSchema)
 async def get_umrah_requisition_by_id(
         requisition_id: int,
         db: AsyncSession = Depends(get_async_db),
@@ -92,7 +90,7 @@ async def get_umrah_requisition_by_id(
                                                                        agency_name=agency_name)
 
 
-@private_router.post("/umrah-vendors-price", response_model=UmrahVendorsPriceResponseSchema, tags=['Umrah Requisition'])
+@private_router.post("/umrah-vendors-price", response_model=UmrahVendorsPriceResponseSchema)
 async def create_vendors_price(
         request: UmrahVendorsPriceCreateSchema,
         db: AsyncSession = Depends(get_async_db),
@@ -106,7 +104,7 @@ async def create_vendors_price(
 
 
 @private_router.get("/umrah-requisition-with-vendors-price/{umrah_requisition_id}",
-                    response_model=UmrahRequisitionWithVendorsPrice, tags=['Umrah Requisition'])
+                    response_model=UmrahRequisitionWithVendorsPrice)
 async def get_vendors_price_by_umrah_requisition_id(
         umrah_requisition_id: int,
         db: AsyncSession = Depends(get_async_db),
@@ -125,4 +123,14 @@ async def get_confirmed_pilgrims(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-    return await umrah_requisition_service.get_confirmed_pilgrims(db=db, agency_name=agency_name)
+    return await umrah_confirmed_pilgrim_service.get_confirmed_pilgrims(db=db, agency_name=agency_name)
+
+@private_router.get("/umrah/confirmed-pilgrim/{umrah_requisition_id}", response_model=UmrahConfirmedPilgrimItemSchema)
+async def get_confirmed_pilgrim_by_id(
+        umrah_requisition_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+    agency_name = current_user['agency_name']
+    return await umrah_confirmed_pilgrim_service.get_confirmed_pilgrim_by_id(db=db, agency_name=agency_name, umrah_requisition_id=umrah_requisition_id)

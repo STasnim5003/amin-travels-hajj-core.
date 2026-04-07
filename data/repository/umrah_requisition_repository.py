@@ -1,5 +1,4 @@
-from sqlalchemy import select, update
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import select, update, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.umrah_requisition_model import UmrahRequisitionModel, UmrahVendorsPriceModel
@@ -33,7 +32,7 @@ async def get_umrah_requisitions(db, agency_name):
         raise e
 
 
-async def get_requisition_by_id(db, requisition_id, agency_name):
+async def get_requisition_by_id(db:AsyncSession, requisition_id:int, agency_name:str):
     try:
         stmt = (
             select(UmrahRequisitionModel)
@@ -45,29 +44,12 @@ async def get_requisition_by_id(db, requisition_id, agency_name):
         raise e
 
 
-async def umrah_requisition_assign_service(db:AsyncSession, request_dict:dict):
+async def umrah_requisition_assign_service(db: AsyncSession, request_dict: dict):
     try:
         stmt = (update(UmrahRequisitionModel)
                 .where(UmrahRequisitionModel.id == request_dict.get('id'))
                 .values(**request_dict)
                 .returning(UmrahRequisitionModel))
-        result = await db.execute(stmt)
-        await db.commit()
-        return result.scalar_one_or_none()
-    except Exception as e:
-        await db.rollback()
-        raise e
-
-
-async def umrah_requisition_confirmation(db:AsyncSession, request_dict:dict):
-    try:
-        stmt = (
-            update(UmrahRequisitionModel)
-            .where(UmrahRequisitionModel.id == request_dict.get('id'))
-            .values(**request_dict)
-            .returning(UmrahRequisitionModel)
-        )
-
         result = await db.execute(stmt)
         await db.commit()
         return result.scalar_one_or_none()
@@ -94,7 +76,7 @@ async def update_umrah_requisition(db: AsyncSession, request_dict: dict):
         raise e
 
 
-async def create_vendors_price(db:AsyncSession, request_dict: dict):
+async def create_vendors_price(db: AsyncSession, request_dict: dict):
     try:
         stmt = (
             insert(UmrahVendorsPriceModel)
@@ -109,7 +91,7 @@ async def create_vendors_price(db:AsyncSession, request_dict: dict):
         raise e
 
 
-async def get_requisition_with_vendor_price(db:AsyncSession, requisition_id:int):
+async def get_requisition_with_vendor_price(db: AsyncSession, requisition_id: int):
     try:
         stmt = (
             select(UmrahRequisitionModel, UmrahVendorsPriceModel)
@@ -130,10 +112,11 @@ async def get_requisition_with_vendor_price(db:AsyncSession, requisition_id:int)
         raise e
 
 
-async def get_requisition_by_requisition_code(db:AsyncSession, umrah_requisition_code:str):
+async def get_requisition_by_requisition_code(db: AsyncSession, umrah_requisition_code: str):
     try:
         stmt = (
-            select(UmrahRequisitionModel.umrah_requisition_code, UmrahRequisitionModel.total_price, UmrahRequisitionModel.total_payment)
+            select(UmrahRequisitionModel.umrah_requisition_code, UmrahRequisitionModel.total_price,
+                   UmrahRequisitionModel.total_payment)
             .where(UmrahRequisitionModel.umrah_requisition_code == umrah_requisition_code)
         )
         result = await db.execute(stmt)
@@ -142,5 +125,10 @@ async def get_requisition_by_requisition_code(db:AsyncSession, umrah_requisition
         raise e
 
 
-def get_confirmed_pilgrims(db, agency_name):
-    return None
+async def check_requisition_availability(db:AsyncSession, requisition_id:int, agency_name:str):
+    stmt = (
+        select(UmrahRequisitionModel.id)
+        .where(UmrahRequisitionModel.id == requisition_id, UmrahRequisitionModel.agency_name==agency_name)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()

@@ -200,79 +200,97 @@ class UmrahRequisitionWithVendorsPrice(BaseModel):
 
 class ConfirmedPilgrimsBasicInfo(BaseModel):
     name: str
-    mobile_no: Optional[str]
-    gender: Optional[str]
-    dob: Optional[str]
-    passport_no: Optional[str]
-    issue: Optional[str]
-    expiry: Optional[str]
-    visa_no: Optional[str]
-    visa_vendor: Optional[str]
-    visa_status: Optional[str]
-    voucher_no: Optional[str]
-    group_code: Optional[str]
-    group_name: Optional[str]
+    mobile_no: Optional[str] = None
+    gender: Optional[str] = None
+    dob: Optional[str] = None
+    passport_no: Optional[str] = None
+    issue: Optional[str] = None
+    expiry: Optional[str] = None
+    visa_no: Optional[str] = None
+    visa_vendor: Optional[str] = None
+    visa_status: Optional[str] = None
+    voucher_no: Optional[str] = None
+    group_code: Optional[str] = None
+    group_name: Optional[str] = None
 
 
 class ConfirmedPilgrimsFlightInfo(BaseModel):
-    arrival_flight_date: Optional[str]
-    arrival_carrier: Optional[str]
-    arrival_flight_time: Optional[str]
-    arrival_route: Optional[str]
-    departure_flight_date: Optional[str]
-    departure_carrier: Optional[str]
-    departure_flight_time: Optional[str]
-    departure_route: Optional[str]
+    arrival_flight_date: Optional[str] = None
+    arrival_carrier: Optional[str] = None
+    arrival_flight_time: Optional[str] = None
+    arrival_route: Optional[str] = None
+    departure_flight_date: Optional[str] = None
+    departure_carrier: Optional[str] = None
+    departure_flight_time: Optional[str] = None
+    departure_route: Optional[str] = None
 
 
 class ConfirmedPilgrimsHotelInfo(BaseModel):
-    makkah_hotel: Optional[str]
-    makkah_check_in: Optional[str]
-    makkah_check_out: Optional[str]
-    makkah_hotel_vendor: Optional[str]
-    madinah_hotel: Optional[str]
-    madinah_check_in: Optional[str]
-    madinah_check_out: Optional[str]
-    madinah_hotel_vendor: Optional[str]
+    makkah_hotel: Optional[str] = None
+    makkah_check_in: Optional[str] = None
+    makkah_check_out: Optional[str] = None
+    makkah_hotel_vendor: Optional[str] = None
+    madina_hotel: Optional[str] = None
+    madina_check_in: Optional[str] = None
+    madina_check_out: Optional[str] = None
+    madina_hotel_vendor: Optional[str] = None
 
 
 class ConfirmedPilgrimsTransportInfo(BaseModel):
-    arrival_transport_route: Optional[str]
-    arrival_transport_type: Optional[str]
-    arrival_transport_vendor: Optional[str]
-    inter_city_transport_route: Optional[str]
-    inter_city_transport_type: Optional[str]
-    inter_city_transport_date: Optional[str]
-    inter_city_transport_vendor: Optional[str]
-    departure_transport_route: Optional[str]
-    departure_transport_type: Optional[str]
-    departure_transport_vendor: Optional[str]
-    makkah_jiyarah_date: Optional[str]
-    makkah_jiyarah_vendor: Optional[str]
-    madianh_jiyarah_date: Optional[str]
-    madianh_jiyarah_vendor: Optional[str]
-    others_jiyarah: Optional[str]
+    arrival_transport_route: Optional[str] = None
+    arrival_transport_type: Optional[str] = None
+    arrival_transport_vendor: Optional[str] = None
+    inter_city_transport_route: Optional[str] = None
+    inter_city_transport_type: Optional[str] = None
+    inter_city_transport_date: Optional[str] = None
+    inter_city_transport_vendor: Optional[str] = None
+    departure_transport_route: Optional[str] = None
+    departure_transport_type: Optional[str] = None
+    departure_transport_vendor: Optional[str] = None
+    makkah_ziara_date: Optional[str] = None
+    makkah_ziara_vendor: Optional[str] = None
+    madianh_ziara_date: Optional[str] = None
+    madianh_ziara_vendor: Optional[str] = None
+    others_ziara: Optional[str] = None
 
 
 class ConfirmedPilgrimsKSAPartDataSubmission(BaseModel):
-    qasswa_data_status: Optional[str]
-    makkah_rep_data_status: Optional[str]
-    madinah_rep_data_status: Optional[str]
-    transport_rep_data_status: Optional[str]
+    qasswa_data_status: Optional[str] = None
+    makkah_rep_data_status: Optional[str] = None
+    madinah_rep_data_status: Optional[str] = None
+    transport_rep_data_status: Optional[str] = None
+
+class ServiceConfirmationStatus(BaseModel):
+    hotel: str
+    visa: str
+    air_ticket: str
+    transport: str
+    ziara: str
+    guide: str
+    food: str
+    train: str
 
 
 class UmrahRequisitionConfirmedPilgrimsInfoSchema(BaseModel):
-    id : int
+    id: int
     amin_office_code: str
     reference: Optional[str] = None
     confirmed_pilgrims_basic_info: List[ConfirmedPilgrimsBasicInfo]
-    confirmed_pilgrims_flight_info: ConfirmedPilgrimsFlightInfo
-    confirmed_pilgrims_hotel_info: ConfirmedPilgrimsHotelInfo
-    confirmed_pilgrims_transport_info: ConfirmedPilgrimsTransportInfo
-    confirmed_pilgrims_ksa_part_data_submission: ConfirmedPilgrimsKSAPartDataSubmission
+    confirmed_pilgrims_flight_info: Optional[ConfirmedPilgrimsFlightInfo] = None
+    confirmed_pilgrims_hotel_info: Optional[ConfirmedPilgrimsHotelInfo] = None
+    confirmed_pilgrims_transport_info: Optional[ConfirmedPilgrimsTransportInfo] = None
+    confirmed_pilgrims_ksa_part_data_submission: Optional[ConfirmedPilgrimsKSAPartDataSubmission] = None
     confirmed_remarks: Optional[str] = None
     confirmed_pilgrims_family_group: Optional[str] = None
+    service_confirmation_status: ServiceConfirmationStatus
+
+
+class UmrahConfirmedPilgrimItemSchema(UmrahRequisitionConfirmedPilgrimsInfoSchema):
+    total_price: Optional[float]
+    total_due: Optional[float]
+    total_payment: Optional[float]
+    discount: Optional[float]
+
 
 class UmrahConfirmedPilgrimsResponseSchema(BaseModel):
-    confirmed_pilgrims: List[UmrahRequisitionConfirmedPilgrimsInfoSchema]
-    
+    confirmed_pilgrims: List[UmrahConfirmedPilgrimItemSchema]
