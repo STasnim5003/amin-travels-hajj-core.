@@ -138,3 +138,5 @@ async def get_requisitions_with_vendors_price(db: AsyncSession, requisition_id: 
 async def get_confirmed_pilgrims(db:AsyncSession, agency_name:str):
     try:
         result = await umrah_requisition_repository.get_confirmed_pilgrims(db=db, agency_name=agency_name)
+    except Exception as e:
+        raise e
