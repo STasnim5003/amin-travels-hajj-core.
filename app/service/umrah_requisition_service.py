@@ -2,11 +2,12 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
+from app.core.utils.umrah_requisition_utils import generate_amin_office_code
 from data.repository import umrah_requisition_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
-    UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionConfirmationSchema, \
-    UmrahRequisitionUpdateSchema, UmrahVendorsPriceCreateSchema, UmrahVendorsPriceResponseSchema, \
-    UmrahRequisitionWithVendorsPrice
+    UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionUpdateSchema, \
+    UmrahVendorsPriceCreateSchema, UmrahVendorsPriceResponseSchema, \
+    UmrahRequisitionWithVendorsPrice, UmrahRequisitionConfirmedPilgrimsInfoSchema
 
 
 async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, agency_name: str, username: str):
@@ -15,7 +16,7 @@ async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, ag
         request_dict['agency_name'] = agency_name
         request_dict['created_by'] = username
         request_dict['updated_by'] = username
-
+        request_dict['amin_office_code'] = await generate_amin_office_code(db=db)
         saved = await umrah_requisition_repository.create(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(saved)
     except Exception as e:
@@ -51,7 +52,8 @@ async def umrah_requisition_assign_service(db: AsyncSession, request: UmrahRequi
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
-        request_dict['total_due'] = max(0, request_dict['total_price'] - requisition.total_payment)
+        request_dict['total_due'] = max(0, request_dict['total_price'] - (
+                    requisition.total_payment + request_dict['discount']))
 
         result = await umrah_requisition_repository.umrah_requisition_assign_service(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(result)
@@ -74,12 +76,13 @@ async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUp
         raise e
 
 
-async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisitionConfirmationSchema,
+async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisitionConfirmedPilgrimsInfoSchema,
                                          agency_name: str, username: str):
     try:
         await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
 
         request_dict = request.model_dump(exclude_none=True)
+        request_dict['is_confirmed'] = True
         request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
 
@@ -130,3 +133,8 @@ async def get_requisitions_with_vendors_price(db: AsyncSession, requisition_id: 
         )
     except Exception as e:
         raise e
+
+
+async def get_confirmed_pilgrims(db:AsyncSession, agency_name:str):
+    try:
+        result = await umrah_requisition_repository.get_confirmed_pilgrims(db=db, agency_name=agency_name)

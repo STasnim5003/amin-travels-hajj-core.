@@ -10,7 +10,7 @@ class UmrahVendorBillingModel(Base, BaseMixinModel):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
-    umrah_requisition_code = Column(String, nullable=False)
+    amin_office_code = Column(String, nullable=False)
     invoice_no = Column(String, nullable=False)
     guest_name = Column(String, nullable=False)
 

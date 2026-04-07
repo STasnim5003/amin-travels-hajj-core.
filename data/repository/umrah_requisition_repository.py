@@ -140,3 +140,7 @@ async def get_requisition_by_requisition_code(db:AsyncSession, umrah_requisition
         return result.first()
     except Exception as e:
         raise e
+
+
+def get_confirmed_pilgrims(db, agency_name):
+    return None
