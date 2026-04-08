@@ -6,7 +6,6 @@ from typing import Optional, List, Dict, Any
 
 class UmrahB2BPaymentCreate(BaseModel):
     b2b_agent_name: str
-    invoice_no: str
     guest_name: str
     description: Optional[Dict[str, Any]] = None
     way_of_payment: Optional[str] = None
@@ -32,6 +31,7 @@ class UmrahB2BPaymentUpdate(BaseModel):
 
 class UmrahB2BPaymentResponse(UmrahB2BPaymentCreate):
     id: int
+    invoice_no: Optional[str]
     agency_name: Optional[str]
     created_by: Optional[str]
     updated_by: Optional[str]

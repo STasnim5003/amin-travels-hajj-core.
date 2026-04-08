@@ -4,8 +4,7 @@ from typing import Optional, Any, List
 from pydantic import BaseModel
 
 class UmrahCustomerBillingBaseSchema(BaseModel):
-    invoice_no: str
-    umrah_requisition_code: str
+    amin_office_code: str
     description: Optional[str] = None
     way_of_payment: Optional[str] = None
     amount: float
@@ -15,6 +14,7 @@ class UmrahCustomerBillingBaseSchema(BaseModel):
 
 class UmrahCustomerBillingResponseSchema(UmrahCustomerBillingBaseSchema):
     id : int
+    invoice_no: Optional[str] = None
     agency_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -25,6 +25,7 @@ class UmrahCustomerBillingResponseSchema(UmrahCustomerBillingBaseSchema):
         from_attributes = True
 
 class UmrahCustomerBillingItem(BaseModel):
+    invoice_no: Optional[str]
     amount: Optional[float]
     description: Optional[str]
     way_of_payment: Optional[str]
@@ -33,26 +34,27 @@ class UmrahCustomerBillingItem(BaseModel):
     id: Optional[int]
 
 
+
 class UmrahCustomerBillingListResponse(BaseModel):
-    umrah_requisition_code: str
-    invoice_no: Optional[str]
+    amin_office_code: str
     name: Optional[str]
     total_price: Optional[float]
     total_payment: Optional[float]
     total_due: Optional[float]
+    discount: Optional[float]
     billing_list: List[UmrahCustomerBillingItem]
 
 class UmrahCustomerBillingUpdateSchema(UmrahCustomerBillingBaseSchema):
     id: int
 
 class UmrahCustomerBillingInvoiceBuildSchema(BaseModel):
-    umrah_requisition_code: str
-    invoice_no: str
+    amin_office_code: str
     name: Optional[str]
     mobile_no: Optional[str]
     total_price: Optional[float]
-    total_due: Optional[float]
     total_payment: Optional[float]
+    discount: Optional[float]
+    total_due: Optional[float]
     no_of_adults: Optional[int]
     no_of_children: Optional[int]
     no_of_infants: Optional[int]

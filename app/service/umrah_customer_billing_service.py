@@ -15,8 +15,8 @@ async def create_umrah_customer_billing(db: AsyncSession, request: UmrahCustomer
         if request.amount <= 0:
             raise HTTPException(status_code=400, detail='Amount must be positive')
 
-        umrah_requisition = await umrah_requisition_repository.get_requisition_by_requisition_code(db=db,
-                                                                                                   umrah_requisition_code=request.umrah_requisition_code)
+        umrah_requisition = await umrah_requisition_repository.get_requisition_by_office_code(db=db,
+                                                                                              office_code=request.amin_office_code)
 
         if not umrah_requisition:
             raise HTTPException(status_code=400, detail='Requisition does not exist')
@@ -26,10 +26,12 @@ async def create_umrah_customer_billing(db: AsyncSession, request: UmrahCustomer
         request_dict['created_by'] = username
         request_dict['updated_by'] = username
 
+        discount = umrah_requisition.discount or 0
+
         total_payment = umrah_requisition.total_payment + request.amount
         requisition_price_update_dict = {
             'total_payment': total_payment,
-            'total_due': max(0, umrah_requisition.total_price - total_payment),
+            'total_due': max(0, umrah_requisition.total_price - (total_payment + discount)),
         }
 
         result = await umrah_customer_billing_repository.create_umrah_customer_billing(db=db, request_dict=request_dict,
@@ -61,13 +63,13 @@ async def update_umrah_customer_billing(db: AsyncSession, request: UmrahCustomer
 
         billing_update_dict = {}
         if umrah_customer_billing.amount != request.amount:
-            requisition = await umrah_requisition_repository.get_requisition_by_requisition_code(db=db,
-                                                                                                 umrah_requisition_code=request.umrah_requisition_code)
+            requisition = await umrah_requisition_repository.get_requisition_by_office_code(db=db,
+                                                                                            office_code=request.amin_office_code)
 
             total_payment = requisition.total_payment - umrah_customer_billing.amount + request.amount
-
+            discount = requisition.discount or 0
             billing_update_dict['total_payment'] = total_payment
-            billing_update_dict['total_due'] = max(0, requisition.total_price - total_payment)
+            billing_update_dict['total_due'] = max(0, requisition.total_price - (total_payment + discount))
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['updated_by'] = username
@@ -92,15 +94,15 @@ async def delete_umrah_customer_billing(db: AsyncSession, agency_name: str, bill
 
         return await umrah_customer_billing_repository.delete_umrah_customer_billing(db=db, billing_id=billing_id,
                                                                                      deleted_payment=umrah_customer_billing.amount,
-                                                                                     requisition_code=umrah_customer_billing.umrah_requisition_code)
+                                                                                     office_code=umrah_customer_billing.amin_office_code)
     except Exception as e:
         raise e
 
 
-async def get_umrah_customer_billing_invoice_data(db: AsyncSession, umrah_requisition_code: str, agency_name: str):
+async def get_umrah_customer_billing_invoice_data(db: AsyncSession, amin_office_code: str, agency_name: str):
     try:
         invoice_data = await umrah_customer_billing_repository.get_umrah_customer_billing_invoice_data(db=db,
-                                                                                                       umrah_requisition_code=umrah_requisition_code)
+                                                                                                       amin_office_code=amin_office_code)
 
         if not invoice_data:
             raise HTTPException(status_code=400, detail="Requisition Doesn't Exists")
@@ -109,13 +111,13 @@ async def get_umrah_customer_billing_invoice_data(db: AsyncSession, umrah_requis
             raise HTTPException(status_code=400, detail='Agency name does not match')
 
         return UmrahCustomerBillingInvoiceBuildSchema(
-            umrah_requisition_code=umrah_requisition_code,
-            invoice_no=invoice_data['invoice_no'],
+            amin_office_code=amin_office_code,
             name=invoice_data.get('name'),
             mobile_no=invoice_data.get('mobile_no'),
             total_price=invoice_data.get('total_price'),
             total_due=invoice_data.get('total_due'),
             total_payment=invoice_data.get('total_payment'),
+            discount=invoice_data.get("discount"),
             no_of_adults=invoice_data.get('adult_traveller'),
             no_of_children=invoice_data.get('other_traveller').get('child') if invoice_data.get(
                 'other_traveller') else None,

@@ -18,7 +18,7 @@ async def create_umrah_customer_billing(db: AsyncSession, request_dict: dict, re
         stmt = (
             update(UmrahRequisitionModel)
             .values(**requisition_price_update_dict)
-            .where(UmrahRequisitionModel.umrah_requisition_code == request_dict['umrah_requisition_code'])
+            .where(UmrahRequisitionModel.amin_office_code == request_dict['amin_office_code'])
         )
         await db.execute(stmt)
         await db.commit()
@@ -31,39 +31,37 @@ async def create_umrah_customer_billing(db: AsyncSession, request_dict: dict, re
 async def get_umrah_customer_billing(db: AsyncSession, agency_name: str):
     try:
         query = text("""
-                SELECT 
-                    ur.umrah_requisition_code,
-                    ur.invoice_no,
-                    ur.name,
-                    ur.total_price,
-                    ur.total_payment,
-                    ur.total_due,
-
-                    json_agg(
-                        json_build_object(
-                            'amount', ucb.amount,
-                            'description', ucb.description,
-                            'way_of_payment', ucb.way_of_payment,
-                            'date', ucb.date,
-                            'remarks', ucb.remarks,
-                            'id', ucb.id
-                        )
-                        ORDER BY ucb.id
-                    ) AS billing_list
-
-                FROM core.umrah_requisition ur
-                LEFT JOIN core.umrah_customer_billing ucb
-                    ON ur.umrah_requisition_code = ucb.umrah_requisition_code
-
-                WHERE ur.agency_name = :agency_name
-
-                GROUP BY 
-                    ur.umrah_requisition_code,
-                    ur.invoice_no,
-                    ur.name,
-                    ur.total_price,
-                    ur.total_payment,
-                    ur.total_due
+                    SELECT 
+                        ur.amin_office_code,
+                        ur.name,
+                        ur.total_price,
+                        ur.total_payment,
+                        ur.total_due,
+                        ur.discount,
+                    
+                        COALESCE(
+                            (
+                                SELECT json_agg(
+                                    json_build_object(
+                                        'amount', ucb.amount,
+                                        'description', ucb.description,
+                                        'way_of_payment', ucb.way_of_payment,
+                                        'date', ucb.date,
+                                        'remarks', ucb.remarks,
+                                        'id', ucb.id,
+                                        'invoice_no', ucb.invoice_no
+                                    )
+                                    ORDER BY ucb.id DESC
+                                )
+                                FROM core.umrah_customer_billing ucb
+                                WHERE ucb.amin_office_code = ur.amin_office_code
+                            ),
+                            '[]'
+                        ) AS billing_list
+                    
+                    FROM core.umrah_requisition ur
+                    WHERE ur.agency_name = :agency_name
+                    ORDER BY ur.id DESC;
             """)
 
         result = await db.execute(query, {"agency_name": agency_name})
@@ -101,7 +99,7 @@ async def update_umrah_customer_billing(db: AsyncSession, request_dict: dict, bi
             stmt = (
                 update(UmrahRequisitionModel)
                 .values(**billing_update_dict)
-                .where(UmrahRequisitionModel.umrah_requisition_code == request_dict['umrah_requisition_code'])
+                .where(UmrahRequisitionModel.amin_office_code == request_dict['amin_office_code'])
             )
             await db.execute(stmt)
 
@@ -113,7 +111,7 @@ async def update_umrah_customer_billing(db: AsyncSession, request_dict: dict, bi
 
 
 async def delete_umrah_customer_billing(db: AsyncSession, billing_id: int, deleted_payment: float,
-                                        requisition_code: str):
+                                        office_code: str):
     try:
         stmt = (
             delete(UmrahCustomerBillingModel)
@@ -124,7 +122,7 @@ async def delete_umrah_customer_billing(db: AsyncSession, billing_id: int, delet
 
         stmt = (
             update(UmrahRequisitionModel)
-            .where(UmrahRequisitionModel.umrah_requisition_code == requisition_code)
+            .where(UmrahRequisitionModel.amin_office_code == office_code)
             .values(
                 total_payment=UmrahRequisitionModel.total_payment - deleted_payment,
                 total_due=UmrahRequisitionModel.total_due + deleted_payment
@@ -139,17 +137,17 @@ async def delete_umrah_customer_billing(db: AsyncSession, billing_id: int, delet
         raise e
 
 
-async def get_umrah_customer_billing_invoice_data(db:AsyncSession, umrah_requisition_code:str):
+async def get_umrah_customer_billing_invoice_data(db:AsyncSession, amin_office_code:str):
     try:
         query = text("""
                 SELECT 
-                    ur.umrah_requisition_code,
-                    ur.invoice_no,
+                    ur.amin_office_code,
                     ur.name,
                     ur.mobile_no,
                     ur.total_price,
                     ur.total_due,
                     ur.total_payment,
+                    ur.discount,
                     ur.adult_traveller,
                     ur.other_traveller,
                     ur.per_head_price_adult,
@@ -157,12 +155,12 @@ async def get_umrah_customer_billing_invoice_data(db:AsyncSession, umrah_requisi
                     ur.per_head_price_infant,
                     ur.agency_name
                 FROM core.umrah_requisition ur
-                WHERE ur.umrah_requisition_code = :umrah_requisition_code
+                WHERE ur.amin_office_code = :amin_office_code
             """)
 
         result = await db.execute(
             query,
-            {"umrah_requisition_code": umrah_requisition_code}
+            {"amin_office_code": amin_office_code}
         )
 
         row = result.mappings().first()

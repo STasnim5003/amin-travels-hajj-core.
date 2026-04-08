@@ -66,15 +66,15 @@ async def delete_umrah_customer_billing(
                                                                               billing_id=billing_id)
 
 
-@private_router.get("/umrah/customer-billing-invoice-data/{umrah_requisition_code}",
+@private_router.get("/umrah/customer-billing-invoice-data/{amin_office_code}",
                     response_model=UmrahCustomerBillingInvoiceBuildSchema)
 async def get_umrah_customer_billing_invoice_data(
-        umrah_requisition_code: str,
+        amin_office_code: str,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
     return await umrah_customer_billing_service.get_umrah_customer_billing_invoice_data(db=db,
-                                                                                        umrah_requisition_code=umrah_requisition_code,
+                                                                                        amin_office_code=amin_office_code,
                                                                                         agency_name=agency_name)

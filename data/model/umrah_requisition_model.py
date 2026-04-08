@@ -69,6 +69,7 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     confirmed_pilgrims_ksa_part_data_submission = Column(JSONB, nullable=True)
     reference = Column(String, nullable=True)
     service_confirmation_status = Column(JSONB, nullable=True)
+    emergency_contract_person = Column(JSONB, nullable=True)
 
 
 class UmrahVendorsPriceModel(Base, BaseMixinModel):

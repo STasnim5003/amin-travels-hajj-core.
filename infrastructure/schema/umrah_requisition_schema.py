@@ -10,6 +10,7 @@ class UmrahRequisitionVendorPrice(BaseModel):
     per_head_price_adult: Optional[float] = None
     per_head_price_child: Optional[float] = None
     per_head_price_infant: Optional[float] = None
+    city: Optional[str] = None
 
 
 class UmrahRequisitionHotelType(BaseModel):
@@ -23,6 +24,7 @@ class UmrahRequisitionHotelSchema(BaseModel):
     room_type : Any
     check_in : Any
     check_out : Any
+    nights: Optional[int] = None
 
     price : Optional[UmrahRequisitionVendorPrice] = None
 
@@ -271,6 +273,12 @@ class ServiceConfirmationStatus(BaseModel):
     train: str
 
 
+class EmergencyContractPerson(BaseModel):
+    role: Optional[str] = None
+    name: Optional[str] = None
+    mobile_no: Optional[str] = None
+
+
 class UmrahRequisitionConfirmedPilgrimsInfoSchema(BaseModel):
     id: int
     amin_office_code: str
@@ -283,6 +291,7 @@ class UmrahRequisitionConfirmedPilgrimsInfoSchema(BaseModel):
     confirmed_remarks: Optional[str] = None
     confirmed_pilgrims_family_group: Optional[str] = None
     service_confirmation_status: ServiceConfirmationStatus
+    emergency_contract_person: List[EmergencyContractPerson]
 
 
 class UmrahConfirmedPilgrimItemSchema(UmrahRequisitionConfirmedPilgrimsInfoSchema):

@@ -15,6 +15,8 @@ from infrastructure.schema.umrah_b2b_payment_schema import (
 
 async def create_umrah_b2b_payment(db: AsyncSession, request: UmrahB2BPaymentCreate, agency_name: str, username: str):
     try:
+        if request.bill <= 0 or request.credit <= 0:
+            raise HTTPException(status_code=400, detail="Amount Must Be Greater than 0")
         request_dict = request.model_dump(exclude_none=True)
         request_dict["agency_name"] = agency_name
         request_dict["created_by"] = username
@@ -118,9 +120,9 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
                                            end_date: date):
     try:
         row = await umrah_b2b_payment_repository.get_umrah_payments_for_b2b_agent(db=db, agency_name=agency_name,
-                                                                                     b2b_agent_name=b2b_agent_name,
-                                                                                     start_date=start_date,
-                                                                                     end_date=end_date)
+                                                                                  b2b_agent_name=b2b_agent_name,
+                                                                                  start_date=start_date,
+                                                                                  end_date=end_date)
         if not row:
             return None
 
