@@ -101,6 +101,7 @@ async def get_confirmed_pilgrim_by_id(db: AsyncSession, agency_name: str, umrah_
                 id=requisition.id,
                 amin_office_code=requisition.amin_office_code,
                 reference=requisition.reference,
+                number_of_traveller=requisition.number_of_traveller,
                 confirmed_pilgrims_family_group=requisition.confirmed_pilgrims_family_group,
                 confirmed_pilgrims_basic_info=[],
                 confirmed_pilgrims_flight_info=ConfirmedPilgrimsFlightInfo(
