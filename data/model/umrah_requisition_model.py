@@ -78,7 +78,7 @@ class UmrahVendorsPriceModel(Base, BaseMixinModel):
 
     id = Column(Integer, primary_key=True, index=True)
     exchange_rate = Column(Float, nullable=True)
-    umrah_requisition_id = Column(Integer, nullable=False)
+    umrah_requisition_id = Column(Integer, nullable=False,unique=True)
     hotel_vendors_price = Column(JSONB, nullable=True)
     transport_vendors_price = Column(JSONB, nullable=True)
     air_ticket_vendors_price = Column(JSONB, nullable=True)

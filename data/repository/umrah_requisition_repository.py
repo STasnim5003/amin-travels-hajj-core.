@@ -1,6 +1,6 @@
-from sqlalchemy import select, update, insert
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.dialects.postgresql import insert
 from data.model.umrah_requisition_model import UmrahRequisitionModel, UmrahVendorsPriceModel
 
 
@@ -82,11 +82,13 @@ async def create_vendors_price(db: AsyncSession, request_dict: dict):
         infant_service = request_dict.pop('infant_service')
         discount = request_dict.pop('discount')
 
-        stmt = (
-            insert(UmrahVendorsPriceModel)
-            .values(**request_dict)
-            .returning(UmrahVendorsPriceModel)
-        )
+        stmt = insert(UmrahVendorsPriceModel).values(**request_dict)
+
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[UmrahVendorsPriceModel.umrah_requisition_id],
+            set_={key: stmt.excluded[key] for key in request_dict.keys()}
+        ).returning(UmrahVendorsPriceModel)
+
         result = await db.execute(stmt)
         vendor_price = result.scalar_one_or_none()
 
