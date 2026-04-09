@@ -184,6 +184,7 @@ class UmrahVendorsPriceCreateSchema(BaseModel):
     ziara_vendors_price : Optional[Any] = None
     food_vendors_price : Optional[Any] = None
     others_vendors_price : Optional[Any] = None
+    guide_vendors_price : Optional[Any] = None
     child_service: Optional[Any] = None
     infant_service: Optional[Any] = None
     discount: Optional[float] = None

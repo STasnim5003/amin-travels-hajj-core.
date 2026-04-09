@@ -87,3 +87,4 @@ class UmrahVendorsPriceModel(Base, BaseMixinModel):
     ziara_vendors_price = Column(JSONB, nullable=True)
     food_vendors_price = Column(JSONB, nullable=True)
     others_vendors_price = Column(JSONB, nullable=True)
+    guide_vendors_price = Column(JSONB, nullable=True)
