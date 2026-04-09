@@ -78,16 +78,40 @@ async def update_umrah_requisition(db: AsyncSession, request_dict: dict):
 
 async def create_vendors_price(db: AsyncSession, request_dict: dict):
     try:
+        child_service = request_dict.pop('child_service')
+        infant_service = request_dict.pop('infant_service')
+        discount = request_dict.pop('discount')
+
         stmt = (
             insert(UmrahVendorsPriceModel)
             .values(**request_dict)
             .returning(UmrahVendorsPriceModel)
         )
-
         result = await db.execute(stmt)
+        vendor_price = result.scalar_one_or_none()
+
+        stmt = (
+            update(UmrahRequisitionModel)
+            .values(
+                child_service=child_service,
+                infant_service=infant_service,
+                discount=discount
+            )
+            .where(UmrahRequisitionModel.id == request_dict.get('umrah_requisition_id'))
+        )
+        await db.execute(stmt)
+
         await db.commit()
-        return result.scalar_one_or_none()
+
+        if vendor_price:
+            vendor_price.child_service = child_service
+            vendor_price.infant_service = infant_service
+            vendor_price.discount = discount
+
+        return vendor_price
+
     except Exception as e:
+        await db.rollback()
         raise e
 
 
