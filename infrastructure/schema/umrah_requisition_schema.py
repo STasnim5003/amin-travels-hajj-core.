@@ -267,14 +267,14 @@ class ConfirmedPilgrimsKSAPartDataSubmission(BaseModel):
     transport_rep_data_status: Optional[str] = None
 
 class ServiceConfirmationStatus(BaseModel):
-    hotel: str
-    visa: str
-    air_ticket: str
-    transport: str
-    ziara: str
-    guide: str
-    food: str
-    train: str
+    hotel: Optional[bool] = None
+    visa: Optional[bool] = None
+    air_ticket: Optional[bool] = None
+    transport: Optional[bool] = None
+    ziara: Optional[bool] = None
+    guide: Optional[bool] = None
+    food: Optional[bool] = None
+    train: Optional[bool] = None
 
 
 class EmergencyContractPerson(BaseModel):
@@ -286,6 +286,7 @@ class EmergencyContractPerson(BaseModel):
 class UmrahRequisitionConfirmedPilgrimsInfoSchema(BaseModel):
     id: int
     amin_office_code: str
+    number_of_traveller: Optional[int] = None
     reference: Optional[str] = None
     confirmed_pilgrims_basic_info: List[ConfirmedPilgrimsBasicInfo]
     confirmed_pilgrims_flight_info: Optional[ConfirmedPilgrimsFlightInfo] = None
