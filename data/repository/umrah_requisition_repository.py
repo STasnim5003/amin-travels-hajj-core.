@@ -78,8 +78,8 @@ async def update_umrah_requisition(db: AsyncSession, request_dict: dict):
 
 async def create_vendors_price(db: AsyncSession, request_dict: dict):
     try:
-        child_service = request_dict.pop('child_service')
-        infant_service = request_dict.pop('infant_service')
+        child_service = request_dict.pop('child_service') if request_dict.get('child_service') else None
+        infant_service = request_dict.pop('infant_service') if request_dict.get('infant_service') else None
         discount = request_dict.pop('discount')
 
         stmt = insert(UmrahVendorsPriceModel).values(**request_dict)
