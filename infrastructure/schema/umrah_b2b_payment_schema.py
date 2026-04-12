@@ -13,6 +13,7 @@ class UmrahB2BPaymentCreate(BaseModel):
     credit: int
     payment_date: Optional[date] = None
     remarks: Optional[str] = None
+    sales_person: Optional[str] = None
 
 
 class UmrahB2BPaymentUpdate(BaseModel):
@@ -27,6 +28,7 @@ class UmrahB2BPaymentUpdate(BaseModel):
     payment_date: Optional[date] = None
     remarks: Optional[str] = None
     is_active: Optional[bool] = None
+    sales_person: Optional[str] = None
 
 
 class UmrahB2BPaymentResponse(UmrahB2BPaymentCreate):
@@ -53,6 +55,7 @@ class B2BPaymentItem(BaseModel):
     credit: Optional[float]
     way_of_payment: Optional[str]
     payment_date: Optional[date]
+    sales_person: Optional[str] = None
 
 
 class B2BAgentPaymentResponse(BaseModel):
@@ -65,5 +68,5 @@ class B2BAgentPaymentResponse(BaseModel):
 
 class B2BAgentPaymentListQueryParameters(BaseModel):
     b2b_agent_name: str
-    payment_start_date: date
-    payment_end_date: date
+    payment_start_date: Optional[date]
+    payment_end_date: Optional[date]
