@@ -116,13 +116,10 @@ async def delete_umrah_b2b_payment(db: AsyncSession, agency_name: str, payment_i
     return await umrah_b2b_payment_repository.delete_umrah_b2b_payment(db, payment_id, b2b_agent_finance_update_dict)
 
 
-async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str, start_date: date,
-                                           end_date: date):
+async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str):
     try:
         row = await umrah_b2b_payment_repository.get_umrah_payments_for_b2b_agent(db=db, agency_name=agency_name,
-                                                                                  b2b_agent_name=b2b_agent_name,
-                                                                                  start_date=start_date,
-                                                                                  end_date=end_date)
+                                                                                  b2b_agent_name=b2b_agent_name)
         if not row:
             return None
 

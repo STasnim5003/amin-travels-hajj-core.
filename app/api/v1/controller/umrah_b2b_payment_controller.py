@@ -88,6 +88,4 @@ async def get_umrah_b2b_payment_list(
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
     return await umrah_b2b_payment_service.get_umrah_payments_for_b2b_agent(db=db, agency_name=agency_name,
-                                                                            b2b_agent_name=request.b2b_agent_name,
-                                                                            start_date=request.payment_start_date,
-                                                                            end_date=request.payment_end_date)
+                                                                            b2b_agent_name=request.b2b_agent_name)

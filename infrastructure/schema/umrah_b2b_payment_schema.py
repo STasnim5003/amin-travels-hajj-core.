@@ -68,5 +68,5 @@ class B2BAgentPaymentResponse(BaseModel):
 
 class B2BAgentPaymentListQueryParameters(BaseModel):
     b2b_agent_name: str
-    payment_start_date: Optional[date]
-    payment_end_date: Optional[date]
+    # payment_start_date: Optional[date]
+    # payment_end_date: Optional[date]

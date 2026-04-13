@@ -106,8 +106,7 @@ async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, b2b_agent_
         raise e
 
 
-async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str, start_date: date,
-                                           end_date: date):
+async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str):
     try:
         query = text("""
                     SELECT 
@@ -125,13 +124,13 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
                                         'bill', p.bill,
                                         'credit', p.credit,
                                         'way_of_payment', p.way_of_payment,
-                                        'payment_date', p.payment_date
+                                        'payment_date', p.payment_date,
+                                        'sales_person', p.sales_person
                                     )
                                 )
                                 FROM core.umrah_b2b_payements p
                                 WHERE p.b2b_agent_name = :b2b_agent_name
                                     AND p.agency_name = :agency_name
-                                  AND p.payment_date BETWEEN :start_date AND :end_date
                             ),'[]'::jsonb
                         ) AS payment_list
                     FROM core.umrah_b2b_agents ag
@@ -142,9 +141,7 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
 
         result = await db.execute(query, {
             "agency_name": agency_name,
-            "b2b_agent_name": b2b_agent_name,
-            "start_date": start_date,
-            "end_date": end_date
+            "b2b_agent_name": b2b_agent_name
         })
 
         return result.fetchone()
