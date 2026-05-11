@@ -11,7 +11,8 @@ from app.service import pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, PilgrimFamilyGroupAssign, \
-    PilgrimDataBaseSchema, PilgrimReplaceSchema, PilgrimArchiveSchema, ReplacedPilgrimListResponseSchema
+    PilgrimDataBaseSchema, PilgrimReplaceSchema, PilgrimArchiveSchema, ReplacedPilgrimListResponseSchema, \
+    PilgrimPreRegistrationEnquire
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -164,3 +165,10 @@ async def assign_family_code_to_pilgrim(
     agency_name = current_user["agency_name"]
     # agency_name = "Marvellous Air Travels Ltd"
     return await pilgrim_service.assign_family_code(db, request_body, agency_name)
+
+@public_router.post("/pilgrim/pre-register-enquiry", tags=["Pilgrim"])
+async def pre_register_enquiry(
+        request_body: PilgrimPreRegistrationEnquire,
+        db: AsyncSession = Depends(get_async_db)
+):
+    return await pilgrim_service.pre_register_enquiry(db=db, request_body=request_body)

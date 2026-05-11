@@ -105,85 +105,27 @@ async def fetch_pilgrim_data_json(
 
             # Main query
         query = f"""
-                WITH filtered_data AS (
-                    SELECT 
-                        p.id, p.name_bn, p.name_en, p.father_name, p.spouse_name, p.occupation, p.nid, p.voucher, p.type,
-                        p.listed_in, p.mother_name, p.date_of_birth, p.gender, p.management, p.mobile_no,
-                        p.passport_address, p.present_address, p.permanent_address, p.tracking_id,
-                        p.serial_no, p.group_name, p.sub_group, p.registration_status, p.allocation_status,
-                        p.created_at, p.created_by, p.updated_at, p.updated_by, p.is_assigned, p.comment_on_package,
-                        p.vaccination_center, p.passport_copy, p.package_id, p.group_leader, p.actual_payable, p.package_price_discount,
-                        p.package_name, p.package_bed_types, p.package_duration, p.total_payable, p.total_payment, p.total_due,
-                        p.is_package_assigned, p.pre_reg_voucher, p.reg_voucher, p.passport_no, p.passport_dob,p.passport_expiry_date,
-                         p.passport_type, p.family_code, COUNT(*) OVER() AS total_count
-                    FROM core.pilgrim_data p
-                    {where_clause}
-                    ORDER BY p.created_at DESC, p.id DESC
-                    LIMIT :limit_val OFFSET :skip_val
-                ),
-                result_data AS (
-                    SELECT 
-                        JSON_BUILD_OBJECT(
-                            'id', id,
-                            'name_bn', name_bn,
-                            'name_en', name_en,
-                            'father_name', father_name,
-                            'spouse_name', spouse_name,
-                            'occupation', occupation,
-                            'nid', nid,
-                            'voucher', voucher,
-                            'type', type,
-                            'listed_in', listed_in,
-                            'mother_name', mother_name,
-                            'date_of_birth', date_of_birth,
-                            'gender', gender,
-                            'management', management,
-                            'mobile_no', mobile_no,
-                            'passport_address', passport_address,
-                            'present_address', present_address,
-                            'permanent_address', permanent_address,
-                            'tracking_id', tracking_id,
-                            'serial_no', serial_no,
-                            'group_name', group_name,
-                            'sub_group', sub_group,
-                            'registration_status', registration_status,
-                            'allocation_status', allocation_status,
-                            'created_at', created_at,
-                            'created_by', created_by,
-                            'updated_at', updated_at,
-                            'updated_by', updated_by,
-                            'is_assigned', is_assigned,
-                            'vaccination_center', vaccination_center,
-                            'passport_copy', passport_copy,
-                            'package_id', package_id,
-                            'package_name', package_name,
-                            'comment_on_package', comment_on_package,
-                            'group_leader', group_leader,
-                            'package_duration', package_duration,
-                            'package_bed_types', package_bed_types,
-                            'total_payable', total_payable,
-                            'total_payment', total_payment,
-                            'is_package_assigned', is_package_assigned,
-                            'actual_payable', actual_payable,
-                            'total_due', total_due,
-                            'package_price_discount', package_price_discount,
-                            'pre_reg_voucher', pre_reg_voucher,
-                            'reg_voucher', reg_voucher,
-                            'passport_no', passport_no,
-                            'passport_dob', passport_dob,
-                            'passport_expiry_date', passport_expiry_date,
-                            'passport_type', passport_type,
-                            'family_code', family_code
-                        ) AS item,
-                        total_count
-                    FROM filtered_data
-                ),
-                {status_count_cte}
+            WITH filtered_data AS (
                 SELECT 
-                    (SELECT COALESCE(JSON_AGG(item), '[]'::json) FROM result_data) AS data,
-                    (SELECT COALESCE(MAX(total_count), 0) FROM result_data) AS total_count,
-                    {status_count_select};
-                """
+                    p.*,
+                    COUNT(*) OVER() AS total_count
+                FROM core.pilgrim_data p
+                {where_clause}
+                ORDER BY p.created_at DESC, p.id DESC
+                LIMIT :limit_val OFFSET :skip_val
+            ),
+            result_data AS (
+                SELECT 
+                    TO_JSONB(filtered_data) - 'total_count' AS item,
+                    total_count
+                FROM filtered_data
+            ),
+            {status_count_cte}
+            SELECT 
+                (SELECT COALESCE(JSON_AGG(item), '[]'::json) FROM result_data) AS data,
+                (SELECT COALESCE(MAX(total_count), 0) FROM result_data) AS total_count,
+                {status_count_select};
+            """
 
         # Execute
         result = await db.execute(text(query), params)
@@ -440,4 +382,20 @@ async def get_replaced_pilgrims(db:AsyncSession, agency_name:str):
         result = await db.execute(stmt)
         return result.scalars().all()
     except Exception as e:
+        raise e
+
+
+async def pre_register_enquiry(db:AsyncSession, request_dict:dict):
+    try:
+        stmt  = (
+            insert(PilgrimDataModel)
+            .values(**request_dict)
+            .returning(PilgrimDataModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
         raise e

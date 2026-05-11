@@ -41,6 +41,9 @@ class PilgrimDataBaseSchema(BaseModel):
     pre_reg_voucher : Optional[str] = None
     reg_voucher : Optional[str] = None
     passport_type : Optional[str] = None
+    remarks: Optional[str] = None
+    email: Optional[str] = None
+    interested_in_package: Optional[str] = None
 
 
     class Config:
@@ -170,3 +173,11 @@ class ReplacedPilgrimResponseSchema(BaseModel):
 
 class ReplacedPilgrimListResponseSchema(BaseModel):
     replaced_pilgrims : List[ReplacedPilgrimResponseSchema]
+
+class PilgrimPreRegistrationEnquire(BaseModel):
+    name_en: Optional[str] = None
+    father_name: Optional[str] = None
+    mobile_no: Optional[str] = None
+    email: Optional[str] = None
+    interested_in_package: Optional[str] = None
+    remarks: Optional[str] = None

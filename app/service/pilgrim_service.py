@@ -18,7 +18,8 @@ from data.repository.pilgrim_repository import fetch_pilgrim_data_json
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
     PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign, PilgrimDataBaseSchema, PilgrimReplaceSchema, \
-    PilgrimArchiveSchema, ReplacedPilgrimResponseSchema, ReplacedPilgrimListResponseSchema
+    PilgrimArchiveSchema, ReplacedPilgrimResponseSchema, ReplacedPilgrimListResponseSchema, \
+    PilgrimPreRegistrationEnquire
 
 
 async def get_pilgrim_data(db: AsyncSession,
@@ -260,5 +261,22 @@ async def get_replaced_pilgrims(db, agency_name):
                 for r in replaced_pilgrims
             ]
         )
+    except Exception as e:
+        raise e
+
+
+async def pre_register_enquiry(db:AsyncSession, request_body:PilgrimPreRegistrationEnquire):
+    try:
+        request_dict = request_body.model_dump()
+        request_dict["group_name"] = "Amin Travels & Tours"
+        request_dict["registration_status"] = "WALK_IN"
+        request_dict["allocation_status"] = "WALK_IN"
+        request_dict["is_assigned"] = False
+        request_dict["created_by"] = "pilgrim"
+        request_dict["updated_by"] = "pilgrim"
+
+
+        pilgrim = await pilgrim_repository.pre_register_enquiry(db=db, request_dict=request_dict)
+        return PilgrimDataResponseSchema.model_validate(pilgrim)
     except Exception as e:
         raise e

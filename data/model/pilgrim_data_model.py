@@ -60,6 +60,9 @@ class PilgrimDataModel(Base, BaseMixinModel):
     passport_type = Column(String, nullable=True)
     family_code = Column(String, nullable=True)
     sub_group = Column(String, nullable=True)
+    remarks=Column(String, nullable=True)
+    email=Column(String, nullable=True)
+    interested_in_package=Column(String, nullable=True)
 
 class ReplacedPilgrimModel(Base, BaseMixinModel):
     __tablename__ = 'replaced_pilgrim'
