@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, Any
 
 class UmrahVendorBillingCreateSchema(BaseModel):
-    umrah_requisition_code: str
+    amin_office_code: str
     guest_name: str
     vendor_name: str
     description: Optional[Any]
@@ -27,8 +27,7 @@ class UmrahVendorBillingResponseSchema(UmrahVendorBillingCreateSchema):
         from_attributes = True
 
 class UmrahVendorBillingDetailsResponseSchema(BaseModel):
-    umrah_requisition_code: str
-    invoice_no: str
+    amin_office_code: str
     name: Optional[str]
     number_of_traveller: Optional[int]
 

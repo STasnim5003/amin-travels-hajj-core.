@@ -9,8 +9,8 @@ from infrastructure.schema.umrah_vendor_billing_schema import UmrahVendorBilling
 async def create_umrah_vendor_billing(db: AsyncSession, request: UmrahVendorBillingCreateSchema, agency_name: str,
                                       username: str):
     try:
-        requisition = await umrah_requisition_repository.get_requisition_by_requisition_code(db=db,
-                                                                                             umrah_requisition_code=request.umrah_requisition_code)
+        requisition = await umrah_requisition_repository.get_requisition_by_office_code(db=db,
+                                                                                             office_code=request.amin_office_code)
 
         if not requisition:
             raise HTTPException(status_code=400, detail='Requisition not found')
@@ -37,8 +37,7 @@ async def get_umrah_vendor_billing(db: AsyncSession, agency_name: str):
         for data in rows:
             result.append(
                 UmrahVendorBillingDetailsResponseSchema(
-                    umrah_requisition_code=data["umrah_requisition_code"],
-                    invoice_no=data["invoice_no"],
+                    amin_office_code=data["amin_office_code"],
                     name=data.get("name"),
                     number_of_traveller=data.get("number_of_traveller"),
 

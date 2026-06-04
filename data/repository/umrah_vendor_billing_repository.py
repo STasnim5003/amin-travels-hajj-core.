@@ -24,8 +24,7 @@ async def get_umrah_vendor_billing(db: AsyncSession, agency_name: str):
     try:
         query = text("""
                 SELECT
-                    ur.umrah_requisition_code,
-                    ur.invoice_no,
+                    ur.amin_office_code,
                     ur.name,
                     ur.number_of_traveller,
                 
@@ -151,12 +150,12 @@ async def get_umrah_vendor_billing(db: AsyncSession, agency_name: str):
                             )
                         )
                         FROM core.umrah_vendor_billing uvb
-                        WHERE uvb.umrah_requisition_code = ur.umrah_requisition_code
+                        WHERE uvb.amin_office_code = ur.amin_office_code
                     ) AS payments
                 
                 FROM core.umrah_requisition ur
                 WHERE ur.agency_name = :agency_name
-                ORDER BY ur.umrah_requisition_code DESC;
+                ORDER BY ur.amin_office_code DESC;
             """)
 
         result = await db.execute(query, {"agency_name": agency_name})
