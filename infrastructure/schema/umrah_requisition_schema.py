@@ -141,7 +141,7 @@ class UmrahRequisitionAssignedService(BaseModel):
     air_ticket_price: Optional[UmrahRequisitionVendorPrice] = None
     train_price: Optional[UmrahRequisitionVendorPrice] = None
     ziara_price: Optional[UmrahRequisitionVendorPrice] = None
-    guide_price: Optional[UmrahRequisitionVendorPrice] = None
+    guide_price: Optional[Any] = None
     food_price: Optional[UmrahRequisitionVendorPrice] = None
     others_price: Optional[UmrahRequisitionVendorPrice] = None
     total_vendor_price: Optional[float] = None
