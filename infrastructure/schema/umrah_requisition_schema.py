@@ -135,7 +135,7 @@ class UmrahRequisitionAssignedService(BaseModel):
     ziara: Optional[bool] = None
     train: Optional[bool] = None
     guide: Optional[bool] = None
-    hotel_info: Optional[List[UmrahRequisitionHotelSchema]] = None
+    hotel_info: Optional[Any] = None
     transport: Optional[List[UmrahRequisitionTransportSchema]] = None
     visa_price: Optional[UmrahRequisitionVendorPrice] = None
     air_ticket_price: Optional[UmrahRequisitionVendorPrice] = None
@@ -299,11 +299,20 @@ class UmrahRequisitionConfirmedPilgrimsInfoSchema(BaseModel):
     emergency_contract_person: List[EmergencyContractPerson]
 
 
+
 class UmrahConfirmedPilgrimItemSchema(UmrahRequisitionConfirmedPilgrimsInfoSchema):
     total_price: Optional[float]
     total_due: Optional[float]
     total_payment: Optional[float]
     discount: Optional[float]
+    is_visa: Optional[bool] = None
+    is_air_ticket: Optional[bool] = None
+    is_hotel: Optional[bool] = None
+    is_transport: Optional[bool] = None
+    is_ziara: Optional[bool] = None
+    is_guide: Optional[bool] = None
+    is_food: Optional[bool] = None
+    is_train: Optional[bool] = None
 
 
 class UmrahConfirmedPilgrimsResponseSchema(BaseModel):
