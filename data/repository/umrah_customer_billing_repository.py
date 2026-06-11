@@ -60,7 +60,7 @@ async def get_umrah_customer_billing(db: AsyncSession, agency_name: str):
                         ) AS billing_list
                     
                     FROM core.umrah_requisition ur
-                    WHERE ur.agency_name = :agency_name and ur.requisition_type = 'B2C'
+                    WHERE ur.agency_name = :agency_name and ur.requisition_type = 'B2C' and ur.is_confirmed = TRUE
                     ORDER BY ur.id DESC;
             """)
 

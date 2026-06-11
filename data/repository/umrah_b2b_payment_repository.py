@@ -67,7 +67,7 @@ async def get_umrah_b2b_payments(db: AsyncSession, agency_name: str):
                             ) AS billing_list
         
                         FROM core.umrah_requisition ur
-                        WHERE ur.agency_name = :agency_name and ur.requisition_type = 'B2B'
+                        WHERE ur.agency_name = :agency_name and ur.requisition_type = 'B2B' and ur.is_confirmed = true
                         ORDER BY ur.id DESC;
                 """)
 
@@ -133,34 +133,40 @@ async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, requisitio
 async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str):
     try:
         query = text("""
-                    SELECT 
-                        ag.name, 
-                        ag.agency_name, 
-                        ag.total_bill, 
-                        ag.total_credit, 
-                        ag.total_due,
+                    SELECT
+                        ur.b2b_agent_name,
+                        SUM(ur.total_price) AS total_price,
+                        SUM(ur.total_payment) AS total_payment,
+                        SUM(ur.total_due) AS total_due,
+                    
                         COALESCE(
                             (
                                 SELECT jsonb_agg(
                                     jsonb_build_object(
                                         'invoice_no', p.invoice_no,
-                                        'guest_name', p.guest_name,
-                                        'bill', p.bill,
-                                        'credit', p.credit,
                                         'way_of_payment', p.way_of_payment,
                                         'payment_date', p.payment_date,
-                                        'sales_person', p.sales_person
+                                        'amin_office_code', p.amin_office_code,
+                                        'amount', p.amount,
+                                        'id', p.id,
+                                        'description', p.description
                                     )
+                                    ORDER BY p.id DESC
                                 )
                                 FROM core.umrah_b2b_payements p
-                                WHERE p.b2b_agent_name = :b2b_agent_name
-                                    AND p.agency_name = :agency_name
-                            ),'[]'::jsonb
+                                WHERE p.b2b_agent_name = ur.b2b_agent_name
+                                  AND p.agency_name = ur.agency_name
+                            ),
+                            '[]'::jsonb
                         ) AS payment_list
-                    FROM core.umrah_b2b_agents ag
-                    WHERE ag.agency_name = :agency_name
-                      AND ag.name = :b2b_agent_name
-                    GROUP BY ag.name, ag.agency_name, ag.total_bill, ag.total_credit, ag.total_due
+                    
+                    FROM core.umrah_requisition ur
+                    WHERE ur.agency_name = :agency_name
+                      AND ur.b2b_agent_name = :b2b_agent_name
+                      AND ur.is_confirmed = TRUE
+                    GROUP BY
+                        ur.b2b_agent_name,
+                        ur.agency_name;
                 """)
 
         result = await db.execute(query, {

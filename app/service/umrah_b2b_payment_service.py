@@ -135,10 +135,10 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
             ]
 
         return B2BAgentPaymentResponse(
-            name=row.name,
-            agency_name=row.agency_name,
-            total_bill=row.total_bill,
-            total_credit=row.total_credit,
+            name=row.b2b_agent_name,
+            agency_name=agency_name,
+            total_bill=row.total_price,
+            total_credit=row.total_payment,
             total_due=row.total_due,
             payment_list=payment_list
         )
