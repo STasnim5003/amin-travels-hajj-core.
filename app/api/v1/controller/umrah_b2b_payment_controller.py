@@ -10,7 +10,8 @@ from infrastructure.schema.umrah_b2b_payment_schema import (
     UmrahB2BPaymentCreate,
     UmrahB2BPaymentResponse,
     UmrahB2BPaymentListResponse,
-    UmrahB2BPaymentUpdate, B2BAgentPaymentResponse, B2BAgentPaymentListQueryParameters
+    UmrahB2BPaymentUpdate, B2BAgentPaymentResponse, B2BAgentPaymentListQueryParameters,
+    UmrahB2BBillingInvoiceBuildSchema
 )
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private", tags=["Umrah B2B Payment"])
@@ -30,7 +31,7 @@ async def create_payment(
     )
 
 
-@private_router.get("/umrah/b2b-payment", response_model=UmrahB2BPaymentListResponse)
+@private_router.get("/umrah/b2b-payment")
 async def get_payments(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user),
@@ -89,3 +90,15 @@ async def get_umrah_b2b_payment_list(
     agency_name = current_user['agency_name']
     return await umrah_b2b_payment_service.get_umrah_payments_for_b2b_agent(db=db, agency_name=agency_name,
                                                                             b2b_agent_name=request.b2b_agent_name)
+
+
+@private_router.get("/umrah/b2b-billing-invoice/{amin_office_code}", response_model=UmrahB2BBillingInvoiceBuildSchema)
+async def get_umrah_b2b_billing_invoice(
+        amin_office_code: str,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+    agency_name = current_user['agency_name']
+    return await umrah_b2b_payment_service.get_umrah_b2b_billing_invoice(db=db, agency_name=agency_name,
+                                                                        amin_office_code=amin_office_code)

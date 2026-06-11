@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.umrah_b2b_agent_model import UmrahB2BAgentModel
 from data.model.umrah_b2b_payment_model import UmrahB2BPayment
+from data.model.umrah_requisition_model import UmrahRequisitionModel
 
 
-async def create_umrah_b2b_payment(db: AsyncSession, request_dict: dict):
+async def create_umrah_b2b_payment(db: AsyncSession, request_dict: dict, requisition_price_update_dict: dict):
     try:
+        b2b_agent_name = request_dict['b2b_agent_name']
         stmt = (
             insert(UmrahB2BPayment)
             .values(**request_dict)
@@ -18,19 +20,12 @@ async def create_umrah_b2b_payment(db: AsyncSession, request_dict: dict):
         result = await db.execute(stmt)
 
         stmt = (
-            update(UmrahB2BAgentModel)
-            .values(
-                total_bill=UmrahB2BAgentModel.total_bill + request_dict['bill'],
-                total_credit=UmrahB2BAgentModel.total_credit + request_dict['credit'],
-                total_due=func.greatest(
-                    0,
-                    (UmrahB2BAgentModel.total_bill + request_dict['bill']) -
-                    (UmrahB2BAgentModel.total_credit + request_dict['credit'])
-                )
-            )
-            .where(UmrahB2BAgentModel.name == request_dict['b2b_agent_name'])
+            update(UmrahRequisitionModel)
+            .values(**requisition_price_update_dict)
+            .where(UmrahRequisitionModel.amin_office_code == request_dict['amin_office_code'])
         )
         await db.execute(stmt)
+
         await db.commit()
         return result.scalar_one_or_none()
     except Exception as e:
@@ -39,14 +34,47 @@ async def create_umrah_b2b_payment(db: AsyncSession, request_dict: dict):
 
 
 async def get_umrah_b2b_payments(db: AsyncSession, agency_name: str):
-    result = await db.execute(
-        select(UmrahB2BPayment)
-        .where(
-            UmrahB2BPayment.agency_name == agency_name
-        )
-        .order_by(UmrahB2BPayment.id.desc())
-    )
-    return result.scalars().all()
+    try:
+        query = text("""
+                        SELECT 
+                            ur.amin_office_code,
+                            ur.b2b_agent_name,
+                            ur.sales_person,
+                            ur.name,
+                            ur.total_price,
+                            ur.total_payment,
+                            ur.total_due,
+                            ur.discount,
+        
+                            COALESCE(
+                                (
+                                    SELECT json_agg(
+                                        json_build_object(
+                                            'amount', ubp.amount,
+                                            'description', ubp.description,
+                                            'way_of_payment', ubp.way_of_payment,
+                                            'date', ubp.payment_date,
+                                            'remarks', ubp.remarks,
+                                            'id', ubp.id,
+                                            'invoice_no', ubp.invoice_no
+                                        )
+                                        ORDER BY ubp.id DESC
+                                    )
+                                    FROM core.umrah_b2b_payements ubp
+                                    WHERE ubp.amin_office_code = ur.amin_office_code
+                                ),
+                                '[]'
+                            ) AS billing_list
+        
+                        FROM core.umrah_requisition ur
+                        WHERE ur.agency_name = :agency_name and ur.requisition_type = 'B2B'
+                        ORDER BY ur.id DESC;
+                """)
+
+        result = await db.execute(query, {"agency_name": agency_name})
+        return result.mappings().all()
+    except Exception as e:
+        raise e
 
 
 async def get_umrah_b2b_payment_by_id(db: AsyncSession, payment_id: int):
@@ -56,7 +84,7 @@ async def get_umrah_b2b_payment_by_id(db: AsyncSession, payment_id: int):
     return result.scalars().first()
 
 
-async def update_umrah_b2b_payment(db: AsyncSession, request_dict: dict, b2b_agent_finance_update_dict: dict):
+async def update_umrah_b2b_payment(db: AsyncSession, request_dict: dict, requisition_update_dict: dict):
     try:
         stmt = (
             update(UmrahB2BPayment)
@@ -67,13 +95,10 @@ async def update_umrah_b2b_payment(db: AsyncSession, request_dict: dict, b2b_age
 
         result = await db.execute(stmt)
 
-        b2b_agent_name = b2b_agent_finance_update_dict.pop('b2b_agent_name')
         stmt = (
-            update(UmrahB2BAgentModel)
-            .values(
-                **b2b_agent_finance_update_dict
-            )
-            .where(UmrahB2BAgentModel.name == b2b_agent_name)
+            update(UmrahRequisitionModel)
+            .values(**requisition_update_dict)
+            .where(UmrahRequisitionModel.amin_office_code == request_dict['amin_office_code'])
         )
         await db.execute(stmt)
         await db.commit()
@@ -83,7 +108,7 @@ async def update_umrah_b2b_payment(db: AsyncSession, request_dict: dict, b2b_age
         raise e
 
 
-async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, b2b_agent_finance_update_dict: dict):
+async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, requisition_update_dict: dict):
     try:
         stmt = (
             delete(UmrahB2BPayment)
@@ -91,11 +116,10 @@ async def delete_umrah_b2b_payment(db: AsyncSession, payment_id: int, b2b_agent_
         )
         await db.execute(stmt)
 
-        b2b_agent_name = b2b_agent_finance_update_dict.pop('b2b_agent_name')
         stmt = (
-            update(UmrahB2BAgentModel)
-            .values(**b2b_agent_finance_update_dict)
-            .where(UmrahB2BAgentModel.name == b2b_agent_name)
+            update(UmrahRequisitionModel)
+            .values(**requisition_update_dict)
+            .where(UmrahRequisitionModel.amin_office_code == requisition_update_dict['amin_office_code'])
         )
 
         await db.execute(stmt)
@@ -145,5 +169,40 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
         })
 
         return result.fetchone()
+    except Exception as e:
+        raise e
+
+
+async def get_umrah_b2b_billing_invoice(db:AsyncSession, amin_office_code:str):
+    try:
+        query = text("""
+                SELECT 
+                    ur.amin_office_code,
+                    ur.b2b_agent_name,
+                    ur.sales_person,
+                    ur.name,
+                    ur.mobile_no,
+                    ur.total_price,
+                    ur.total_due,
+                    ur.total_payment,
+                    ur.discount,
+                    ur.adult_traveller,
+                    ur.other_traveller,
+                    ur.per_head_price_adult,
+                    ur.per_head_price_child,
+                    ur.per_head_price_infant,
+                    ur.agency_name
+                FROM core.umrah_requisition ur
+                WHERE ur.amin_office_code = :amin_office_code
+            """)
+
+        result = await db.execute(
+            query,
+            {"amin_office_code": amin_office_code}
+        )
+
+        row = result.mappings().first()
+        return row
+
     except Exception as e:
         raise e
