@@ -44,7 +44,7 @@ class B2BPaymentItem(BaseModel):
     description: Optional[str] = None
     invoice_no: Optional[str] = None
     way_of_payment: Optional[str] = None
-    date: Optional[str] = None
+    payment_date: Optional[str] = None
     remarks: Optional[str] = None
     id: Optional[int]
 

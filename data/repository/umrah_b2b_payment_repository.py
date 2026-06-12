@@ -53,7 +53,7 @@ async def get_umrah_b2b_payments(db: AsyncSession, agency_name: str):
                                             'amount', ubp.amount,
                                             'description', ubp.description,
                                             'way_of_payment', ubp.way_of_payment,
-                                            'date', ubp.payment_date,
+                                            'payment_date', ubp.payment_date,
                                             'remarks', ubp.remarks,
                                             'id', ubp.id,
                                             'invoice_no', ubp.invoice_no
