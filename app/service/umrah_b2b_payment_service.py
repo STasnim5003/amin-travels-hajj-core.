@@ -10,7 +10,8 @@ from infrastructure.schema.umrah_b2b_payment_schema import (
     UmrahB2BPaymentCreate,
     UmrahB2BPaymentResponse,
     UmrahB2BPaymentListResponse,
-    UmrahB2BPaymentUpdate, B2BPaymentItem, B2BAgentPaymentResponse, UmrahB2BBillingInvoiceBuildSchema
+    UmrahB2BPaymentUpdate, B2BPaymentItem, B2BAgentPaymentResponse, UmrahB2BBillingInvoiceBuildSchema,
+    UmrahB2BTransactionList
 )
 
 
@@ -20,27 +21,17 @@ async def create_umrah_b2b_payment(db: AsyncSession, request: UmrahB2BPaymentCre
         if request.amount <= 0:
             raise HTTPException(status_code=400, detail='Amount must be positive')
 
-        umrah_requisition = await umrah_requisition_repository.get_requisition_by_office_code(db=db,
-                                                                                              office_code=request.amin_office_code)
+        b2b_agent = await umrah_b2b_agent_repository.get_umrah_b2b_agent_by_name(db=db, b2b_agent_name=request.b2b_agent_name, agency_name=agency_name)
 
-        if not umrah_requisition:
-            raise HTTPException(status_code=400, detail='Requisition does not exist')
+        if not b2b_agent:
+            raise HTTPException(status_code=400, detail='B2B Agent does not exist')
 
         request_dict = request.model_dump(exclude_none=True)
         request_dict['agency_name'] = agency_name
         request_dict['created_by'] = username
         request_dict['updated_by'] = username
 
-        discount = umrah_requisition.discount or 0
-
-        total_payment = umrah_requisition.total_payment + request.amount
-        requisition_price_update_dict = {
-            'total_payment': total_payment,
-            'total_due': max(0, umrah_requisition.total_price - (total_payment + discount)),
-        }
-
-        result = await umrah_b2b_payment_repository.create_umrah_b2b_payment(db=db, request_dict=request_dict,
-                                                                                       requisition_price_update_dict=requisition_price_update_dict)
+        result = await umrah_b2b_payment_repository.create_umrah_b2b_payment(db=db, request_dict=request_dict)
         return UmrahB2BPaymentResponse.model_validate(result)
     except Exception as e:
         raise e
@@ -50,7 +41,7 @@ async def get_umrah_b2b_payments(db: AsyncSession, agency_name: str):
     try:
         results = await umrah_b2b_payment_repository.get_umrah_b2b_payments(db, agency_name)
 
-        return [UmrahB2BPaymentListResponse(**row) for row in results]
+        return [UmrahB2BTransactionList(**row) for row in results]
     except Exception as e:
         raise e
 
@@ -81,16 +72,22 @@ async def update_umrah_b2b_payment(db: AsyncSession, request: UmrahB2BPaymentUpd
         request_dict["updated_by"] = username
         request_dict["updated_at"] = get_current_time()
 
-        requisition = await umrah_requisition_repository.get_requisition_by_office_code(db=db, office_code=request_dict['amin_office_code'])
+        b2b_agent_name = result.b2b_agent_name
 
-        current_payment = requisition.total_payment - result.amount + request_dict["amount"]
-        current_due = requisition.total_price - requisition.discount - current_payment
+        if b2b_agent_name != request_dict.get("b2b_agent_name"):
+            raise HTTPException(status_code=400, detail="B2B Agent name cannot be changed")
 
-        requisition_update_dict = {
-            'total_payment': current_payment,
-            'total_due': max(0, current_due),
+        b2b_agent = await umrah_b2b_agent_repository.get_umrah_b2b_agent_by_name(db=db, b2b_agent_name=b2b_agent_name, agency_name=agency_name)
+
+        current_credit = b2b_agent.total_credit - result.amount + request_dict["amount"]
+        current_due = max(b2b_agent.total_bill - current_credit, 0)
+
+        b2b_finance_update = {
+            'total_credit': current_credit,
+            'total_due': current_due,
+            'agency_name': agency_name,
         }
-        result = await umrah_b2b_payment_repository.update_umrah_b2b_payment(db, request_dict, requisition_update_dict)
+        result = await umrah_b2b_payment_repository.update_umrah_b2b_payment(db, request_dict, b2b_finance_update)
 
         return UmrahB2BPaymentResponse.model_validate(result)
     except Exception as e:
@@ -106,18 +103,21 @@ async def delete_umrah_b2b_payment(db: AsyncSession, agency_name: str, payment_i
     if result.agency_name != agency_name:
         raise HTTPException(status_code=400, detail="Agency mismatch")
 
-    requisition = await umrah_requisition_repository.get_requisition_by_office_code(db=db, office_code=result.amin_office_code)
+    b2b_agent_name = result.b2b_agent_name
+    b2b_agent = await umrah_b2b_agent_repository.get_umrah_b2b_agent_by_name(db=db, b2b_agent_name=b2b_agent_name,
+                                                                             agency_name=agency_name)
 
-    current_payment = requisition.total_payment - result.amount
-    current_due = requisition.total_price - requisition.discount - current_payment
+    current_credit = b2b_agent.total_credit - result.amount
+    current_due = max(0, b2b_agent.total_bill - current_credit)
 
-    requisition_update_dict = {
-        'total_payment': current_payment,
+    b2b_finance_update = {
+        'total_credit': current_credit,
         'total_due': max(0, current_due),
-        'amin_office_code' : result.amin_office_code
+        'name': b2b_agent_name,
+        'agency_name' : agency_name
     }
 
-    return await umrah_b2b_payment_repository.delete_umrah_b2b_payment(db, payment_id, requisition_update_dict)
+    return await umrah_b2b_payment_repository.delete_umrah_b2b_payment(db, payment_id, b2b_finance_update)
 
 
 async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b2b_agent_name: str):

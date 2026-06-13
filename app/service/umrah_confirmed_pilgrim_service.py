@@ -13,14 +13,24 @@ from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionConfi
 async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisitionConfirmedPilgrimsInfoSchema,
                                          agency_name: str, username: str):
     try:
-        await requisition_availability_check(db=db, requisition_id=request.id, agency_name=agency_name)
+        requisition = await umrah_requisition_repository.get_requisition_by_id(db=db, requisition_id=request.id,
+                                                                               agency_name=agency_name)
+        if not requisition:
+            raise HTTPException(status_code=400, detail="No Requisition Found ")
 
+        b2b_finance_update_dict = {}
+        if requisition.requisition_type == "B2B" and not requisition.is_confirmed:
+            b2b_finance_update_dict = {
+                "bill": requisition.total_price - requisition.discount,
+                "b2b_agent_name": requisition.b2b_agent_name,
+                "agency_name": agency_name
+            }
         request_dict = request.model_dump(exclude_none=True)
         request_dict['is_confirmed'] = True
         request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
 
-        result = await umrah_confirmation_pilgrim_repository.umrah_requisition_confirmation(db, request_dict)
+        result = await umrah_confirmation_pilgrim_repository.umrah_requisition_confirmation(db, request_dict, b2b_finance_update_dict)
         return UmrahRequisitionResponseSchema.model_validate(result)
 
     except Exception as e:
