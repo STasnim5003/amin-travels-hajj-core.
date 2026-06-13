@@ -38,35 +38,6 @@ class UmrahB2BPaymentResponse(UmrahB2BPaymentCreate):
     class Config:
         from_attributes = True
 
-class B2BPaymentItem(BaseModel):
-    amount: Optional[float]
-    description: Optional[str] = None
-    invoice_no: Optional[str] = None
-    way_of_payment: Optional[str] = None
-    payment_date: Optional[str] = None
-    remarks: Optional[str] = None
-    id: Optional[int]
-
-class UmrahB2BPaymentListResponse(BaseModel):
-    amin_office_code: Optional[str]
-    b2b_agent_name: Optional[str]
-    sales_person: Optional[str]
-    name: Optional[str]
-    total_price: Optional[float]
-    total_payment: Optional[float]
-    total_due: Optional[float]
-    discount: Optional[float]
-    billing_list: List[B2BPaymentItem]
-
-
-class B2BAgentPaymentResponse(BaseModel):
-    name: str
-    agency_name: str
-    total_bill: float
-    total_credit: float
-    total_due: float
-    payment_list: List[B2BPaymentItem] = []
-
 class B2BAgentPaymentListQueryParameters(BaseModel):
     b2b_agent_name: str
     # payment_start_date: Optional[date]
@@ -91,6 +62,16 @@ class UmrahB2BBillingInvoiceBuildSchema(BaseModel):
     total_price_in_words: Optional[str]
     total_due_in_words: Optional[str]
     total_payment_in_words: Optional[str]
+    child_service: Optional[dict] = None
+    infant_service: Optional[dict] = None
+    visa_total_price: Optional[float] = None
+    air_ticket_total_price: Optional[float] = None
+    ziara_total_price: Optional[float] = None
+    train_total_price: Optional[float] = None
+
+    hotel_info: Optional[List[dict]] = []
+    transport_info: Optional[List[dict]] = []
+    guide_info: Optional[List[dict]] = []
 
 
 class B2BTransactionItem(BaseModel):
