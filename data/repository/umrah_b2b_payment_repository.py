@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.umrah_b2b_agent_model import UmrahB2BAgentModel
 from data.model.umrah_b2b_payment_model import UmrahB2BPayment
+from data.model.umrah_requisition_model import UmrahRequisitionModel
 
 
 async def create_umrah_b2b_payment(db: AsyncSession, request_dict: dict):
@@ -219,34 +220,16 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
 
 async def get_umrah_b2b_billing_invoice(db: AsyncSession, amin_office_code: str):
     try:
-        query = text("""
-                SELECT 
-                    ur.amin_office_code,
-                    ur.b2b_agent_name,
-                    ur.sales_person,
-                    ur.name,
-                    ur.mobile_no,
-                    ur.total_price,
-                    ur.total_due,
-                    ur.total_payment,
-                    ur.discount,
-                    ur.adult_traveller,
-                    ur.other_traveller,
-                    ur.per_head_price_adult,
-                    ur.per_head_price_child,
-                    ur.per_head_price_infant,
-                    ur.agency_name
-                FROM core.umrah_requisition ur
-                WHERE ur.amin_office_code = :amin_office_code
-            """)
-
-        result = await db.execute(
-            query,
-            {"amin_office_code": amin_office_code}
+        stmt = (
+            select(UmrahRequisitionModel)
+            .where(
+                UmrahRequisitionModel.amin_office_code == amin_office_code,
+                UmrahRequisitionModel.requisition_type == 'B2B',
+                UmrahRequisitionModel.is_confirmed == True
+            )
         )
-
-        row = result.mappings().first()
-        return row
+        result = await db.execute(stmt)
+        return result.scalars().first()
 
     except Exception as e:
         raise e

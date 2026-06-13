@@ -62,6 +62,16 @@ class UmrahB2BBillingInvoiceBuildSchema(BaseModel):
     total_price_in_words: Optional[str]
     total_due_in_words: Optional[str]
     total_payment_in_words: Optional[str]
+    child_service: Optional[dict] = None
+    infant_service: Optional[dict] = None
+    visa_total_price: Optional[float] = None
+    air_ticket_total_price: Optional[float] = None
+    ziara_total_price: Optional[float] = None
+    train_total_price: Optional[float] = None
+
+    hotel_info: Optional[List[dict]] = []
+    transport_info: Optional[List[dict]] = []
+    guide_info: Optional[List[dict]] = []
 
 
 class B2BTransactionItem(BaseModel):

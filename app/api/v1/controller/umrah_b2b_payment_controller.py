@@ -91,7 +91,7 @@ async def get_umrah_b2b_payment_list(
                                                                                     b2b_agent_name=request.b2b_agent_name)
 
 
-@private_router.get("/umrah/b2b-billing-invoice/{amin_office_code}", response_model=UmrahB2BBillingInvoiceBuildSchema)
+@private_router.get("/umrah/b2b-billing-invoice/{amin_office_code}")
 async def get_umrah_b2b_billing_invoice(
         amin_office_code: str,
         db: AsyncSession = Depends(get_async_db),
