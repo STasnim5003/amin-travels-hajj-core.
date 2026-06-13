@@ -10,8 +10,7 @@ class UmrahB2BPaymentCreate(BaseModel):
     amount: float
     payment_date: Optional[date] = None
     remarks: Optional[str] = None
-    amin_office_code: str
-    b2b_agent_name : Optional[str] = None
+    b2b_agent_name : str
 
 class UmrahB2BPaymentUpdate(BaseModel):
     id: int
@@ -23,7 +22,7 @@ class UmrahB2BPaymentUpdate(BaseModel):
     remarks: Optional[str] = None
     is_active: Optional[bool] = None
     amount: Optional[float] = None
-    amin_office_code: Optional[str] = None
+
 
 
 class UmrahB2BPaymentResponse(UmrahB2BPaymentCreate):
@@ -92,3 +91,25 @@ class UmrahB2BBillingInvoiceBuildSchema(BaseModel):
     total_price_in_words: Optional[str]
     total_due_in_words: Optional[str]
     total_payment_in_words: Optional[str]
+
+
+class B2BTransactionItem(BaseModel):
+    type: Optional[str] = None
+    amin_office_code: Optional[str] = None
+    name: Optional[str] = None
+    sales_person: Optional[str] = None
+    total_price: Optional[float] = None
+    discount: Optional[float] = None
+    invoice_no: Optional[str] = None
+    payment_date: Optional[str] = None
+    amount: Optional[float] = None
+    payment_way: Optional[str] = None
+    created_at: Optional[str] = None
+
+class UmrahB2BTransactionList(BaseModel):
+    b2b_agent_name: str
+    agency_name: str
+    total_bill: float
+    total_credit: float
+    total_due: float
+    transactions: Optional[List[B2BTransactionItem]] = None
