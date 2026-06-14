@@ -76,6 +76,7 @@ async def get_umrah_b2b_payments(db: AsyncSession, agency_name: str):
                                     SELECT
                                         json_build_object(
                                             'type', 'payment',
+                                            'id', ubp.id,
                                             'invoice_no', ubp.invoice_no,
                                             'payment_date', ubp.payment_date,
                                             'amount', ubp.amount,
