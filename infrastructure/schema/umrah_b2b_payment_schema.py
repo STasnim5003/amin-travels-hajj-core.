@@ -86,7 +86,7 @@ class B2BTransactionItem(BaseModel):
     amount: Optional[float] = None
     payment_way: Optional[str] = None
     created_at: Optional[str] = None
-    id: Optional[str] = None
+    id: Optional[int] = None
 
 class UmrahB2BTransactionList(BaseModel):
     b2b_agent_name: str
