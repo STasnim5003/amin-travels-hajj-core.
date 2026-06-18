@@ -39,7 +39,7 @@ class PilgrimDataModel(Base, BaseMixinModel):
     comment_on_package = Column(String, nullable=True)
     reference = Column(String, nullable=True)
     group_leader = Column(String, nullable=True)
-    passport_no =Column(String, nullable=True)
+    passport_no = Column(String, nullable=True)
     total_payable = Column(Integer, nullable=True)
     total_payment = Column(Integer, nullable=True)
     package_name = Column(String, nullable=True)
@@ -60,9 +60,10 @@ class PilgrimDataModel(Base, BaseMixinModel):
     passport_type = Column(String, nullable=True)
     family_code = Column(String, nullable=True)
     sub_group = Column(String, nullable=True)
-    remarks=Column(String, nullable=True)
-    email=Column(String, nullable=True)
-    interested_in_package=Column(String, nullable=True)
+    remarks = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    interested_in_package = Column(String, nullable=True)
+
 
 class ReplacedPilgrimModel(Base, BaseMixinModel):
     __tablename__ = 'replaced_pilgrim'
@@ -74,3 +75,20 @@ class ReplacedPilgrimModel(Base, BaseMixinModel):
     replaced_tracking_id = Column(String, nullable=False)
     replaced_name_en = Column(String, nullable=False)
     agency_name = Column(String, nullable=False)
+
+
+class TrainingSessionAndPreRegisterEnquiryPilgrim(Base, BaseMixinModel):
+    __tablename__ = 'book_training_session_and_pre_register_customer'
+    __table_args__ = {'schema': 'core'}
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    name_en = Column(String, nullable=False)
+    father_name = Column(String, nullable=True)
+    mobile_no = Column(String, nullable=False)
+    email = Column(String, nullable=True)
+    interested_in_package = Column(String, nullable=True)
+    remarks = Column(String, nullable=True)
+    number_of_people = Column(Integer, nullable=True)
+    media = Column(String, nullable=True)
+    purpose = Column(String, nullable=True)
+    agency_name = Column(String, nullable=True)

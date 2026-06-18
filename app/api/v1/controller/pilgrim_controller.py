@@ -11,8 +11,8 @@ from app.service import pilgrim_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, PilgrimFamilyGroupAssign, \
-    PilgrimDataBaseSchema, PilgrimReplaceSchema, PilgrimArchiveSchema, ReplacedPilgrimListResponseSchema, \
-    PilgrimPreRegistrationEnquire
+    PilgrimReplaceSchema, PilgrimArchiveSchema, ReplacedPilgrimListResponseSchema, \
+    PilgrimPreRegistrationEnquire, BookTrainingSession
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -27,10 +27,11 @@ async def get_pilgrim_data(
         mobile_no: Optional[str] = Query(None),
         allocation_status: Optional[str] = Query(None),
         registration_status: Optional[str] = Query(None),
-        group_leader : Optional[str] = Query(None),
+        group_leader: Optional[str] = Query(None),
         table_name: Optional[str] = Query(None),
         show_customers: bool = Query(default=True),
         is_package_assigned: bool = Query(None),
+        hajj_year: Optional[int] = Query(None),
         page: int = Query(1, ge=1),
         size: int = Query(10, ge=1),
         db: AsyncSession = Depends(get_async_db),
@@ -40,14 +41,16 @@ async def get_pilgrim_data(
     if current_user["role"] == "SUPER_ADMIN":
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, None,
                                                       allocation_status, registration_status, page, size, table_name,
-                                                      username, group_leader, show_customers, is_package_assigned)
+                                                      username, group_leader, show_customers, is_package_assigned,
+                                                      hajj_year)
     else:
         if allocation_status == "UNASSIGNED":
             raise HTTPException(status_code=403, detail="Unauthorized")
         group_name = current_user["agency_name"]
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, group_name,
                                                       allocation_status, registration_status, page,
-                                                      size, table_name, username, group_leader, show_customers, is_package_assigned)
+                                                      size, table_name, username, group_leader, show_customers,
+                                                      is_package_assigned, hajj_year)
 
 
 @private_router.put("/pilgrim-data", response_model=PaginatedPilgrimDataListResponseSchema, tags=["Pilgrim"])
@@ -65,28 +68,31 @@ async def update_pilgrim_data(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @private_router.put("/pilgrim-data/replace", response_model=PilgrimDataResponseSchema, tags=["Pilgrim"])
 async def replace_pilgrim(
         request: PilgrimReplaceSchema,
-        db:AsyncSession = Depends(get_async_db),
-        current_user:dict = Depends(get_current_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
     return await pilgrim_service.replace_pilgrim(db=db, request=request, agency_name=agency_name)
 
+
 @private_router.get("/pilgrim-data/replace", response_model=ReplacedPilgrimListResponseSchema, tags=["Pilgrim"])
 async def get_replaced_pilgrims(
-        db:AsyncSession = Depends(get_async_db),
-        current_user:dict = Depends(get_current_user)
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
     return await pilgrim_service.get_replaced_pilgrims(db=db, agency_name=agency_name)
 
-@private_router.put("/pilgrim-data/archive", response_model=List[PilgrimDataResponseSchema],tags=["Pilgrim"])
+
+@private_router.put("/pilgrim-data/archive", response_model=List[PilgrimDataResponseSchema], tags=["Pilgrim"])
 async def archive_pilgrim(
         request: PilgrimArchiveSchema,
         db: AsyncSession = Depends(get_async_db),
@@ -97,6 +103,7 @@ async def archive_pilgrim(
 
     agency_name = current_user["agency_name"]
     return await pilgrim_service.archive_pilgrim(db=db, request=request, agency_name=agency_name)
+
 
 @public_router.post("/pilgrim/login", response_model=PilgrimLoginResponseSchema, tags=["Pilgrim"])
 async def pilgrim_login(
@@ -140,7 +147,7 @@ async def register_pilgrim(
     if not tracking_id:
         raise HTTPException(status_code=400, detail="Tracking ID is missing in user context")
     try:
-        return  await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id,
+        return await pilgrim_service.pilgrim_register(db, tracking_id, vaccination_center, passport_copy, package_id,
                                                       comment_on_package)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -152,8 +159,8 @@ async def get_pilgrim_by_id(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PilgrimDataResponseSchema:
-
     return await pilgrim_service.get_pilgrim_by_id(db, pilgrim_id)
+
 
 @private_router.put("/pilgrim/assign-family-code", tags=["Pilgrim"])
 async def assign_family_code_to_pilgrim(
@@ -166,9 +173,29 @@ async def assign_family_code_to_pilgrim(
     # agency_name = "Marvellous Air Travels Ltd"
     return await pilgrim_service.assign_family_code(db, request_body, agency_name)
 
+
 @public_router.post("/pilgrim/pre-register-enquiry", tags=["Pilgrim"])
 async def pre_register_enquiry(
         request_body: PilgrimPreRegistrationEnquire,
         db: AsyncSession = Depends(get_async_db)
 ):
     return await pilgrim_service.pre_register_enquiry(db=db, request_body=request_body)
+
+
+@public_router.post("/pilgrim/book-training-session", tags=["Pilgrim"])
+async def book_hajj_training_session(
+        request_body: BookTrainingSession,
+        db: AsyncSession = Depends(get_async_db)
+):
+    return await pilgrim_service.book_training_session(db=db, request_body=request_body)
+
+
+@private_router.get("/pre-register-enquiry-training-session", tags=["Pilgrim"])
+async def get_pre_register_enquiry_training_session_pilgrims(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+
+    agency_name = current_user["agency_name"]
+    return await pilgrim_service.get_pre_register_enquiry_training_session_pilgrims(db=db, agency_name=agency_name)

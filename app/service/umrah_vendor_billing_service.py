@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import umrah_requisition_repository, umrah_vendor_billing_repository
 from infrastructure.schema.umrah_vendor_billing_schema import UmrahVendorBillingCreateSchema, \
-    UmrahVendorBillingResponseSchema, UmrahVendorBillingDetailsResponseSchema
+    UmrahVendorBillingResponseSchema, UmrahVendorBillingDetailsResponseSchema, UmrahAllVendorBillingSchema
 
 
 async def create_umrah_vendor_billing(db: AsyncSession, request: UmrahVendorBillingCreateSchema, agency_name: str,
@@ -25,6 +25,12 @@ async def create_umrah_vendor_billing(db: AsyncSession, request: UmrahVendorBill
     except Exception as e:
         raise e
 
+async def get_all_umrah_vendor_billing(db:AsyncSession, agency_name:str):
+    try:
+        rows = await umrah_vendor_billing_repository.get_umrah_all_vendor_billing(db=db, agency_name=agency_name)
+        return [UmrahAllVendorBillingSchema(**row) for row in rows]
+    except Exception as e:
+        raise e
 
 async def get_umrah_vendor_billing(db: AsyncSession, agency_name: str):
     try:

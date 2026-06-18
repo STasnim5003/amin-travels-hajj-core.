@@ -49,3 +49,11 @@ class UmrahVendorBillingDetailsResponseSchema(BaseModel):
 
 class UmrahVendorBillingSummaryQueryParams(BaseModel):
     vendor_name: str
+
+class UmrahAllVendorBillingSchema(BaseModel):
+    vendor_name: Optional[str]
+    service: Optional[str]
+    total_vendor_price: Optional[float]
+    total_vendor_payment: Optional[float]
+    requisitions: Optional[Any]
+    payments: Optional[Any]

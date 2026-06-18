@@ -13,7 +13,6 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    umrah_b2b_agent_controller, umrah_b2b_payment_controller,
                                    umrah_hotel_booking_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
-from app.api.v1.controller.admin_user_controller import public_router
 
 router = APIRouter()
 

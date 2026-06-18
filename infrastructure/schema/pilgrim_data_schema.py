@@ -175,9 +175,36 @@ class ReplacedPilgrimListResponseSchema(BaseModel):
     replaced_pilgrims : List[ReplacedPilgrimResponseSchema]
 
 class PilgrimPreRegistrationEnquire(BaseModel):
+    name_en: str
+    father_name: Optional[str] = None
+    mobile_no: str
+    email: Optional[str] = None
+    interested_in_package: Optional[str] = None
+    remarks: Optional[str] = None
+
+class BookTrainingSession(BaseModel):
+    name_en: str
+    mobile_no: str
+    number_of_people : Optional[int] = None
+    media: Optional[str] = None
+
+
+class PreRegistrationOrBookTrainingResponse(BaseModel):
+    id:int
     name_en: Optional[str] = None
     father_name: Optional[str] = None
     mobile_no: Optional[str] = None
     email: Optional[str] = None
     interested_in_package: Optional[str] = None
     remarks: Optional[str] = None
+    number_of_people: Optional[int] = None
+    media: Optional[str] = None
+    purpose: Optional[str] = None
+    agency_name : Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
+
+    class Config:
+        from_attributes = True

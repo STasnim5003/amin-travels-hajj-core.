@@ -92,6 +92,7 @@ async def create_vendors_price(db: AsyncSession, request_dict: dict):
         result = await db.execute(stmt)
         vendor_price = result.scalar_one_or_none()
 
+        # ✅ FIX: correct WHERE condition
         stmt = (
             update(UmrahRequisitionModel)
             .values(

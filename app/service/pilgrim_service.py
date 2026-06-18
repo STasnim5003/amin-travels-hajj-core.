@@ -1,5 +1,3 @@
-from os import access
-from pyexpat.errors import messages
 from typing import Optional
 
 from fastapi import HTTPException
@@ -12,14 +10,13 @@ from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import verify_pilgrim_password, create_access_token_for_pilgrim, \
     create_refresh_token_for_pilgrim
 from app.service import view_field_service
-from data.model.pilgrim_data_model import ReplacedPilgrimModel
 from data.repository import pilgrim_repository, file_repository
 from data.repository.pilgrim_repository import fetch_pilgrim_data_json
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
-    PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign, PilgrimDataBaseSchema, PilgrimReplaceSchema, \
+    PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign, PilgrimReplaceSchema, \
     PilgrimArchiveSchema, ReplacedPilgrimResponseSchema, ReplacedPilgrimListResponseSchema, \
-    PilgrimPreRegistrationEnquire
+    PilgrimPreRegistrationEnquire, PreRegistrationOrBookTrainingResponse, BookTrainingSession
 
 
 async def get_pilgrim_data(db: AsyncSession,
@@ -35,7 +32,8 @@ async def get_pilgrim_data(db: AsyncSession,
                            username: Optional[str],
                            group_leader: Optional[str],
                            show_customers: bool,
-                            is_package_assigned: Optional[bool]
+                           is_package_assigned: Optional[bool],
+                           hajj_year: Optional[bool],
                            ) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
     try:
@@ -50,6 +48,7 @@ async def get_pilgrim_data(db: AsyncSession,
                                                                                                             group_leader,
                                                                                                             show_customers,
                                                                                                             is_package_assigned,
+                                                                                                            hajj_year,
                                                                                                             skip, limit)
         views = []
         if username:
@@ -135,7 +134,7 @@ async def pilgrim_register(db: AsyncSession, tracking_id: str, vaccination_cente
     )
 
     try:
-        pilgrim =  await pilgrim_repository.pilgrim_register(db, new_pilgrim_registration_request)
+        pilgrim = await pilgrim_repository.pilgrim_register(db, new_pilgrim_registration_request)
         pilgrim_dict = pilgrim.__dict__.copy()
         if pilgrim_dict.get("passport_copy"):
             passport_data_urls = await generate_downloadable_urls(passport_data)
@@ -161,7 +160,7 @@ async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int) -> PilgrimDataRes
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def assign_family_code(db:AsyncSession, request_body:PilgrimFamilyGroupAssign, agency_name:str):
+async def assign_family_code(db: AsyncSession, request_body: PilgrimFamilyGroupAssign, agency_name: str):
     pilgrims = await pilgrim_repository.get_pilgrims_by_tracking_ids(db, request_body.tracking_ids)
     family_codes = await pilgrim_repository.available_family_codes(db)
 
@@ -175,14 +174,13 @@ async def assign_family_code(db:AsyncSession, request_body:PilgrimFamilyGroupAss
         if pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="Pilgrim group name does not match.")
 
-
     result = await pilgrim_repository.assign_family_code(db, request_body)
     return [PilgrimDataResponseSchema.model_validate(r) for r in result]
 
 
-async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_name:str):
+async def replace_pilgrim(db: AsyncSession, request: PilgrimReplaceSchema, agency_name: str):
     try:
-        pilgrim = await pilgrim_repository.get_pilgrim_by_id(db=db, pilgrim_id = request.id)
+        pilgrim = await pilgrim_repository.get_pilgrim_by_id(db=db, pilgrim_id=request.id)
 
         if pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="Pilgrim group name does not match.")
@@ -199,7 +197,7 @@ async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_
             "is_package_assigned": False,
             "allocation_status": "ASSIGNED",
             "registration_status": "REGISTERED",
-            "preliminary_password" : pilgrim.preliminary_password,
+            "preliminary_password": pilgrim.preliminary_password,
             "password": pilgrim.password,
             "is_assigned": True,
             "created_by": agency_name,
@@ -210,27 +208,28 @@ async def replace_pilgrim(db:AsyncSession, request:PilgrimReplaceSchema, agency_
         })
 
         replaced_dict = {
-            "id" : request.id,
-            "registration_status" : "REPLACED"
+            "id": request.id,
+            "registration_status": "REPLACED"
         }
 
         replaced_details_dict = {
-            "tracking_id" : request.tracking_id,
-            "name_en" : request.name_en,
-            "replaced_tracking_id" : pilgrim.tracking_id,
-            "replaced_name_en" : pilgrim.name_en,
-            "agency_name" : agency_name,
-            "created_by" : agency_name,
-            "updated_by" : agency_name
+            "tracking_id": request.tracking_id,
+            "name_en": request.name_en,
+            "replaced_tracking_id": pilgrim.tracking_id,
+            "replaced_name_en": pilgrim.name_en,
+            "agency_name": agency_name,
+            "created_by": agency_name,
+            "updated_by": agency_name
         }
 
-        result = await pilgrim_repository.replace_pilgrim(db=db, request_dict=request_dict, replaced_dict=replaced_dict, replaced_details_dict=replaced_details_dict)
+        result = await pilgrim_repository.replace_pilgrim(db=db, request_dict=request_dict, replaced_dict=replaced_dict,
+                                                          replaced_details_dict=replaced_details_dict)
         return PilgrimDataResponseSchema.model_validate(result)
     except Exception as e:
         raise e
 
 
-async def archive_pilgrim(db:AsyncSession, request:PilgrimArchiveSchema, agency_name:str):
+async def archive_pilgrim(db: AsyncSession, request: PilgrimArchiveSchema, agency_name: str):
     try:
         pilgrims = await pilgrim_repository.get_pilgrims_by_tracking_ids(db, request.tracking_ids)
 
@@ -265,18 +264,40 @@ async def get_replaced_pilgrims(db, agency_name):
         raise e
 
 
-async def pre_register_enquiry(db:AsyncSession, request_body:PilgrimPreRegistrationEnquire):
+async def pre_register_enquiry(db: AsyncSession, request_body: PilgrimPreRegistrationEnquire):
     try:
         request_dict = request_body.model_dump()
-        request_dict["group_name"] = "Amin Travels & Tours"
-        request_dict["registration_status"] = "WALK_IN"
-        request_dict["allocation_status"] = "WALK_IN"
-        request_dict["is_assigned"] = False
+        request_dict["agency_name"] = "Amin Travels & Tours"
+        request_dict["purpose"] = "Pre-Register"
         request_dict["created_by"] = "pilgrim"
         request_dict["updated_by"] = "pilgrim"
 
+        pilgrim = await pilgrim_repository.pre_register_enquiry_or_book_training_session(db=db,
+                                                                                         request_dict=request_dict)
+        return PreRegistrationOrBookTrainingResponse.model_validate(pilgrim)
+    except Exception as e:
+        raise e
 
-        pilgrim = await pilgrim_repository.pre_register_enquiry(db=db, request_dict=request_dict)
-        return PilgrimDataResponseSchema.model_validate(pilgrim)
+
+async def book_training_session(db: AsyncSession, request_body: BookTrainingSession):
+    try:
+        request_dict = request_body.model_dump()
+        request_dict["agency_name"] = "Amin Travels & Tours"
+        request_dict["purpose"] = "Training Session"
+        request_dict["created_by"] = "pilgrim"
+        request_dict["updated_by"] = "pilgrim"
+
+        pilgrim = await pilgrim_repository.pre_register_enquiry_or_book_training_session(db=db,
+                                                                                         request_dict=request_dict)
+        return PreRegistrationOrBookTrainingResponse.model_validate(pilgrim)
+    except Exception as e:
+        raise e
+
+
+async def get_pre_register_enquiry_training_session_pilgrims(db: AsyncSession, agency_name: str):
+    try:
+        pilgrims = await pilgrim_repository.get_pre_register_enquiry_training_session_pilgrims(db=db,
+                                                                                               agency_name=agency_name)
+        return [PreRegistrationOrBookTrainingResponse.model_validate(pilgrim) for pilgrim in pilgrims]
     except Exception as e:
         raise e

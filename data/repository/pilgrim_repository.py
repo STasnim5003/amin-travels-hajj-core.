@@ -5,7 +5,8 @@ from fastapi import HTTPException
 from sqlalchemy import text, case, update, func, select, distinct, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.model.pilgrim_data_model import PilgrimDataModel, ReplacedPilgrimModel
+from data.model.pilgrim_data_model import PilgrimDataModel, ReplacedPilgrimModel, \
+    TrainingSessionAndPreRegisterEnquiryPilgrim
 from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema, PilgrimRegistrationRequestSchema, \
     PilgrimFamilyGroupAssign
 
@@ -22,6 +23,7 @@ async def fetch_pilgrim_data_json(
         group_leader: Optional[str] = None,
         show_customers: bool = True,
         is_package_assigned: Optional[bool] = None,
+        hajj_year: Optional[bool] = None,
         skip: int = 0,
         limit: int = 10,
 ):
@@ -74,6 +76,10 @@ async def fetch_pilgrim_data_json(
             where_conditions.append("is_package_assigned = :is_package_assigned")
             params['is_package_assigned'] = is_package_assigned
 
+        if hajj_year:
+            where_conditions.append("hajj_year = :hajj_year")
+            params['hajj_year'] = hajj_year
+
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
 
@@ -84,7 +90,7 @@ async def fetch_pilgrim_data_json(
                         FROM (
                             SELECT registration_status, COUNT(*) AS count
                             FROM core.pilgrim_data
-                            WHERE group_name = '{group_name}' AND allocation_status IN ('ASSIGNED', 'WALK_IN')
+                            WHERE group_name = '{group_name}' AND allocation_status IN ('ASSIGNED', 'WALK_IN') AND hajj_year = '{hajj_year}'
                             GROUP BY registration_status
                         ) AS registration_counts
                     )
@@ -98,6 +104,7 @@ async def fetch_pilgrim_data_json(
                             SELECT allocation_status, COUNT(*) AS count
                             FROM core.pilgrim_data
                             GROUP BY allocation_status
+                            WHERE hajj_year = '{hajj_year}'
                         ) AS allocation_counts
                     )
                     """
@@ -303,7 +310,7 @@ async def assign_family_code(db: AsyncSession, request_body: PilgrimFamilyGroupA
         result = await db.execute(
             update(PilgrimDataModel)
             .where(PilgrimDataModel.tracking_id.in_(request_body.tracking_ids))
-            .values(family_code = request_body.family_code)
+            .values(family_code=request_body.family_code)
             .returning(PilgrimDataModel)
         )
 
@@ -312,6 +319,7 @@ async def assign_family_code(db: AsyncSession, request_body: PilgrimFamilyGroupA
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
+
 
 async def available_family_codes(db: AsyncSession):
     try:
@@ -324,7 +332,7 @@ async def available_family_codes(db: AsyncSession):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def replace_pilgrim(db:AsyncSession, request_dict:dict, replaced_dict:dict, replaced_details_dict:dict):
+async def replace_pilgrim(db: AsyncSession, request_dict: dict, replaced_dict: dict, replaced_details_dict: dict):
     try:
         update_stmt = (
             update(PilgrimDataModel)
@@ -355,7 +363,8 @@ async def replace_pilgrim(db:AsyncSession, request_dict:dict, replaced_dict:dict
         await db.rollback()
         raise e
 
-async def archive_pilgrims(db:AsyncSession, tracking_ids:List[str], update_data:dict):
+
+async def archive_pilgrims(db: AsyncSession, tracking_ids: List[str], update_data: dict):
     try:
         stmt = (
             update(PilgrimDataModel)
@@ -372,7 +381,7 @@ async def archive_pilgrims(db:AsyncSession, tracking_ids:List[str], update_data:
         raise e
 
 
-async def get_replaced_pilgrims(db:AsyncSession, agency_name:str):
+async def get_replaced_pilgrims(db: AsyncSession, agency_name: str):
     try:
         stmt = (
             select(ReplacedPilgrimModel)
@@ -385,12 +394,12 @@ async def get_replaced_pilgrims(db:AsyncSession, agency_name:str):
         raise e
 
 
-async def pre_register_enquiry(db:AsyncSession, request_dict:dict):
+async def pre_register_enquiry_or_book_training_session(db: AsyncSession, request_dict: dict):
     try:
-        stmt  = (
-            insert(PilgrimDataModel)
+        stmt = (
+            insert(TrainingSessionAndPreRegisterEnquiryPilgrim)
             .values(**request_dict)
-            .returning(PilgrimDataModel)
+            .returning(TrainingSessionAndPreRegisterEnquiryPilgrim)
         )
 
         result = await db.execute(stmt)
@@ -398,4 +407,17 @@ async def pre_register_enquiry(db:AsyncSession, request_dict:dict):
         return result.scalar_one_or_none()
     except Exception as e:
         await db.rollback()
+        raise e
+
+
+async def get_pre_register_enquiry_training_session_pilgrims(db: AsyncSession, agency_name: str):
+    try:
+        stmt = (
+            select(TrainingSessionAndPreRegisterEnquiryPilgrim)
+            .where(TrainingSessionAndPreRegisterEnquiryPilgrim.agency_name == agency_name)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
         raise e
