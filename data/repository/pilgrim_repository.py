@@ -23,133 +23,211 @@ async def fetch_pilgrim_data_json(
         group_leader: Optional[str] = None,
         show_customers: bool = True,
         is_package_assigned: Optional[bool] = None,
-        hajj_year: Optional[bool] = None,
+        hajj_year: Optional[int] = None,
         skip: int = 0,
         limit: int = 10,
 ):
     try:
-        # Build WHERE conditions dynamically
         where_conditions = []
         params = {
-            'skip_val': skip,
-            'limit_val': limit
+            "skip_val": skip,
+            "limit_val": limit,
         }
 
         if name_en:
-            where_conditions.append("name_en ILIKE :name_filter")
-            params['name_filter'] = f"%{name_en}%"
+            where_conditions.append("p.name_en ILIKE :name_filter")
+            params["name_filter"] = f"%{name_en}%"
 
         if tracking_id:
-            where_conditions.append("tracking_id = :tracking_id")
-            params['tracking_id'] = tracking_id
+            where_conditions.append("p.tracking_id = :tracking_id")
+            params["tracking_id"] = tracking_id
 
         if serial_no:
-            where_conditions.append("serial_no = :serial_no")
-            params['serial_no'] = serial_no
+            where_conditions.append("p.serial_no = :serial_no")
+            params["serial_no"] = serial_no
 
         if mobile_no:
-            where_conditions.append("mobile_no = :mobile_no")
-            params['mobile_no'] = mobile_no
+            where_conditions.append("p.mobile_no = :mobile_no")
+            params["mobile_no"] = mobile_no
 
         if allocation_status:
-            where_conditions.append("allocation_status = :allocation_status")
-            params['allocation_status'] = allocation_status
+            where_conditions.append("p.allocation_status = :allocation_status")
+            params["allocation_status"] = allocation_status
 
         if group_name:
-            where_conditions.append("group_name ILIKE :group_name")
-            where_conditions.append("allocation_status != :assigned_status")
-            params['group_name'] = f"%{group_name}%"
-            params['assigned_status'] = "UNASSIGNED"
+            where_conditions.append("p.group_name ILIKE :group_name")
+            where_conditions.append("p.allocation_status != :assigned_status")
+
+            params["group_name"] = f"%{group_name}%"
+            params["assigned_status"] = "UNASSIGNED"
 
         if registration_status:
-            # Use ANY array to filter multiple values
-            where_conditions.append("registration_status = :registration_status")
-            params['registration_status'] = registration_status
+            where_conditions.append(
+                "p.registration_status = :registration_status"
+            )
+            params["registration_status"] = registration_status
+
         if group_leader:
-            where_conditions.append("group_leader = :group_leader")
-            params['group_leader'] = group_leader
+            where_conditions.append("p.group_leader = :group_leader")
+            params["group_leader"] = group_leader
 
         if not show_customers:
-            where_conditions.append("tracking_id IS NOT NULL")
+            where_conditions.append("p.tracking_id IS NOT NULL")
 
         if is_package_assigned is not None:
-            where_conditions.append("is_package_assigned = :is_package_assigned")
-            params['is_package_assigned'] = is_package_assigned
+            where_conditions.append(
+                "p.is_package_assigned = :is_package_assigned"
+            )
+            params["is_package_assigned"] = is_package_assigned
 
-        if hajj_year:
-            where_conditions.append("hajj_year = :hajj_year")
-            params['hajj_year'] = hajj_year
+        if hajj_year is not None:
+            where_conditions.append("p.hajj_year = :hajj_year")
+            params["hajj_year"] = hajj_year
 
-        # Build WHERE clause
-        where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+        where_clause = (
+            "WHERE " + " AND ".join(where_conditions)
+            if where_conditions
+            else ""
+        )
 
+        # Status count CTE
         if group_name:
-            status_count_cte = f"""
-                    status_counts AS (
-                        SELECT JSON_OBJECT_AGG(registration_status, count) AS registration_status_count
-                        FROM (
-                            SELECT registration_status, COUNT(*) AS count
-                            FROM core.pilgrim_data
-                            WHERE group_name = '{group_name}' AND allocation_status IN ('ASSIGNED', 'WALK_IN') AND hajj_year = '{hajj_year}'
-                            GROUP BY registration_status
-                        ) AS registration_counts
-                    )
-                    """
-            status_count_select = "(SELECT registration_status_count FROM status_counts) AS registration_status_count, NULL AS allocation_status_count"
-        else:
-            status_count_cte = f"""
-                    status_counts AS (
-                        SELECT JSON_OBJECT_AGG(allocation_status, count) AS allocation_status_count
-                        FROM (
-                            SELECT allocation_status, COUNT(*) AS count
-                            FROM core.pilgrim_data
-                            GROUP BY allocation_status
-                            WHERE hajj_year = '{hajj_year}'
-                        ) AS allocation_counts
-                    )
-                    """
-            status_count_select = "NULL AS registration_status_count, (SELECT allocation_status_count FROM status_counts) AS allocation_status_count"
+            status_count_conditions = [
+                "group_name = :status_group_name",
+                "allocation_status IN ('ASSIGNED', 'WALK_IN')"
+            ]
 
-            # Main query
-        query = f"""
-            WITH filtered_data AS (
-                SELECT 
-                    p.*,
-                    COUNT(*) OVER() AS total_count
-                FROM core.pilgrim_data p
-                {where_clause}
-                ORDER BY p.created_at DESC, p.id DESC
-                LIMIT :limit_val OFFSET :skip_val
-            ),
-            result_data AS (
-                SELECT 
-                    TO_JSONB(filtered_data) - 'total_count' AS item,
-                    total_count
-                FROM filtered_data
-            ),
-            {status_count_cte}
-            SELECT 
-                (SELECT COALESCE(JSON_AGG(item), '[]'::json) FROM result_data) AS data,
-                (SELECT COALESCE(MAX(total_count), 0) FROM result_data) AS total_count,
-                {status_count_select};
+            params["status_group_name"] = group_name
+
+            if hajj_year is not None:
+                status_count_conditions.append(
+                    "hajj_year = :status_hajj_year"
+                )
+                params["status_hajj_year"] = hajj_year
+
+            status_count_where = " AND ".join(
+                status_count_conditions
+            )
+
+            status_count_cte = f"""
+            status_counts AS (
+                SELECT JSON_OBJECT_AGG(registration_status, count)
+                    AS registration_status_count
+                FROM (
+                    SELECT
+                        registration_status,
+                        COUNT(*) AS count
+                    FROM core.pilgrim_data
+                    WHERE {status_count_where}
+                    GROUP BY registration_status
+                ) registration_counts
+            )
             """
 
-        # Execute
+            status_count_select = """
+                (SELECT registration_status_count
+                 FROM status_counts)
+                 AS registration_status_count,
+                NULL AS allocation_status_count
+            """
+
+        else:
+            status_count_conditions = []
+
+            if hajj_year is not None:
+                status_count_conditions.append(
+                    "hajj_year = :status_hajj_year"
+                )
+                params["status_hajj_year"] = hajj_year
+
+            status_count_where = (
+                f"WHERE {' AND '.join(status_count_conditions)}"
+                if status_count_conditions
+                else ""
+            )
+
+            status_count_cte = f"""
+            status_counts AS (
+                SELECT JSON_OBJECT_AGG(allocation_status, count)
+                    AS allocation_status_count
+                FROM (
+                    SELECT
+                        allocation_status,
+                        COUNT(*) AS count
+                    FROM core.pilgrim_data
+                    {status_count_where}
+                    GROUP BY allocation_status
+                ) allocation_counts
+            )
+            """
+
+            status_count_select = """
+                NULL AS registration_status_count,
+                (SELECT allocation_status_count
+                 FROM status_counts)
+                 AS allocation_status_count
+            """
+
+        query = f"""
+        WITH filtered_data AS (
+            SELECT
+                p.*,
+                COUNT(*) OVER() AS total_count
+            FROM core.pilgrim_data p
+            {where_clause}
+            ORDER BY p.created_at DESC, p.id DESC
+            LIMIT :limit_val OFFSET :skip_val
+        ),
+        result_data AS (
+            SELECT
+                TO_JSONB(filtered_data) - 'total_count' AS item,
+                total_count
+            FROM filtered_data
+        ),
+        {status_count_cte}
+        SELECT
+            (
+                SELECT COALESCE(
+                    JSON_AGG(item),
+                    '[]'::json
+                )
+                FROM result_data
+            ) AS data,
+            (
+                SELECT COALESCE(
+                    MAX(total_count),
+                    0
+                )
+                FROM result_data
+            ) AS total_count,
+            {status_count_select};
+        """
+
         result = await db.execute(text(query), params)
         row = result.fetchone()
 
         if not row:
             return [], 0, {}, {}
 
-        data = json.loads(row[0]) if isinstance(row[0], str) else row[0] or []
+        data = (
+            json.loads(row[0])
+            if isinstance(row[0], str)
+            else row[0]
+        ) or []
+
         total_count = row[1] or 0
         registration_status_count = row[2] or {}
         allocation_status_count = row[3] or {}
 
-        return data, total_count, registration_status_count, allocation_status_count
+        return (
+            data,
+            total_count,
+            registration_status_count,
+            allocation_status_count,
+        )
 
     except Exception as e:
-        print(f"Error fetching pilgrim data: {str(e)}")
+        print(f"Error fetching pilgrim data: {e}")
         raise
 
 
