@@ -44,6 +44,7 @@ class PilgrimDataBaseSchema(BaseModel):
     remarks: Optional[str] = None
     email: Optional[str] = None
     interested_in_package: Optional[str] = None
+    hajj_year: Optional[int] = None
 
 
     class Config:
