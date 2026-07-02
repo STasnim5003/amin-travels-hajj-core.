@@ -70,6 +70,9 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     reference = Column(String, nullable=True)
     service_confirmation_status = Column(JSONB, nullable=True)
     emergency_contract_person = Column(JSONB, nullable=True)
+    b2b_type = Column(String, nullable=True)
+    b2b_partial_guests = Column(JSONB, nullable=True)
+    b2b_partial_description = Column(JSONB, nullable=True)
 
 
 class UmrahVendorsPriceModel(Base, BaseMixinModel):

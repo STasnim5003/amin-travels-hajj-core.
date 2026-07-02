@@ -18,6 +18,9 @@ async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, ag
         request_dict['updated_by'] = username
         request_dict['amin_office_code'] = await generate_amin_office_code(db=db)
         request_dict['is_confirmed'] = False
+        if request.b2b_type and request.b2b_type == 'PARTIAL':
+            request_dict['is_confirmed'] = True
+
         saved = await umrah_requisition_repository.create(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(saved)
     except Exception as e:

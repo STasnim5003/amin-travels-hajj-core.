@@ -70,6 +70,9 @@ class UmrahRequisitionBase(BaseModel):
     ziara: Optional[bool] = None
     guide: Optional[bool] = None
     train: Optional[bool] = None
+    b2b_type : Optional[str] = None
+    b2b_partial_guests : Optional[Any] = None
+    b2b_partial_description : Optional[Any] = None
 
 
 class UmrahRequisitionUpdateSchema(BaseModel):
@@ -157,6 +160,9 @@ class UmrahRequisitionAssignedService(BaseModel):
     child_service: Optional[Any] = None
     infant_service: Optional[Any] = None
     discount: Optional[float] = None
+    b2b_type: Optional[str] = None
+    b2b_partial_guests: Optional[Any] = None
+    b2b_partial_description: Optional[Any] = None
 
 class UmrahRequisitionResponseSchema(UmrahRequisitionAssignedService):
     is_confirmed: Optional[bool] = None
@@ -288,15 +294,18 @@ class UmrahRequisitionConfirmedPilgrimsInfoSchema(BaseModel):
     amin_office_code: str
     number_of_traveller: Optional[int] = None
     reference: Optional[str] = None
-    confirmed_pilgrims_basic_info: List[ConfirmedPilgrimsBasicInfo]
+    confirmed_pilgrims_basic_info: Optional[List[ConfirmedPilgrimsBasicInfo]] = None
     confirmed_pilgrims_flight_info: Optional[ConfirmedPilgrimsFlightInfo] = None
     confirmed_pilgrims_hotel_info: Optional[ConfirmedPilgrimsHotelInfo] = None
     confirmed_pilgrims_transport_info: Optional[ConfirmedPilgrimsTransportInfo] = None
     confirmed_pilgrims_ksa_part_data_submission: Optional[ConfirmedPilgrimsKSAPartDataSubmission] = None
     confirmed_remarks: Optional[str] = None
     confirmed_pilgrims_family_group: Optional[str] = None
-    service_confirmation_status: ServiceConfirmationStatus
-    emergency_contract_person: List[EmergencyContractPerson]
+    service_confirmation_status: Optional[ServiceConfirmationStatus] = None
+    emergency_contract_person: Optional[List[EmergencyContractPerson]] = None
+    b2b_type: Optional[str] = None
+    b2b_partial_guests : Optional[Any] = None
+    b2b_partial_description : Optional[Any] = None
 
 
 
