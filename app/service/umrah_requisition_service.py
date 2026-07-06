@@ -20,6 +20,8 @@ async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, ag
         request_dict['is_confirmed'] = False
         if request.b2b_type and request.b2b_type == 'PARTIAL':
             request_dict['is_confirmed'] = True
+            request_dict['is_child_included_with_bed_transport'] = False
+
 
         saved = await umrah_requisition_repository.create(db, request_dict)
         return UmrahRequisitionResponseSchema.model_validate(saved)

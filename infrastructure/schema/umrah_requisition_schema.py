@@ -41,12 +41,12 @@ class UmrahRequisitionTravellerPassportInfo(BaseModel):
     passport_type : str
 
 class UmrahRequisitionBase(BaseModel):
-    name: str
-    number_of_traveller: int
-    adult_traveller: int
+    name: Optional[str] = None
+    number_of_traveller: Optional[int] = None
+    adult_traveller: Optional[int]= None
     other_traveller: Optional[Any] = None
     is_child_included_with_bed_transport: Optional[bool] = None
-    is_visa: bool
+    is_visa: Optional[bool] = None
     requisition_type: str
     b2b_agent_name: Optional[str] = None
     sales_person : Optional[str] = None
@@ -55,8 +55,8 @@ class UmrahRequisitionBase(BaseModel):
     air_ticket_category: Optional[str] = None
     airline_preference: Optional[str] = None
     flight_data: Optional[Any] = None
-    hotel_info: List[UmrahRequisitionHotelSchema]
-    transport: List[UmrahRequisitionTransportSchema]
+    hotel_info: Optional[List[UmrahRequisitionHotelSchema]] = None
+    transport: Optional[List[UmrahRequisitionTransportSchema]]=None
     remarks: Optional[str] = None
     food : Optional[bool] = None
     mobile_no : Optional[str] = None
