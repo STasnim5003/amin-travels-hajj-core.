@@ -323,6 +323,7 @@ class UmrahConfirmedPilgrimItemSchema(UmrahRequisitionConfirmedPilgrimsInfoSchem
     is_guide: Optional[bool] = None
     is_food: Optional[bool] = None
     is_train: Optional[bool] = None
+    b2b_agent_name: Optional[str] = None
 
 
 class UmrahConfirmedPilgrimsResponseSchema(BaseModel):

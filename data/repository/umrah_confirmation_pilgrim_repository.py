@@ -63,7 +63,8 @@ async def get_confirmed_pilgrims(db: AsyncSession, agency_name: str):
                     ur.discount,
                     ur.b2b_type,
                     ur.b2b_partial_guests,
-                    ur.b2b_partial_description
+                    ur.b2b_partial_description,
+                    ur.b2b_agent_name
                 FROM core.umrah_requisition ur
                 WHERE ur.agency_name = :agency_name 
                   AND ur.is_confirmed = TRUE

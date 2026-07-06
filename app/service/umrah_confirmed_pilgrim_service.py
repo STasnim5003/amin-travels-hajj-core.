@@ -64,7 +64,8 @@ async def get_confirmed_pilgrims(db: AsyncSession, agency_name: str):
                     discount=row['discount'],
                     b2b_partial_description=row['b2b_partial_description'],
                     b2b_partial_guests=row['b2b_partial_guests'],
-                    b2b_type=row['b2b_type']
+                    b2b_type=row['b2b_type'],
+                    b2b_agent_name = row["b2b_agent_name"]
                 )
             )
 
