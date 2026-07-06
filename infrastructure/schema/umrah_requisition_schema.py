@@ -73,6 +73,7 @@ class UmrahRequisitionBase(BaseModel):
     b2b_type : Optional[str] = None
     b2b_partial_guests : Optional[Any] = None
     b2b_partial_description : Optional[Any] = None
+    total_price: Optional[float] = None
 
 
 class UmrahRequisitionUpdateSchema(BaseModel):
