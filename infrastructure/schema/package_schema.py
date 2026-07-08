@@ -29,10 +29,16 @@ class PackageBaseSchema(BaseModel):
     fixed_or_shifting: Optional[str] = None
     food_menu_id: Optional[int] = None
     ziara_id: Optional[int] = None
-    special_services: Optional[Dict[str, Any]] = None
-    other_services: Optional[Dict[str, Any]] = None
     route_id: Optional[int] = None
-    airlines: Optional[str] = None
+    air_ticket :Optional[Any] = None
+    transportation :Optional[Any] = None
+    mina_and_arafah :Optional[Any] = None
+    hajj_guide :Optional[Any] = None
+    qurbani :Optional[Any] = None
+    tayef_jeddah_ziyara :Optional[Any] = None
+    additional_services :Optional[Any] = None
+    important_notes :Optional[Any] = None
+    required_add_ons : Optional[Any] = None
 
 
     @property
@@ -112,6 +118,15 @@ class PackageUpdateSchema(BaseModel):
     other_services: Optional[Dict[str, Any]] = None
     route_id: Optional[int] = None
     airlines: Optional[str] = None
+    air_ticket: Optional[Any] = None
+    transportation: Optional[Any] = None
+    mina_and_arafah: Optional[Any] = None
+    hajj_guide: Optional[Any] = None
+    qurbani: Optional[Any] = None
+    tayef_jeddah_ziyara: Optional[Any] = None
+    additional_services: Optional[Any] = None
+    important_notes: Optional[Any] = None
+    required_add_ons: Optional[Any] = None
 
 class PackageNameBaseSchema(BaseModel):
     name: str
