@@ -199,3 +199,14 @@ async def get_pre_register_enquiry_training_session_pilgrims(
 
     agency_name = current_user["agency_name"]
     return await pilgrim_service.get_pre_register_enquiry_training_session_pilgrims(db=db, agency_name=agency_name)
+
+@private_router.get("/pilgrim-agreement/{family_code}", tags=["Pilgrim"])
+async def get_pilgrim_agreement_by_family_code(
+        family_code: str,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+
+    agency_name = current_user["agency_name"]
+    return await pilgrim_service.get_pilgrim_agreement_by_family_code(db=db, family_code=family_code, agency_name=agency_name)

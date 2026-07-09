@@ -301,3 +301,23 @@ async def get_pre_register_enquiry_training_session_pilgrims(db: AsyncSession, a
         return [PreRegistrationOrBookTrainingResponse.model_validate(pilgrim) for pilgrim in pilgrims]
     except Exception as e:
         raise e
+
+
+async def get_pilgrim_agreement_by_family_code(
+    db: AsyncSession,
+    family_code: str,
+    agency_name: str,
+):
+    result = await pilgrim_repository.get_pilgrim_agreement_by_family_code(
+        db=db,
+        family_code=family_code,
+        agency_name=agency_name,
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=404,
+            detail="Pilgrim agreement not found.",
+        )
+
+    return result
