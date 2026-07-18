@@ -13,6 +13,10 @@ class PaymentSchema(BaseModel):
     group_leader: Optional[str] = None
     tracking_id: Optional[str] = None
     agency_name: Optional[str] = None
+    nid: Optional[str] = None
+    passport_no: Optional[str] = None
+    pilgrim_name: Optional[str] = None
+    hajj_year: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -33,16 +37,6 @@ class PaymentResponseSchema(PaymentSchema):
     cheque_bank: Optional[str] = None
     voucher_no: Optional[str] = None
     bank_info: Optional[Dict[str, Any]] = None
-
-
-class AgencyPaymentSchemaForGroupLeader(BaseModel):
-    group_leader: Optional[str] = None
-    description: Optional[str] = None
-    date: Optional[str] = None
-    amount: int
-    category: Optional[str]
-    payable_id: int
-    pilgrims_id: Optional[List[str]] = None
 
 
 class PaginatedPaymentResponseForGroupLeader(BaseModel):
@@ -147,13 +141,17 @@ class PilgrimPayableBaseSchema(PaymentPayableBaseSchema):
 
 
 class PilgrimPaymentBaseSchema(PaymentPayableBaseSchema):
-    tracking_id: str
+    tracking_id: Optional[str] = None
+    nid: Optional[str] = None
+    passport_no: Optional[str] = None
+    pilgrim_name: Optional[str] = None
     bank_info_id: Optional[int] = None
     way_of_payment: Optional[str] = None
     transfer_no: Optional[str] = None
-    voucher_no: Optional[str] = None,
-    cheque_no: Optional[str] = None,
-    cheque_bank: Optional[str] = None,
+    voucher_no: Optional[str] = None
+    cheque_no: Optional[str] = None
+    cheque_bank: Optional[str] = None
+    hajj_year: Optional[int] = None
 
 
 class GroupLeaderPaymentBaseSchema(PaymentPayableBaseSchema):
@@ -188,6 +186,9 @@ class ReceiptPrintSchema(BaseModel):
     voucher_no: Optional[str] = None
     cheque_no: Optional[str] = None
     cheque_bank: Optional[str] = None
+    nid: Optional[str] = None
+    passport_no: Optional[str] = None
+    name: Optional[str] = None
 
 
 class PilgrimPayableReportSchema(BaseModel):

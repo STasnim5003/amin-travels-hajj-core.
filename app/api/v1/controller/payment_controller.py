@@ -96,24 +96,18 @@ async def get_group_leader_payment_info(
     )
 
 
-@private_router.get("/agency/payment-info", response_model=PaginatedPaymentResponseForAgency, tags=["payment"])
-async def get_agency_payment_info(
-        user_type: str = Query("GROUP_LEADER", description="Filter by payment type"),
+@private_router.get("/agency/pilgrims-payment-info", tags=["payment"])
+async def get_agency_pilgrims_payment_info(
+        hajj_year: int = Query(..., description="Hajj year to filter pilgrims"),
         db: AsyncSession = Depends(get_async_db),
-        category: str | None = Query(None, description="Filter by payment category"),
-        group_leader: str | None = Query(None, description="Filter by group leader"),
-        tracking_id: str | None = Query(None),
-        page: int = Query(1, ge=1),
-        size: int = Query(100, ge=1),
         current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
 
-    return await payment_service.get_agency_payments(
-        user_type, db, agency_name, group_leader, tracking_id, page, size
-    )
+    # return await payment_service.get_agency_payments(db, agency_name)
+    return await payment_service.get_agency_pilgrims_payment_info(db, agency_name, hajj_year)
 
 
 @private_router.put("/update-payable", response_model=PaymentResponseSchema, tags=["payment"])
@@ -192,7 +186,11 @@ async def create_payable_for_pilgrim(
 @private_router.post("/pilgrim/create-payment", response_model=PaymentResponseSchema, tags=["payment"])
 async def create_payment_for_pilgrim(
         amount: int = Form(...),
-        tracking_id: str = Form(...),
+        tracking_id: str = Form(None),
+        nid: str = Form(None),
+        passport_no: str = Form(None),
+        pilgrim_name: str = Form(None),
+        hajj_year: int = Form(None),
         description: Optional[str] = Form(None),
         date: Optional[str] = Form(None),
         payment_category: Optional[str] = Form(None),
@@ -221,7 +219,11 @@ async def create_payment_for_pilgrim(
         category="Payment",
         voucher_no=voucher_no,
         cheque_no=cheque_no,
-        cheque_bank=cheque_bank
+        cheque_bank=cheque_bank,
+        nid=nid,
+        passport_no=passport_no,
+        pilgrim_name=pilgrim_name,
+        hajj_year=hajj_year
     )
 
     return await pilgrim_payment_service.create_payment_for_pilgrim(db, request, agency_name, receipt, username)
@@ -248,12 +250,15 @@ async def get_pilgrim_payment_info(
     )
 
 
-@public_router.get("/payment/{payment_id}", tags=["payment"])
-async def get_payment_by_id(
+@private_router.get("/payment-info-for-receipt/{payment_id}", tags=["payment"])
+async def get_payment_by_id_for_receipt(
         payment_id: int,
         db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
 ):
-    return await payment_service.get_payment_by_id(db, payment_id)
+    check_agency_or_staff_user(current_user=current_user)
+    agency_name = current_user["agency_name"]
+    return await payment_service.get_payment_by_id_for_receipt(db, payment_id, agency_name)
 
 
 @private_router.get("/payment/{payment_id}", tags=["payment"])
@@ -314,3 +319,16 @@ async def get_pilgrim_payment_summary_list(
     agency_name = current_user["agency_name"]
 
     return await pilgrim_payment_service.get_pilgrims_payment_summary(db=db, agency_name=agency_name)
+
+
+@private_router.get("/agency/pilgrims-for-payment", tags=["payment"])
+async def get_agency_pilgrims_for_payment(
+        hajj_year: int = Query(..., description="Hajj year to filter pilgrims"),
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+
+    agency_name = current_user["agency_name"]
+
+    return await payment_service.get_agency_pilgrims_for_payment(db=db, agency_name=agency_name, hajj_year=hajj_year)

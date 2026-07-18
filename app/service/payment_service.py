@@ -329,51 +329,10 @@ async def update_payable(
         raise e
 
 
-async def get_payment_by_id(db: AsyncSession, payment_id: int):
+async def get_payment_by_id_for_receipt(db: AsyncSession, payment_id: int, agency_name:str):
     try:
-        result = await payment_repository.get_payment_by_id(db, payment_id)
-        payment = result["payment"]
-        bank_info = result.get("bank_info")
-
-        # Optional: fetch group leader or pilgrim name
-        group_leader_name = None
-        payer_name = None
-        payee_name = payment.created_by
-
-        if payment.group_leader:
-            admin_user = await admin_user_repository.get_admin_user_by_code(db, payment.group_leader)
-            group_leader_name = admin_user.name if admin_user else None
-            payer_name = group_leader_name
-        elif payment.tracking_id:
-            pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, payment.tracking_id)
-            payer_name = pilgrim.name_en if pilgrim else None
-
-        amount_to_words = num_to_words.amount_to_words(payment.amount)
-
-        receipt = ReceiptPrintSchema(
-            id=payment.id,
-            description=getattr(payment, "description", None),
-            date=getattr(payment, "date", None),
-            amount=payment.amount,
-            group_leader=payment.group_leader,
-            payer_name=payer_name,
-            payee_name=payee_name,
-            category=payment.category,
-            transaction_id=getattr(payment, "transaction_id", None),
-            tracking_id=payment.tracking_id,
-            payment_category=getattr(payment, "payment_category", None),
-            way_of_payment=getattr(payment, "way_of_payment", None),
-            bank_info_id=payment.bank_info_id,
-            bank_name=bank_info.name if bank_info else None,
-            bank_branch=bank_info.branch if bank_info else None,
-            bank_account_no=bank_info.account_no if bank_info else None,
-            amount_in_words=amount_to_words,
-            cheque_no=payment.cheque_no,
-            cheque_bank=payment.cheque_bank,
-            voucher_no=payment.voucher_no
-        )
-
-        return receipt
+        result = await payment_repository.get_payment_by_id_for_receipt(db, payment_id, agency_name)
+        return result
 
     except Exception as e:
         raise e
@@ -386,12 +345,28 @@ async def get_payment_by_id_for_update(db: AsyncSession, payment_id: int, agency
         if payment.receipt:
             payment.receipt = await generate_downloadable_urls(payment.receipt)
 
-        if payment.created_by != agency_name:
+        if payment.agency_name != agency_name:
             raise HTTPException(status_code=400, detail=f"This payment is not belong to {agency_name}")
         if payment.category != 'Payment':
             raise HTTPException(status_code=400, detail="This is not a Payment")
         return result
 
 
+    except Exception as e:
+        raise e
+
+
+async def get_agency_pilgrims_payment_info(db:AsyncSession, agency_name:str, hajj_year:int):
+    try:
+        result = await payment_repository.get_agency_pilgrims_payment_info(db=db, agency_name=agency_name, hajj_year=hajj_year)
+        return result
+    except Exception as e:
+        raise e
+
+
+async def get_agency_pilgrims_for_payment(db:AsyncSession, agency_name:str, hajj_year:int):
+    try:
+        result = await payment_repository.get_agency_pilgrims_for_payment(db=db, agency_name=agency_name, hajj_year=hajj_year)
+        return result
     except Exception as e:
         raise e

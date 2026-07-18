@@ -73,9 +73,9 @@ async def create_payment_for_pilgrim(
         raise HTTPException(status_code=400, detail="Amount must be greater than 0")
 
     try:
-        pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, payment_data.tracking_id)
-        if not pilgrim or pilgrim.group_name != agency_name:
-            raise HTTPException(status_code=400, detail="Pilgrim with tracking id not found")
+        # pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, payment_data.tracking_id)
+        # if not pilgrim or pilgrim.group_name != agency_name:
+        #     raise HTTPException(status_code=400, detail="Pilgrim with tracking id not found")
 
         if payment_data.voucher_no:
             is_voucher_num_exist = await pilgrim_payment_repository.is_voucher_no_exist(db=db,
@@ -94,19 +94,19 @@ async def create_payment_for_pilgrim(
         except Exception as e:
             raise e
 
-    prev_total_payable = pilgrim.actual_payable or 0
-    prev_total_payment = pilgrim.total_payment or 0
-
-    new_total_payment = prev_total_payment + payment_data.amount
-    new_total_due = max(0, prev_total_payable - new_total_payment)
-    new_available_amount = max(0, new_total_payment - prev_total_payable)
-
-    payment_info = PayableInfoUpdateSchema(
-        total_payment=new_total_payment,
-        total_available_amount=new_available_amount,
-        total_due=new_total_due,
-        tracking_id=payment_data.tracking_id
-    )
+    # prev_total_payable = pilgrim.actual_payable or 0
+    # prev_total_payment = pilgrim.total_payment or 0
+    #
+    # new_total_payment = prev_total_payment + payment_data.amount
+    # new_total_due = max(0, prev_total_payable - new_total_payment)
+    # new_available_amount = max(0, new_total_payment - prev_total_payable)
+    #
+    # payment_info = PayableInfoUpdateSchema(
+    #     total_payment=new_total_payment,
+    #     total_available_amount=new_available_amount,
+    #     total_due=new_total_due,
+    #     tracking_id=payment_data.tracking_id
+    # )
 
     transaction_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     payment_request_dict = payment_data.model_dump(exclude_unset=True)
@@ -119,7 +119,7 @@ async def create_payment_for_pilgrim(
     })
 
     try:
-        result = await pilgrim_payment_repository.create_payment_for_pilgrim(db, payment_request_dict, payment_info)
+        result = await pilgrim_payment_repository.create_payment_for_pilgrim(db, payment_request_dict)
         return PaymentResponseSchema.model_validate(result)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

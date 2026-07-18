@@ -44,8 +44,7 @@ async def create_payable_for_pilgrim(
 
 async def create_payment_for_pilgrim(
         db: AsyncSession,
-        payment_request: dict,
-        payment_info: PayableInfoUpdateSchema
+        payment_request: dict
 ):
     try:
         stmt = (
@@ -55,20 +54,19 @@ async def create_payment_for_pilgrim(
         )
         result = await db.execute(stmt)
 
-        stmt = (
-            update(PilgrimDataModel)
-            .values(
-                total_payment=payment_info.total_payment,
-                total_due=payment_info.total_due,
-                total_available_amount=payment_info.total_available_amount,
-                tracking_id=payment_info.tracking_id,
-            )
-            .where(PilgrimDataModel.tracking_id == payment_info.tracking_id)
-        )
-        res = await db.execute(stmt)
+        # stmt = (
+        #     update(PilgrimDataModel)
+        #     .values(
+        #         total_payment=payment_info.total_payment,
+        #         total_due=payment_info.total_due,
+        #         total_available_amount=payment_info.total_available_amount,
+        #         tracking_id=payment_info.tracking_id,
+        #     )
+        #     .where(PilgrimDataModel.tracking_id == payment_info.tracking_id)
+        # )
+        # res = await db.execute(stmt)
         await db.commit()
-        created_payment = result.scalar_one()
-        return created_payment
+        return result.scalar_one()
     except Exception as e:
         await db.rollback()
         raise e

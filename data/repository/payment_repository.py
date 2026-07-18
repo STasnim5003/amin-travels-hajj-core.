@@ -502,3 +502,259 @@ async def get_group_leader_ledger(db: AsyncSession, group_leader: str):
         return result.scalars().all()
     except Exception as e:
         raise e
+
+
+async def get_agency_pilgrims_payment_info(db:AsyncSession, agency_name:str, hajj_year:int):
+    try:
+        query = text("""
+                WITH pilgrim_data AS (
+                    SELECT
+                        tracking_id,
+                        nid,
+                        passport_no,
+                        name_en,
+                        mobile_no,
+                        family_code,
+                        total_payable,
+                        actual_payable,
+                        package_price_discount
+                    FROM core.pilgrim_data
+                    WHERE
+                        hajj_year =:hajj_year
+                        AND group_name =:agency_name
+                ),
+                
+                payment_normalized AS (
+                    SELECT
+                        COALESCE(
+                            p.tracking_id,
+                            pd_nid.tracking_id,
+                            pd_passport.tracking_id
+                        ) AS tracking_id,
+                        p.id,
+                        p.amount,
+                        p.category,
+                        p.description,
+                        p.date,
+                        p.way_of_payment,
+                        p.created_at
+                    FROM core.payment p
+                
+                    -- direct tracking_id match
+                    LEFT JOIN pilgrim_data pd_tracking
+                        ON pd_tracking.tracking_id = p.tracking_id
+                
+                    -- nid lookup
+                    LEFT JOIN pilgrim_data pd_nid
+                        ON p.tracking_id IS NULL
+                        AND pd_nid.nid = p.nid
+                
+                    -- passport lookup
+                    LEFT JOIN pilgrim_data pd_passport
+                        ON p.tracking_id IS NULL
+                        AND p.nid IS NULL
+                        AND pd_passport.passport_no = p.passport_no
+                
+                    WHERE
+                        p.hajj_year =:hajj_year
+                        AND p.agency_name =:agency_name
+                ),
+                
+                payment_summary AS (
+                    SELECT
+                        pn.tracking_id,
+                
+                        COALESCE(
+                            SUM(pn.amount) FILTER (WHERE pn.category = 'Payment'),
+                            0
+                        ) AS total_payment,
+                
+                        jsonb_agg(
+                            jsonb_build_object(
+                                'id', pn.id,
+                                'amount', pn.amount,
+                                'category', pn.category,
+                                'description', pn.description,
+                                'date', pn.date,
+                                'way_of_payment', pn.way_of_payment
+                            )
+                            ORDER BY pn.created_at
+                        ) AS payment_list
+                
+                    FROM payment_normalized pn
+                                    
+                    WHERE pn.tracking_id IS NOT NULL
+                
+                    GROUP BY pn.tracking_id
+                )
+                
+                SELECT
+                    pd.tracking_id,
+                    pd.nid,
+                    pd.passport_no,
+                    pd.name_en,
+                    pd.mobile_no,
+                    pd.family_code,
+                    pd.total_payable,
+                    pd.actual_payable,
+                    pd.package_price_discount,
+                
+                    COALESCE(ps.total_payment, 0) AS total_payment,
+                
+                    GREATEST(
+                        pd.actual_payable - COALESCE(ps.total_payment, 0),
+                        0
+                    ) AS due,
+                
+                    ps.payment_list
+                
+                FROM pilgrim_data pd
+                LEFT JOIN payment_summary ps
+                    ON ps.tracking_id = pd.tracking_id;
+                """)
+
+        result = await db.execute(
+            query,
+            {"agency_name": agency_name, "hajj_year":hajj_year},
+        )
+
+        return result.mappings().all()
+    except Exception as e:
+        raise e
+
+
+async def get_agency_pilgrims_for_payment(db:AsyncSession, agency_name:str, hajj_year:int):
+    try:
+        query= text("""
+            WITH payment_summary AS (
+                SELECT
+                    tracking_id,
+                    nid,
+                    passport_no,
+                    SUM(amount) AS total_payment
+                FROM core.payment
+                WHERE category = 'Payment' and agency_name = :group_name
+                GROUP BY
+                    tracking_id,
+                    nid,
+                    passport_no
+            )
+            SELECT
+                pd.tracking_id,
+                pd.name_en,
+                pd.nid,
+                pd.passport_no,
+                pd.mobile_no,
+                pd.family_code,
+                pd.sub_group,
+                pd.total_payable,
+                pd.actual_payable,
+                pd.package_price_discount,
+                COALESCE(SUM(ps.total_payment), 0) AS total_payment,
+                GREATEST(
+                    pd.actual_payable - COALESCE(SUM(ps.total_payment), 0),
+                    0
+                ) AS total_due
+            FROM core.pilgrim_data pd
+            LEFT JOIN payment_summary ps
+                ON (
+                    pd.tracking_id IS NOT NULL
+                    AND ps.tracking_id = pd.tracking_id
+                )
+                OR (
+                    pd.nid IS NOT NULL
+                    AND ps.nid = pd.nid
+                )
+                OR (
+                    pd.passport_no IS NOT NULL
+                    AND ps.passport_no = pd.passport_no
+                )
+            WHERE
+                pd.hajj_year = :hajj_year
+                AND pd.group_name = :group_name
+            GROUP BY
+                pd.name_en,
+                pd.tracking_id,
+                pd.nid,
+                pd.passport_no,
+                pd.mobile_no,
+                pd.family_code,
+                pd.sub_group,
+                pd.total_payable,
+                pd.actual_payable,
+                pd.package_price_discount;
+        """)
+
+        result = await db.execute(
+            query,
+            {"group_name": agency_name, "hajj_year": hajj_year},
+        )
+
+        return result.mappings().all()
+
+    except Exception as e:
+        raise e
+
+
+async def get_payment_by_id_for_receipt(db:AsyncSession, payment_id:int, agency_name:str):
+    try:
+        query = text("""
+            WITH payment_normalized AS (
+                SELECT
+                    p.*,
+            
+                    COALESCE(p.tracking_id, pd.tracking_id) AS tracking_id,
+                    COALESCE(p.nid, pd.nid) AS nid,
+                    COALESCE(p.passport_no, pd.passport_no) AS passport_no,
+            
+                    pd.name_en,
+                    pd.mobile_no,
+                    pd.family_code,
+            
+                    CASE
+                        WHEN b.id IS NULL THEN NULL
+                        ELSE jsonb_build_object(
+                            'id', b.id,
+                            'name', b.name,
+                            'account_no', b.account_no
+                        )
+                    END AS bank_info
+            
+                FROM core.payment p
+            
+                LEFT JOIN LATERAL (
+                    SELECT
+                        tracking_id,
+                        nid,
+                        passport_no,
+                        name_en,
+                        mobile_no,
+                        family_code
+                    FROM core.pilgrim_data pd
+                    WHERE
+                        pd.group_name = :agency_name
+                        AND (
+                            pd.tracking_id = p.tracking_id
+                            OR pd.nid = p.nid
+                            OR pd.passport_no = p.passport_no
+                        )
+                    LIMIT 1
+                ) pd ON TRUE
+            
+                LEFT JOIN core.bank_info b
+                    ON b.id = p.bank_info_id
+            
+                WHERE
+                    p.id = :payment_id
+            )
+            
+            SELECT *
+            FROM payment_normalized;
+        """)
+
+        result = await db.execute(
+            query, {"agency_name": agency_name, "payment_id":payment_id}
+        )
+        return result.mappings().all()
+    except Exception as e:
+        raise e
