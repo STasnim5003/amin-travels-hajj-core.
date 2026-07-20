@@ -585,3 +585,19 @@ async def get_pilgrim_agreement_by_family_code(
 
     except Exception:
         raise
+
+
+async def manual_pre_registration(db:AsyncSession, request_dict:dict):
+    try:
+        stmt = (
+            insert(PilgrimDataModel)
+            .values(**request_dict)
+            .returning(PilgrimDataModel)
+        )
+
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e

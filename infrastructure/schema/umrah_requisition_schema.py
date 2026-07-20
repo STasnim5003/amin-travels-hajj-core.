@@ -74,6 +74,7 @@ class UmrahRequisitionBase(BaseModel):
     b2b_partial_guests : Optional[Any] = None
     b2b_partial_description : Optional[Any] = None
     total_price: Optional[float] = None
+    extra_service_charge: Optional[float] = None
 
 
 class UmrahRequisitionUpdateSchema(BaseModel):
@@ -107,6 +108,7 @@ class UmrahRequisitionUpdateSchema(BaseModel):
     return_date_final: Optional[Any] = None
     passport_info: Optional[Any] = None
     ziara: Optional[bool] = None
+    extra_service_charge: Optional[float]=None
 
 
 class UmrahRequisitionAssignedService(BaseModel):
@@ -164,6 +166,7 @@ class UmrahRequisitionAssignedService(BaseModel):
     b2b_type: Optional[str] = None
     b2b_partial_guests: Optional[Any] = None
     b2b_partial_description: Optional[Any] = None
+    extra_service_charge: Optional[float] = None
 
 class UmrahRequisitionResponseSchema(UmrahRequisitionAssignedService):
     is_confirmed: Optional[bool] = None
@@ -195,6 +198,7 @@ class UmrahVendorsPriceCreateSchema(BaseModel):
     child_service: Optional[Any] = None
     infant_service: Optional[Any] = None
     discount: Optional[float] = None
+    extra_service_charge: Optional[float] = None
 
 class UmrahVendorsPriceResponseSchema(UmrahVendorsPriceCreateSchema):
     id : int

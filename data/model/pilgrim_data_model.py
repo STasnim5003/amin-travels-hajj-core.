@@ -63,6 +63,7 @@ class PilgrimDataModel(Base, BaseMixinModel):
     remarks = Column(String, nullable=True)
     email = Column(String, nullable=True)
     interested_in_package = Column(String, nullable=True)
+    hajj_year=Column(Integer, nullable=True)
 
 
 class ReplacedPilgrimModel(Base, BaseMixinModel):

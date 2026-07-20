@@ -73,6 +73,7 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     b2b_type = Column(String, nullable=True)
     b2b_partial_guests = Column(JSONB, nullable=True)
     b2b_partial_description = Column(JSONB, nullable=True)
+    extra_service_charge = Column(Float, nullable=True)
 
 
 class UmrahVendorsPriceModel(Base, BaseMixinModel):

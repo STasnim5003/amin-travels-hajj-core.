@@ -12,7 +12,7 @@ from data.db.db_config import get_async_db
 from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListResponseSchema, \
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, PilgrimFamilyGroupAssign, \
     PilgrimReplaceSchema, PilgrimArchiveSchema, ReplacedPilgrimListResponseSchema, \
-    PilgrimPreRegistrationEnquire, BookTrainingSession
+    PilgrimPreRegistrationEnquire, BookTrainingSession, PilgrimDataBaseSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
@@ -210,3 +210,15 @@ async def get_pilgrim_agreement_by_family_code(
 
     agency_name = current_user["agency_name"]
     return await pilgrim_service.get_pilgrim_agreement_by_family_code(db=db, family_code=family_code, agency_name=agency_name)
+
+@private_router.post("/pilgrim/pre-registration", tags=["Pilgrim"])
+async def manual_pre_registration(
+        request: PilgrimDataBaseSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+
+    agency_name = current_user["agency_name"]
+    username = current_user["username"]
+    return await pilgrim_service.manual_pre_registration(db=db, agency_name=agency_name, username=username, request=request)

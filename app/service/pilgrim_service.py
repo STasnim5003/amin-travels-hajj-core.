@@ -5,10 +5,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import UploadFile
 
+from app.core.utils.data_clean import generate_password
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import verify_pilgrim_password, create_access_token_for_pilgrim, \
-    create_refresh_token_for_pilgrim
+    create_refresh_token_for_pilgrim, hash_password
 from app.service import view_field_service
 from data.repository import pilgrim_repository, file_repository
 from data.repository.pilgrim_repository import fetch_pilgrim_data_json
@@ -16,7 +17,7 @@ from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListRe
     BulkUpdatePilgrimRequestSchema, PilgrimLoginResponseSchema, PilgrimDataResponseSchema, \
     PilgrimRegistrationRequestSchema, PilgrimFamilyGroupAssign, PilgrimReplaceSchema, \
     PilgrimArchiveSchema, ReplacedPilgrimResponseSchema, ReplacedPilgrimListResponseSchema, \
-    PilgrimPreRegistrationEnquire, PreRegistrationOrBookTrainingResponse, BookTrainingSession
+    PilgrimPreRegistrationEnquire, PreRegistrationOrBookTrainingResponse, BookTrainingSession, PilgrimDataBaseSchema
 
 
 async def get_pilgrim_data(db: AsyncSession,
@@ -321,3 +322,27 @@ async def get_pilgrim_agreement_by_family_code(
         )
 
     return result
+
+
+async def manual_pre_registration(db:AsyncSession, agency_name:str, username:str, request:PilgrimDataBaseSchema):
+    try:
+        preliminary_password = generate_password()
+        hashed_password = hash_password(preliminary_password)
+        request_dict = request.model_dump(exclude_none=True)
+        request_dict.update({
+            'group_name':agency_name,
+            'is_assigned': True,
+            'allocation_status': 'ASSIGNED',
+            'registration_status': "PREREGISTERED",
+            'is_package_assigned': False,
+            'created_by': username,
+            'updated_by': username,
+            'is_active': True,
+            'preliminary_password': preliminary_password,
+            'password':hashed_password
+        })
+
+        result = await pilgrim_repository.manual_pre_registration(db=db, request_dict=request_dict)
+        return PilgrimDataResponseSchema.model_validate(result)
+    except Exception as e:
+        raise e
