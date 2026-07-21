@@ -520,18 +520,20 @@ async def get_agency_pilgrims_payment_info(db:AsyncSession, agency_name:str, haj
                         package_price_discount
                     FROM core.pilgrim_data
                     WHERE
-                        hajj_year =:hajj_year
-                        AND group_name =:agency_name
+                        hajj_year = :hajj_year
+                        AND group_name = :agency_name
                 ),
                 
                 payment_normalized AS (
                     SELECT
                         COALESCE(
-                            p.tracking_id,
+                            pd_tracking.tracking_id,
                             pd_nid.tracking_id,
                             pd_passport.tracking_id
                         ) AS tracking_id,
                         p.id,
+                        p.nid              AS payment_nid,
+                        p.passport_no      AS payment_passport_no,
                         p.amount,
                         p.category,
                         p.description,
@@ -556,10 +558,11 @@ async def get_agency_pilgrims_payment_info(db:AsyncSession, agency_name:str, haj
                         AND pd_passport.passport_no = p.passport_no
                 
                     WHERE
-                        p.hajj_year =:hajj_year
-                        AND p.agency_name =:agency_name
+                        p.hajj_year = :hajj_year
+                        AND p.agency_name = :agency_name
                 ),
                 
+                -- payments that DID resolve to a pilgrim
                 payment_summary AS (
                     SELECT
                         pn.tracking_id,
@@ -582,12 +585,47 @@ async def get_agency_pilgrims_payment_info(db:AsyncSession, agency_name:str, haj
                         ) AS payment_list
                 
                     FROM payment_normalized pn
-                                    
                     WHERE pn.tracking_id IS NOT NULL
-                
                     GROUP BY pn.tracking_id
+                ),
+                
+                -- payments that did NOT resolve to any pilgrim (orphans)
+                orphan_payment_summary AS (
+                    SELECT
+                        COALESCE(
+                            pn.payment_nid,
+                            pn.payment_passport_no,
+                            'no_ref_' || pn.id::text
+                        ) AS orphan_key,
+                        pn.payment_nid,
+                        pn.payment_passport_no,
+                
+                        COALESCE(
+                            SUM(pn.amount) FILTER (WHERE pn.category = 'Payment'),
+                            0
+                        ) AS total_payment,
+                
+                        jsonb_agg(
+                            jsonb_build_object(
+                                'id', pn.id,
+                                'amount', pn.amount,
+                                'category', pn.category,
+                                'description', pn.description,
+                                'date', pn.date,
+                                'way_of_payment', pn.way_of_payment
+                            )
+                            ORDER BY pn.created_at
+                        ) AS payment_list
+                
+                    FROM payment_normalized pn
+                    WHERE pn.tracking_id IS NULL
+                    GROUP BY
+                        COALESCE(pn.payment_nid, pn.payment_passport_no, 'no_ref_' || pn.id::text),
+                        pn.payment_nid,
+                        pn.payment_passport_no
                 )
                 
+                -- matched pilgrims + their payments (original behavior)
                 SELECT
                     pd.tracking_id,
                     pd.nid,
@@ -598,19 +636,30 @@ async def get_agency_pilgrims_payment_info(db:AsyncSession, agency_name:str, haj
                     pd.total_payable,
                     pd.actual_payable,
                     pd.package_price_discount,
-                
                     COALESCE(ps.total_payment, 0) AS total_payment,
-                
-                    GREATEST(
-                        pd.actual_payable - COALESCE(ps.total_payment, 0),
-                        0
-                    ) AS due,
-                
+                    GREATEST(pd.actual_payable - COALESCE(ps.total_payment, 0), 0) AS due,
                     ps.payment_list
-                
                 FROM pilgrim_data pd
                 LEFT JOIN payment_summary ps
-                    ON ps.tracking_id = pd.tracking_id;
+                    ON ps.tracking_id = pd.tracking_id
+                
+                UNION ALL
+                
+                -- orphan payments: no matching pilgrim record at all
+                SELECT
+                    NULL::text            AS tracking_id,
+                    ops.payment_nid        AS nid,
+                    ops.payment_passport_no AS passport_no,
+                    NULL AS name_en,
+                    NULL AS mobile_no,
+                    NULL AS family_code,
+                    NULL AS total_payable,
+                    NULL AS actual_payable,
+                    NULL AS package_price_discount,
+                    ops.total_payment,
+                    NULL AS due,           -- no actual_payable to compare against
+                    ops.payment_list
+                FROM orphan_payment_summary ops;
                 """)
 
         result = await db.execute(
