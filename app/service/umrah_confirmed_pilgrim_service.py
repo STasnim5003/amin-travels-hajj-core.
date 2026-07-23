@@ -113,7 +113,8 @@ async def get_confirmed_pilgrim_by_id(db: AsyncSession, agency_name: str, umrah_
                 is_guide=requisition.guide,
                 is_food=requisition.food,
                 is_train=requisition.train,
-                is_hotel=True if requisition.hotel_info else False
+                is_hotel=True if requisition.hotel_info else False,
+                sales_person=requisition.sales_person
             )
         else:
             makkah = extract_city_info(requisition.hotel_info, "Makkah")
@@ -165,7 +166,8 @@ async def get_confirmed_pilgrim_by_id(db: AsyncSession, agency_name: str, umrah_
                 is_guide=requisition.guide,
                 is_food=requisition.food,
                 is_train=requisition.train,
-                is_hotel=True if makkah or madina else False
+                is_hotel=True if makkah or madina else False,
+                sales_person=requisition.sales_person
             )
     except Exception as e:
         raise e
