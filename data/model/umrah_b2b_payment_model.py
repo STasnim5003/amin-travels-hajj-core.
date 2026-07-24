@@ -20,3 +20,9 @@ class UmrahB2BPayment(BaseMixinModel, Base):
     agency_name = Column(String, nullable=True)
     invoice_no = Column(String, nullable=True)
     b2b_agent_name = Column(String, nullable=True)
+
+    office_code= Column(String, nullable=True)
+    paid_amount= Column(Float, nullable=True)
+    due= Column(Float, nullable=True)
+    invoice_no_and_paid_amount= Column(JSONB, nullable=True)
+

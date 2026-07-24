@@ -38,11 +38,45 @@ async def create_umrah_b2b_payment(db: AsyncSession, request: UmrahB2BPaymentCre
         raise e
 
 
-async def get_umrah_b2b_payments(db: AsyncSession, agency_name: str):
+async def get_umrah_b2b_payments(
+        db: AsyncSession,
+        agency_name: str,
+):
     try:
-        results = await umrah_b2b_payment_repository.get_umrah_b2b_payments(db, agency_name)
+        result = await umrah_b2b_payment_repository.get_umrah_b2b_payments(
+            db=db,
+            agency_name=agency_name,
+        )
 
-        return [UmrahB2BTransactionList(**row) for row in results]
+        if not result:
+            return []
+
+        response = []
+
+        for agent in result:
+            requisitions = []
+            payments = []
+
+            for item in agent["payments"]:
+                if item["office_code"] is not None:
+                    item["type"] = "Requisition"
+                    requisitions.append(item)
+                else:
+                    item["type"] = "Payments"
+                    item["invoice_no"] = None
+                    payments.append(item)
+
+            response.append({
+                "b2b_agent_name": agent["b2b_agent_name"],
+                "total_bill": agent["total_bill"],
+                "total_credit": agent["total_credit"],
+                "due": agent["due"],
+                "available_balance": agent["available_balance"],
+                "payments": requisitions + payments
+            })
+
+        return response
+
     except Exception as e:
         raise e
 
@@ -134,24 +168,37 @@ async def get_umrah_invoice_payments_for_b2b_agent(db: AsyncSession, agency_name
         raise e
 
 
-async def get_umrah_b2b_billing_invoice(db: AsyncSession, agency_name: str, amin_office_code: str):
+async def get_umrah_b2b_billing_invoice(
+    db: AsyncSession,
+    agency_name: str,
+    amin_office_code: str,
+):
     try:
         invoice_data = await umrah_b2b_payment_repository.get_umrah_b2b_billing_invoice(
             db=db,
-            amin_office_code=amin_office_code
+            amin_office_code=amin_office_code,
         )
 
         if not invoice_data:
-            raise HTTPException(status_code=400, detail="Requisition Doesn't Exists")
+            raise HTTPException(
+                status_code=400,
+                detail="Requisition doesn't exist",
+            )
 
-        if invoice_data.agency_name != agency_name:
-            raise HTTPException(status_code=400, detail="Agency name does not match")
+        requisition, invoice_no = invoice_data
+
+        if requisition.agency_name != agency_name:
+            raise HTTPException(
+                status_code=400,
+                detail="Agency name does not match",
+            )
 
         data = {
-            c.name: getattr(invoice_data, c.name)
+            c.name: getattr(requisition, c.name)
             for c in UmrahRequisitionModel.__table__.columns
         }
 
+        data["invoice_no"] = invoice_no
         data["total_price_in_words"] = num_to_words.amount_to_words(
             data.get("total_price") or 0
         )

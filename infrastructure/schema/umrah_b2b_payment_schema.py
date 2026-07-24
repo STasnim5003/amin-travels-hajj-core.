@@ -11,6 +11,7 @@ class UmrahB2BPaymentCreate(BaseModel):
     payment_date: Optional[date] = None
     remarks: Optional[str] = None
     b2b_agent_name : str
+    invoice_no_and_paid_amount: Optional[Any] = None
 
 class UmrahB2BPaymentUpdate(BaseModel):
     id: int

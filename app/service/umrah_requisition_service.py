@@ -12,19 +12,34 @@ from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase,
 
 async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, agency_name: str, username: str):
     try:
+        amin_office_code = await generate_amin_office_code(db=db)
+        b2b_payment_dict={}
+
         request_dict = request.model_dump()
         request_dict['agency_name'] = agency_name
         request_dict['created_by'] = username
         request_dict['updated_by'] = username
-        request_dict['amin_office_code'] = await generate_amin_office_code(db=db)
+        request_dict['amin_office_code'] = amin_office_code
         request_dict['is_confirmed'] = False
+        if request.requisition_type == 'B2B':
+            b2b_payment_dict.update({
+                'b2b_agent_name': request.b2b_agent_name,
+                'office_code': amin_office_code,
+                'amount': request.total_price,
+                'paid_amount': 0,
+                'due': request.total_price,
+                'agency_name': agency_name,
+                'created_by': username,
+                'updated_by': username
+            })
         if request.b2b_type and request.b2b_type == 'PARTIAL':
             request_dict['is_confirmed'] = True
             request_dict['is_child_included_with_bed_transport'] = False
             request_dict['total_due'] = request.total_price
 
 
-        saved = await umrah_requisition_repository.create(db, request_dict)
+
+        saved = await umrah_requisition_repository.create(db=db, request_dict=request_dict, b2b_payment_dict=b2b_payment_dict)
         return UmrahRequisitionResponseSchema.model_validate(saved)
     except Exception as e:
         raise e

@@ -1,17 +1,26 @@
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+
+from data.model.umrah_b2b_payment_model import UmrahB2BPayment
 from data.model.umrah_requisition_model import UmrahRequisitionModel, UmrahVendorsPriceModel
 
 
-async def create(db: AsyncSession, data: dict):
+async def create(db: AsyncSession, request_dict: dict, b2b_payment_dict:dict):
     try:
         stmt = (
             insert(UmrahRequisitionModel)
-            .values(**data)
+            .values(**request_dict)
             .returning(UmrahRequisitionModel)
         )
         result = await db.execute(stmt)
+
+        if b2b_payment_dict:
+            b2b_payment_update_stmt = (
+                insert(UmrahB2BPayment)
+                .values(**b2b_payment_dict)
+            )
+            await db.execute(b2b_payment_update_stmt)
         await db.commit()
         return result.scalar_one_or_none()
     except Exception as e:
