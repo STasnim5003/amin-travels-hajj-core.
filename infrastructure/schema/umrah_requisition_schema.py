@@ -108,7 +108,11 @@ class UmrahRequisitionUpdateSchema(BaseModel):
     return_date_final: Optional[Any] = None
     passport_info: Optional[Any] = None
     ziara: Optional[bool] = None
-    extra_service_charge: Optional[float]=None
+    b2b_type: Optional[str] = None
+    b2b_partial_guests: Optional[Any] = None
+    b2b_partial_description: Optional[Any] = None
+    total_price: Optional[float] = None
+    extra_service_charge: Optional[float] = None
 
 
 class UmrahRequisitionAssignedService(BaseModel):

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
 from app.core.utils.umrah_requisition_utils import generate_amin_office_code
-from data.repository import umrah_requisition_repository
+from data.repository import umrah_requisition_repository, umrah_b2b_payment_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionUpdateSchema, \
     UmrahVendorsPriceCreateSchema, UmrahVendorsPriceResponseSchema, \
@@ -21,7 +21,12 @@ async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, ag
         request_dict['updated_by'] = username
         request_dict['amin_office_code'] = amin_office_code
         request_dict['is_confirmed'] = False
-        if request.requisition_type == 'B2B':
+
+        if request.b2b_type and request.b2b_type == 'PARTIAL':
+            request_dict['is_confirmed'] = True
+            request_dict['is_child_included_with_bed_transport'] = False
+            request_dict['total_due'] = request.total_price
+
             b2b_payment_dict.update({
                 'b2b_agent_name': request.b2b_agent_name,
                 'office_code': amin_office_code,
@@ -32,10 +37,6 @@ async def create_requisition(db: AsyncSession, request: UmrahRequisitionBase, ag
                 'created_by': username,
                 'updated_by': username
             })
-        if request.b2b_type and request.b2b_type == 'PARTIAL':
-            request_dict['is_confirmed'] = True
-            request_dict['is_child_included_with_bed_transport'] = False
-            request_dict['total_due'] = request.total_price
 
 
 
@@ -93,7 +94,22 @@ async def umrah_requisition_update(db: AsyncSession, request: UmrahRequisitionUp
         request_dict['updated_by'] = username
         request_dict['updated_at'] = get_current_time()
 
-        new_requisition = await umrah_requisition_repository.update_umrah_requisition(db, request_dict)
+        requisition = await umrah_requisition_repository.get_requisition_by_id(db=db, requisition_id=request.id, agency_name=agency_name)
+        b2b_partial_invoice_finance_update={}
+        if request.b2b_type and request.b2b_type == 'PARTIAL':
+            umrah_b2b_payment_invoice = await umrah_b2b_payment_repository.get_umrah_b2b_invoices_by_office_code(db=db, office_code=requisition.amin_office_code)
+
+            new_amount = request.total_price
+            paid_amount = umrah_b2b_payment_invoice.paid_amount
+
+            b2b_partial_invoice_finance_update.update({
+                "office_code": requisition.amin_office_code,
+                "amount": new_amount,
+                "due": max(0, new_amount - paid_amount),
+                "updated_by": username,
+            })
+
+        new_requisition = await umrah_requisition_repository.update_umrah_requisition(db, request_dict, b2b_partial_invoice_finance_update)
         return UmrahRequisitionResponseSchema.model_validate(new_requisition)
     except Exception as e:
         raise e

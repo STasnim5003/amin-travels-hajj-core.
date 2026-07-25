@@ -1,7 +1,7 @@
-from sqlalchemy import update, text, func
+from sqlalchemy import update, text, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.model.umrah_b2b_agent_model import UmrahB2BAgentModel
+from data.model.umrah_b2b_payment_model import UmrahB2BPayment
 from data.model.umrah_requisition_model import UmrahRequisitionModel
 
 
@@ -17,18 +17,9 @@ async def umrah_requisition_confirmation(db: AsyncSession, request_dict: dict, b
         result = await db.execute(stmt)
 
         if b2b_finance_update_dict:
-            bill = b2b_finance_update_dict.get("bill", 0)
-            agency_name = b2b_finance_update_dict.pop("agency_name")
             stmt = (
-                update(UmrahB2BAgentModel)
-                .where(UmrahB2BAgentModel.name == b2b_finance_update_dict.get('b2b_agent_name') and UmrahB2BAgentModel.agency_name == agency_name)
-                .values(
-                    total_bill=UmrahB2BAgentModel.total_bill + bill,
-                    total_due=func.greatest(
-                        0,
-                        UmrahB2BAgentModel.total_bill + bill - UmrahB2BAgentModel.total_credit
-                    )
-                )
+                insert(UmrahB2BPayment)
+                .values(**b2b_finance_update_dict)
             )
 
             await db.execute(stmt)

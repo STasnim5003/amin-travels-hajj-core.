@@ -1,12 +1,12 @@
 from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.umrah_b2b_payment_model import UmrahB2BPayment
 from data.model.umrah_requisition_model import UmrahRequisitionModel, UmrahVendorsPriceModel
 
 
-async def create(db: AsyncSession, request_dict: dict, b2b_payment_dict:dict):
+async def create(db: AsyncSession, request_dict: dict, b2b_payment_dict: dict):
     try:
         stmt = (
             insert(UmrahRequisitionModel)
@@ -41,7 +41,7 @@ async def get_umrah_requisitions(db, agency_name):
         raise e
 
 
-async def get_requisition_by_id(db:AsyncSession, requisition_id:int, agency_name:str):
+async def get_requisition_by_id(db: AsyncSession, requisition_id: int, agency_name: str):
     try:
         stmt = (
             select(UmrahRequisitionModel)
@@ -67,7 +67,7 @@ async def umrah_requisition_assign_service(db: AsyncSession, request_dict: dict)
         raise e
 
 
-async def update_umrah_requisition(db: AsyncSession, request_dict: dict):
+async def update_umrah_requisition(db: AsyncSession, request_dict: dict, b2b_partial_invoice_finance_update: dict):
     try:
         stmt = (
             update(UmrahRequisitionModel)
@@ -77,6 +77,21 @@ async def update_umrah_requisition(db: AsyncSession, request_dict: dict):
         )
 
         result = await db.execute(stmt)
+
+        if b2b_partial_invoice_finance_update:
+            stmt_b2b = (
+                update(UmrahB2BPayment)
+                .where(
+                    UmrahB2BPayment.office_code
+                    == b2b_partial_invoice_finance_update["office_code"]
+                )
+                .values(
+                    amount=b2b_partial_invoice_finance_update["amount"],
+                    due=b2b_partial_invoice_finance_update["due"],
+                )
+            )
+
+            await db.execute(stmt_b2b)
         await db.commit()
         return result.scalar_one_or_none()
 
@@ -161,10 +176,10 @@ async def get_requisition_by_office_code(db: AsyncSession, office_code: str):
         raise e
 
 
-async def check_requisition_availability(db:AsyncSession, requisition_id:int, agency_name:str):
+async def check_requisition_availability(db: AsyncSession, requisition_id: int, agency_name: str):
     stmt = (
         select(UmrahRequisitionModel.id)
-        .where(UmrahRequisitionModel.id == requisition_id, UmrahRequisitionModel.agency_name==agency_name)
+        .where(UmrahRequisitionModel.id == requisition_id, UmrahRequisitionModel.agency_name == agency_name)
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()

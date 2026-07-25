@@ -207,3 +207,11 @@ async def get_umrah_b2b_billing_invoice(
 
     except Exception as e:
         raise e
+
+
+async def get_umrah_b2b_due_requisitions(db:AsyncSession, b2b_agent_name:str, agency_name:str):
+    try:
+        result= await umrah_b2b_payment_repository.get_umrah_b2b_due_requisitions(db=db, b2b_agent_name=b2b_agent_name, agency_name=agency_name)
+        return result
+    except Exception as e:
+        raise e

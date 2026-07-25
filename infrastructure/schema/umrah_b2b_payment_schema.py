@@ -15,14 +15,13 @@ class UmrahB2BPaymentCreate(BaseModel):
 
 class UmrahB2BPaymentUpdate(BaseModel):
     id: int
-    b2b_agent_name: Optional[str] = None
-    invoice_no: Optional[str] = None
     description: Optional[str] = None
     way_of_payment: Optional[str] = None
+    amount: float
     payment_date: Optional[date] = None
     remarks: Optional[str] = None
-    is_active: Optional[bool] = None
-    amount: Optional[float] = None
+    b2b_agent_name: str
+    invoice_no_and_paid_amount: Optional[Any] = None
 
 
 

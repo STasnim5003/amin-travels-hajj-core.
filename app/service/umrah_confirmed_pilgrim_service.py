@@ -21,9 +21,14 @@ async def umrah_requisition_confirmation(db: AsyncSession, request: UmrahRequisi
         b2b_finance_update_dict = {}
         if requisition.requisition_type == "B2B" and not requisition.is_confirmed:
             b2b_finance_update_dict = {
-                "bill": requisition.total_price - requisition.discount,
+                "amount": requisition.total_price,
+                "paid_amount": 0,
+                "due": requisition.total_price,
+                "office_code": requisition.amin_office_code,
                 "b2b_agent_name": requisition.b2b_agent_name,
-                "agency_name": agency_name
+                "agency_name": agency_name,
+                "updated_by": username,
+                "created_by": username
             }
         request_dict = request.model_dump(exclude_none=True)
         request_dict['is_confirmed'] = True

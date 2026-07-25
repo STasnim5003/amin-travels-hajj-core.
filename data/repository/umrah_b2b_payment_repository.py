@@ -272,8 +272,8 @@ async def get_umrah_payments_for_b2b_agent(db: AsyncSession, agency_name: str, b
 
 
 async def get_umrah_b2b_billing_invoice(
-    db: AsyncSession,
-    amin_office_code: str,
+        db: AsyncSession,
+        amin_office_code: str,
 ):
     try:
         stmt = (
@@ -294,6 +294,43 @@ async def get_umrah_b2b_billing_invoice(
 
         result = await db.execute(stmt)
         return result.first()  # Returns (UmrahRequisitionModel, invoice_no)
+
+    except Exception as e:
+        raise e
+
+
+async def get_umrah_b2b_due_requisitions(db: AsyncSession, b2b_agent_name: str, agency_name: str):
+    try:
+        query = text(
+            """
+                select * from core.umrah_b2b_payements ubp
+                where ubp.office_code is NULL 
+                and ubp.due > 0 
+                and ubp.agency_name=:agency_name 
+                and ubp.b2b_agent_name=:b2b_agent_name;
+            """
+        )
+
+        params = {
+            'agency_name': agency_name,
+            'b2b_agent_name': b2b_agent_name
+        }
+
+        result = await db.execute(query, params)
+        return result.mappings().all()
+    except Exception as e:
+        raise e
+
+
+async def get_umrah_b2b_invoices_by_office_code(db: AsyncSession, office_code: str):
+    try:
+        stmt = (
+            select(UmrahB2BPayment)
+            .where(UmrahB2BPayment.office_code == office_code)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
 
     except Exception as e:
         raise e
