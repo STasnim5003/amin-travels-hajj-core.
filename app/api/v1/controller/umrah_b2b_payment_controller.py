@@ -105,11 +105,11 @@ async def get_umrah_b2b_billing_invoice(
 
 @private_router.post("/umrah/b2b-due-requisitions")
 async def get_umrah_b2b_due_requisitions(
-        b2b_agent_name: str,
+        request: B2BAgentPaymentListQueryParameters,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
-    return await umrah_b2b_payment_service.get_umrah_b2b_due_requisitions(db=db, b2b_agent_name=b2b_agent_name,
+    return await umrah_b2b_payment_service.get_umrah_b2b_due_requisitions(db=db, b2b_agent_name=request.b2b_agent_name,
                                                                           agency_name=agency_name)
