@@ -304,7 +304,7 @@ async def get_umrah_b2b_due_requisitions(db: AsyncSession, b2b_agent_name: str, 
         query = text(
             """
                 select * from core.umrah_b2b_payements ubp
-                where ubp.office_code is NULL 
+                where ubp.office_code is NOT NULL 
                 and ubp.due > 0 
                 and ubp.agency_name=:agency_name 
                 and ubp.b2b_agent_name=:b2b_agent_name;
