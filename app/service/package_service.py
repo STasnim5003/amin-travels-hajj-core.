@@ -3,12 +3,13 @@ from alembic.util import status
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from data.repository import package_repository
+from data.repository import package_repository, admin_user_repository
 from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema, PackageCreateSchema, \
     PackageUpdateSchema, PackageNameBaseSchema
 
 
 async def get_packages(name, search, hajj_year, package_type, duration, description_type, hajj_month, agency_name,db):
+    child_agencies = await admin_user_repository.get_mother_agencies(db=db, agency_name=agency_name)
     result = await package_repository.get_packages(db=db,
                                                    name=name,
                                                    search=search,
@@ -16,7 +17,7 @@ async def get_packages(name, search, hajj_year, package_type, duration, descript
                                                    package_type=package_type,
                                                    duration=duration,
                                                    description_type=description_type,
-                                                   agency_name=agency_name,
+                                                   agencies=child_agencies,
                                                    hajj_month=hajj_month)
     return result
 
@@ -133,7 +134,6 @@ async def delete_package_by_id(db: AsyncSession, package_id:int, agency_name:str
         if package and package['agency_name'] != agency_name:
             raise HTTPException(status_code=400, detail="Package Name not found")
         await package_repository.delete_package_by_id(db, package_id)
-        packages = await package_repository.get_packages(db, None, None, None, None,None,None,None, agency_name)
-        return packages
+        return True
     except Exception as e:
         raise e

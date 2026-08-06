@@ -35,3 +35,4 @@ class AdminUserModel(Base, BaseMixinModel):
     dob = Column(String, nullable=True)
     ksa_mobile = Column(String, nullable=True)
     gender = Column(String, nullable=True)
+    mother_agency = Column(String, nullable=True)

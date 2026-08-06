@@ -88,6 +88,12 @@ async def admin_user_login(db: AsyncSession, request_credential: OAuth2PasswordR
             detail="Incorrect username or password"
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Inactive user"
+        )
+
     if not verify_password(request_credential.password, user.password):
         raise HTTPException(
             status_code=400,

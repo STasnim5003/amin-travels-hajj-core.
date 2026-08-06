@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy import select, update, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +18,7 @@ async def get_packages(db: AsyncSession,
                        duration: int = None,
                        description_type: str = None,
                        hajj_month: str = None,
-                       agency_name: str = None):
+                       agencies: List[str]=None):
     try:
         # Start query
         query = (select(PackageModel)
@@ -38,8 +40,8 @@ async def get_packages(db: AsyncSession,
             query = query.where(PackageModel.description_type == description_type)
         if hajj_month:
             query = query.where(PackageModel.hajj_month == hajj_month)
-        if agency_name:
-            query = query.where(PackageModel.agency_name == agency_name)
+        if agencies:
+            query = query.where(PackageModel.agency_name.in_(agencies))
         # query = query.where(PackageModel.is_publish == True)
 
         query = query.order_by(PackageModel.id.asc())

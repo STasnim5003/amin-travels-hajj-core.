@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import select, or_, and_, update, func, insert
+from sqlalchemy import select, or_, and_, update, func, insert, distinct
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
@@ -285,3 +285,19 @@ async def get_admin_profile(db:AsyncSession, username:str, agency_name:str):
 
 
 
+async def get_mother_agencies(db:AsyncSession, agency_name:str):
+    try:
+        stmt = (
+            select(distinct(AdminUserModel.agency_name))
+            .where(
+                or_(
+                    AdminUserModel.mother_agency == agency_name,
+                    AdminUserModel.agency_name == agency_name
+                )
+            )
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        raise e
