@@ -264,6 +264,7 @@ celerybeat.pid
 # Environments
 .env
 .env.staging
+.env.test
 .venv
 env/
 venv/
@@ -375,3 +376,12 @@ $RECYCLE.BIN/
 pilgrim_data.json
 prp_cookies.json
 registered_pilgrim.json
+
+# Local project documentation (not tracked)
+docs/
+
+# Local test suite/tooling (not tracked)
+tests/
+pytest.ini
+requirements-dev.txt
+.env.test.example

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DATETIME
+from sqlalchemy import Column, String, Integer, Float, DateTime
 
 from data.model.base_mixin_model import Base
 
@@ -15,4 +15,4 @@ class AgencyHajjiCountFetchModel(Base):
     need_to_pay_voucher = Column(Integer, nullable=True)
     percentage_registered = Column(Float, nullable=True)
     total_pilgrims = Column(Integer, nullable=True)
-    created_at = Column(DATETIME, nullable=True)
+    created_at = Column(DateTime, nullable=True)
