@@ -47,3 +47,4 @@ class GroupLeaderAssignSchema(BaseModel):
 
 class AdminUserResetPasswordSchema(BaseModel):
     new_password: str
+    old_password: str

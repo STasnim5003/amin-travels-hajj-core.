@@ -146,6 +146,9 @@ async def reset_admin_user_password(db:AsyncSession, request_body:AdminUserReset
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
+        if not verify_password(request_body.old_password, user.password):
+            raise HTTPException(status_code=400, detail="Old password is incorrect")
+
         hashed_password = hash_password(request_body.new_password)
         await admin_user_repository.update_admin_user_password(db=db, username=username, hashed_password=hashed_password)
         return {"message": "Password reset successful"}
