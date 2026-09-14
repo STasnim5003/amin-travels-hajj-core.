@@ -103,7 +103,7 @@ class PackageUpdateSchema(BaseModel):
     description_type: Optional[str] = None
     is_publish: Optional[bool] = None
 
-    # New fields from migration
+    hajj_year: Optional[int] = None
     duration_range: Optional[Dict[str, Any]] = None
     makkah: Optional[Dict[str, Any]] = None
     madinah: Optional[Dict[str, Any]] = None

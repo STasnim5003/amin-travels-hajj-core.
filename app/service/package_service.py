@@ -59,7 +59,6 @@ async def update_package(db:AsyncSession, package_id: int, package: PackageUpdat
             raise HTTPException(status_code=400, detail = "Package not found")
 
         update_data = package.model_dump(exclude_unset=True)
-        update_data = {k: v for k, v in update_data.items() if v is not None}
 
         if not update_data:
             return existing_package
