@@ -20,6 +20,18 @@ def _validate_amounts(seats_purchased: int, cost: float):
         raise HTTPException(status_code=400, detail="cost cannot be negative")
 
 
+def _normalize_ticket_file(ticket_file):
+    """Coerce ticket_file into the project's standard file-metadata shape:
+    a list of dicts each containing 'file_url' (see file_repository.upload_file)."""
+    if not ticket_file:
+        return ticket_file
+    if isinstance(ticket_file, str):
+        return [{"file_url": ticket_file}]
+    if isinstance(ticket_file, dict):
+        return [ticket_file]
+    return ticket_file
+
+
 async def create_flight_purchase(db: AsyncSession, request: FlightPurchaseCreateSchema, agency_name: str, username: str):
     try:
         _validate_amounts(request.seats_purchased, request.cost)
@@ -28,6 +40,8 @@ async def create_flight_purchase(db: AsyncSession, request: FlightPurchaseCreate
         request_dict["agency_name"] = agency_name
         request_dict["created_by"] = username
         request_dict["updated_by"] = username
+        if "ticket_file" in request_dict:
+            request_dict["ticket_file"] = _normalize_ticket_file(request_dict["ticket_file"])
 
         result = await flight_purchase_repository.create_flight_purchase(db, request_dict)
         return FlightPurchaseResponseSchema.model_validate(result)
@@ -41,7 +55,7 @@ async def get_flight_purchases(db: AsyncSession, agency_name: str):
         purchases = []
         for item in result:
             if item.ticket_file:
-                item.ticket_file = await generate_downloadable_urls(item.ticket_file)
+                item.ticket_file = await generate_downloadable_urls(_normalize_ticket_file(item.ticket_file))
             purchases.append(FlightPurchaseResponseSchema.model_validate(item))
 
         return FlightPurchaseListResponseSchema(flight_purchases=purchases)
@@ -53,7 +67,7 @@ async def get_flight_purchase_by_id(db: AsyncSession, purchase_id: int, agency_n
     try:
         result = await flight_purchase_repository.get_flight_purchase_by_id(db, purchase_id, agency_name)
         if result.ticket_file:
-            result.ticket_file = await generate_downloadable_urls(result.ticket_file)
+            result.ticket_file = await generate_downloadable_urls(_normalize_ticket_file(result.ticket_file))
         return FlightPurchaseResponseSchema.model_validate(result)
     except Exception as e:
         raise e
@@ -64,6 +78,8 @@ async def update_flight_purchase(db: AsyncSession, request: FlightPurchaseUpdate
         _validate_amounts(request.seats_purchased, request.cost)
 
         update_dict = request.model_dump(exclude_none=True)
+        if "ticket_file" in update_dict:
+            update_dict["ticket_file"] = _normalize_ticket_file(update_dict["ticket_file"])
         result = await flight_purchase_repository.update_flight_purchase(db, update_dict, agency_name, username)
         return FlightPurchaseResponseSchema.model_validate(result)
     except Exception as e:
