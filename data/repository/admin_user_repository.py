@@ -301,3 +301,18 @@ async def get_mother_agencies(db:AsyncSession, agency_name:str):
         return result.scalars().all()
     except Exception as e:
         raise e
+
+
+async def update_admin_user_password(db:AsyncSession, username:str, hashed_password:str):
+    try:
+        stmt = (
+            update(AdminUserModel)
+            .where(AdminUserModel.username == username)
+            .values(password=hashed_password)
+        )
+
+        await db.execute(stmt)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e

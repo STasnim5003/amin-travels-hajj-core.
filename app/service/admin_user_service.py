@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.utils.utils import hash_password, verify_password, create_access_token_for_admin_user, \
     create_refresh_token_for_admin_user
 from data.repository import admin_user_repository
-from infrastructure.schema.admin_user_schema import AdminUserCreate, AdminUserResponse, GroupLeaderAssignSchema
+from infrastructure.schema.admin_user_schema import AdminUserCreate, AdminUserResponse, GroupLeaderAssignSchema, \
+    AdminUserResetPasswordSchema
 
 
 async def list_users(db: AsyncSession, agency_name: str):
@@ -135,5 +136,18 @@ async def assign_group_leader_to_pilgrims(db: AsyncSession, request: GroupLeader
 async def get_group_leader_with_pilgrim_count(db: AsyncSession, agency_name: str):
     try:
         return await admin_user_repository.get_group_leader_with_pilgrim_count(db, agency_name)
+    except Exception as e:
+        raise e
+
+
+async def reset_admin_user_password(db:AsyncSession, request_body:AdminUserResetPasswordSchema, username:str):
+    try:
+        user = await admin_user_repository.get_admin_user_by_username(db, username)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        hashed_password = hash_password(request_body.new_password)
+        await admin_user_repository.update_admin_user_password(db=db, username=username, hashed_password=hashed_password)
+        return {"message": "Password reset successful"}
     except Exception as e:
         raise e

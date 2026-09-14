@@ -9,7 +9,8 @@ from app.core.middleware.middleware import get_current_user, get_current_admin_u
 from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import admin_user_service
 from data.db.db_config import get_async_db
-from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate, GroupLeaderAssignSchema
+from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate, GroupLeaderAssignSchema, \
+    AdminUserResetPasswordSchema
 from infrastructure.schema.pilgrim_data_schema import PilgrimResponseForAdminUser
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
@@ -92,3 +93,13 @@ async def get_group_leader_with_pilgrim_count(
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
     return await admin_user_service.get_group_leader_with_pilgrim_count(db, agency_name)
+
+@private_router.post("/admin-user/reset-password", tags=["Admin User"])
+async def reset_admin_user_password(
+        request_body: AdminUserResetPasswordSchema,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+    username = current_user["username"]
+    return await admin_user_service.reset_admin_user_password(db=db, request_body=request_body, username=username)

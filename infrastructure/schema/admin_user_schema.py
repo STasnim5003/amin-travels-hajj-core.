@@ -44,3 +44,6 @@ class AdminUserResponse(AdminUserBase):
 class GroupLeaderAssignSchema(BaseModel):
     pilgrims_id : List[int]
     group_leader_code : str
+
+class AdminUserResetPasswordSchema(BaseModel):
+    new_password: str
