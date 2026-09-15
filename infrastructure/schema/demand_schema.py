@@ -28,3 +28,18 @@ class FoodDemandResponse(BaseModel):
 
 class FoodDemandListResponse(BaseModel):
     food_demands: List[FoodDemandResponse]
+
+class HotelDemandResponse(BaseModel):
+    # checkin/checkout/category are pulled from packages.<city> JSONB via ->>, so a
+    # package row missing that key (legacy/incomplete data) yields None rather than
+    # a validation error — keep these Optional.
+    checkin: Optional[str] = None
+    checkout: Optional[str] = None
+    package_name: str
+    package_duration: int
+    category: Optional[str] = None
+    room_and_number_of_hajji: Dict[str, int] = {}
+
+# Keyed by city (makkah/madinah/azizia), matching demand_service.get_hotel_demand's
+# actual return shape — a flat HotelDemandListResponse would not match this.
+HotelDemandByCityResponse = Dict[str, List[HotelDemandResponse]]

@@ -7,7 +7,7 @@ from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import demand_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.demand_schema import FlightDemandListResponse, RouteDemandListResponse, \
-    FoodDemandListResponse
+    FoodDemandListResponse, HotelDemandByCityResponse
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private", tags=["Package Demand"])
 
@@ -45,7 +45,7 @@ async def get_food_demand(
     return await demand_service.get_food_demand(db=db, agency_name=agency_name)
 
 
-@private_router.get("/hotel-demand")
+@private_router.get("/hotel-demand", response_model=HotelDemandByCityResponse)
 async def get_hotel_demand(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
