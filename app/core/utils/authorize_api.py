@@ -8,5 +8,5 @@ def has_required_permissions(current_user: dict, roles: List[str]):
         raise HTTPException(status_code=403, detail='Unauthorized')
 
 def check_agency_or_staff_user(current_user:dict):
-    if current_user["role"] not in ["AGENCY", "STAFF"]:
+    if current_user["role"] not in ["AGENCY", "STAFF", "ACCOUNT_STAFF"]:
         raise HTTPException(status_code=403, detail="Unauthorized")

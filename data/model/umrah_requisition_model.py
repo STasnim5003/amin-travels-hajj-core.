@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float
+from sqlalchemy import Column, Integer, String, Boolean, Float, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -74,6 +74,7 @@ class UmrahRequisitionModel(Base, BaseMixinModel):
     b2b_partial_guests = Column(JSONB, nullable=True)
     b2b_partial_description = Column(JSONB, nullable=True)
     extra_service_charge = Column(Float, nullable=True)
+    assign_to = Column(String, nullable=True)
 
 
 class UmrahVendorsPriceModel(Base, BaseMixinModel):

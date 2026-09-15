@@ -2,6 +2,8 @@ from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils.get_current_time import get_current_time
+from data.model.admin_user_model import AdminUserModel
 from data.model.umrah_b2b_payment_model import UmrahB2BPayment
 from data.model.umrah_requisition_model import UmrahRequisitionModel, UmrahVendorsPriceModel
 
@@ -183,3 +185,26 @@ async def check_requisition_availability(db: AsyncSession, requisition_id: int, 
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def create_public_requisition(db:AsyncSession, request_dict:dict):
+    try:
+        stmt = (
+            insert(UmrahRequisitionModel)
+            .values(**request_dict)
+            .returning(UmrahRequisitionModel)
+        )
+        await db.execute(stmt)
+
+        stmt = (
+            update(AdminUserModel)
+            .values(latest_assign_time=get_current_time())
+            .where(AdminUserModel.username == request_dict.get('assign_to'))
+            .returning(AdminUserModel)
+        )
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
