@@ -24,7 +24,7 @@ async def get_packages_endpoint(
         duration: int = None,
         description_type: str = None,
         hajj_month: str = None,
-        agency_name:str = None,
+        agency_name: str = None,
         db: AsyncSession = Depends(get_async_db)
 ):
     response = await package_service.get_packages(name=name,
@@ -37,6 +37,7 @@ async def get_packages_endpoint(
                                                   agency_name=agency_name,
                                                   db=db)
     return JSONResponse(content=jsonable_encoder(response))
+
 
 @private_router.get("/packages", response_model=PackagesResponseSchema, tags=["packages"])
 async def get_packages_endpoint(
@@ -64,6 +65,7 @@ async def get_packages_endpoint(
                                                   db=db)
     return JSONResponse(content=jsonable_encoder(response))
 
+
 @router.get("/package-filtering", response_model=PackageMasterDataForFilterListSchema, tags=["packages"])
 async def get_master_data_for_package_filtering(
         package_type: str = "HAJJ",
@@ -73,17 +75,18 @@ async def get_master_data_for_package_filtering(
     response = await package_service.get_package_master_data_for_filter(db, package_type, description_type)
     return JSONResponse(content=jsonable_encoder(response))
 
+
 @private_router.post("/package", response_model=PackageResponseSchema, tags=["packages"])
 async def create_package(
-        request_body : PackageBaseSchema,
+        request_body: PackageBaseSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PackageResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-
-    return await package_service.create_package(db, request_body, agency_name)
+    username = current_user["username"]
+    return await package_service.create_package(db, request_body, agency_name, username)
 
 
 @router.get("/package/{package_id}", response_model=PackageResponseSchema, tags=["packages"])
@@ -92,6 +95,7 @@ async def get_package(
         db: AsyncSession = Depends(get_async_db)
 ):
     return await package_service.get_package_by_id(db, package_id)
+
 
 @private_router.get("/package/{package_id}", response_model=PackageResponseSchema, tags=["packages"])
 async def get_package_by_id_for_agency(
@@ -104,17 +108,20 @@ async def get_package_by_id_for_agency(
     agency_name = current_user["agency_name"]
     return await package_service.get_package_by_id_for_agency(db, package_id, agency_name)
 
+
 @private_router.put("/package/{package_id}", response_model=PackageResponseSchema, tags=["packages"])
 async def update_package(
         package_id: int,
-        request_body : PackageUpdateSchema,
+        request_body: PackageUpdateSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PackageResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-    return await package_service.update_package(db, package_id, request_body, agency_name)
+    username = current_user["username"]
+    return await package_service.update_package(db, package_id, request_body, agency_name, username)
+
 
 @private_router.delete("/package/{package_id}", tags=["packages"])
 async def delete_package(
@@ -127,16 +134,18 @@ async def delete_package(
     agency_name = current_user["agency_name"]
     return await package_service.delete_package_by_id(db, package_id, agency_name)
 
+
 @private_router.post("/package-name", tags=["packages"])
 async def create_package_name(
-        request : PackageNameBaseSchema,
+        request: PackageNameBaseSchema,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-    return await package_service.create_package_names(db, request, agency_name)
+    username = current_user["username"]
+    return await package_service.create_package_names(db, request, agency_name, username)
 
 
 @private_router.get("/package-name", tags=["packages"])
@@ -149,9 +158,10 @@ async def get_package_names(
     agency_name = current_user["agency_name"]
     return await package_service.get_package_names(db, agency_name)
 
+
 @private_router.get("/package-name/{package_name_id}", tags=["packages"])
 async def get_package_name_by_id(
-        package_name_id:int,
+        package_name_id: int,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
@@ -160,6 +170,8 @@ async def get_package_name_by_id(
     agency_name = current_user["agency_name"]
 
     return await package_service.get_package_name_by_id(db, package_name_id, agency_name)
+
+
 @private_router.delete("/package-name/{package_name_id}", tags=["packages"])
 async def delete_package_name(
         package_name_id: int,
@@ -171,6 +183,7 @@ async def delete_package_name(
     agency_name = current_user["agency_name"]
     return await package_service.delete_package_name(db, package_name_id, agency_name)
 
+
 @private_router.put("/package-name", tags=["packages"])
 async def update_package_name(
         request: PackageNameUpdateSchema,
@@ -180,5 +193,5 @@ async def update_package_name(
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-    return await package_service.update_package_name(db, request, agency_name)
-
+    username = current_user["username"]
+    return await package_service.update_package_name(db, request, agency_name, username)
