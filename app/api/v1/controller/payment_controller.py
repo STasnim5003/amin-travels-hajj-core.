@@ -4,13 +4,12 @@ import fastapi
 from fastapi import Depends, HTTPException, Query, Form, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.controller.pilgrim_controller import public_router
 from app.core.middleware.middleware import get_current_user, get_current_admin_user, get_current_pilgrim
 from app.core.utils.authorize_api import check_agency_or_staff_user
 from app.service import payment_service, pilgrim_payment_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.payment_schema import PaymentResponseSchema, PaginatedPaymentResponseForGroupLeader, \
-    PaginatedPaymentResponseForAgency, GroupLeaderPayableBaseSchema, PilgrimPayableBaseSchema, \
+    GroupLeaderPayableBaseSchema, PilgrimPayableBaseSchema, \
     PilgrimPaymentBaseSchema, \
     GroupLeaderPaymentBaseSchema, PayableUpdateSchema, PaymentUpdateSchema, PaymentLedgerSchema, \
     PilgrimsPaymentSummaryListSchema

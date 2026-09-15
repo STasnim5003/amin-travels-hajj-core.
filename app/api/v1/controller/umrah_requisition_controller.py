@@ -13,7 +13,7 @@ from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionRespo
     UmrahConfirmedPilgrimItemSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private", tags=['Umrah Requisition'])
-
+public_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public", tags=['Umrah Requisition'])
 
 @private_router.post("/umrah-requisition", response_model=UmrahRequisitionResponseSchema)
 async def create_umrah_requisition(
@@ -134,3 +134,11 @@ async def get_confirmed_pilgrim_by_id(
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user['agency_name']
     return await umrah_confirmed_pilgrim_service.get_confirmed_pilgrim_by_id(db=db, agency_name=agency_name, umrah_requisition_id=umrah_requisition_id)
+
+@public_router.post("/umrah-requisition")
+async def create_umrah_requisition_public(
+        request: UmrahRequisitionBase,
+        db: AsyncSession = Depends(get_async_db)
+):
+    agency_name = 'Amin Travels & Tours'
+    return await umrah_requisition_service.create_public_requisition(db=db, request=request, agency_name=agency_name)

@@ -1,9 +1,10 @@
+from datetime import datetime, timezone
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
 from app.core.utils.umrah_requisition_utils import generate_amin_office_code
-from data.repository import umrah_requisition_repository, umrah_b2b_payment_repository
+from data.repository import umrah_requisition_repository, umrah_b2b_payment_repository, admin_user_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionUpdateSchema, \
     UmrahVendorsPriceCreateSchema, UmrahVendorsPriceResponseSchema, \
@@ -153,5 +154,48 @@ async def get_requisitions_with_vendors_price(db: AsyncSession, requisition_id: 
                 if vendors_price else None
             )
         )
+    except Exception as e:
+        raise e
+
+
+async def create_public_requisition(db, request, agency_name):
+    try:
+        amin_office_code = await generate_amin_office_code(db=db)
+
+        agency_staffs = await admin_user_repository.get_agency_staffs(db=db, agency_name=agency_name)
+
+        if not agency_staffs:
+            raise ValueError(
+                f"No agency staff found for agency: {agency_name}"
+            )
+
+        # Round-robin:
+        # 1. Staff with latest_assign_time = None gets priority
+        # 2. Otherwise, staff with the earliest assignment time gets priority
+        latest_assigned_staff = min(
+            agency_staffs,
+            key=lambda staff: (
+                staff.latest_assign_time is not None,
+                staff.latest_assign_time or datetime.min.replace(tzinfo=timezone.utc)
+            )
+        )
+
+        assign_to = latest_assigned_staff.username
+
+        request_dict = request.model_dump()
+        request_dict["agency_name"] = agency_name
+        request_dict["amin_office_code"] = amin_office_code
+        request_dict["is_confirmed"] = False
+        request_dict["assign_to"] = assign_to
+        request_dict["created_by"] = "public"
+        request_dict["updated_by"] = "public"
+
+        saved = await umrah_requisition_repository.create_public_requisition(db=db, request_dict=request_dict)
+
+        return {
+            "message": "Umrah requisition created successfully",
+            "assign_to": saved.name,
+            "contract_no": saved.mobile_no
+        }
     except Exception as e:
         raise e

@@ -1,5 +1,4 @@
-
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import BaseMixinModel, Base
@@ -36,3 +35,4 @@ class AdminUserModel(Base, BaseMixinModel):
     ksa_mobile = Column(String, nullable=True)
     gender = Column(String, nullable=True)
     mother_agency = Column(String, nullable=True)
+    latest_assign_time = Column(DateTime, nullable=True)

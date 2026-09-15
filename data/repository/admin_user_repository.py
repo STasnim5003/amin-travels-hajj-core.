@@ -316,3 +316,19 @@ async def update_admin_user_password(db:AsyncSession, username:str, hashed_passw
     except Exception as e:
         await db.rollback()
         raise e
+
+
+async def get_agency_staffs(db:AsyncSession, agency_name:str):
+    try:
+        stmt = (
+            select(AdminUserModel)
+            .where(
+                AdminUserModel.agency_name == agency_name,
+                AdminUserModel.role == 'STAFF'
+            )
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
+    except Exception as e:
+        raise e
