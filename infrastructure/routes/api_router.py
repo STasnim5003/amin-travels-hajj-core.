@@ -13,7 +13,7 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    umrah_b2b_agent_controller, umrah_b2b_payment_controller,
                                    umrah_hotel_booking_controller, flight_purchase_controller,
                                    hotel_purchase_controller, route_purchase_controller,
-                                   food_purchase_controller)
+                                   food_purchase_controller, agency_profile_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
 
 router = APIRouter()
@@ -82,3 +82,4 @@ router.include_router(hotel_purchase_controller.private_router)
 router.include_router(route_purchase_controller.private_router)
 router.include_router(food_purchase_controller.private_router)
 router.include_router(umrah_requisition_controller.public_router)
+router.include_router(agency_profile_controller.private_router)
