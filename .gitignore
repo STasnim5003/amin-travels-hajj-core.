@@ -376,6 +376,8 @@ $RECYCLE.BIN/
 pilgrim_data.json
 prp_cookies.json
 registered_pilgrim.json
+agency_profile_response.json
+ssh/
 
 # Local project documentation (not tracked)
 docs/
