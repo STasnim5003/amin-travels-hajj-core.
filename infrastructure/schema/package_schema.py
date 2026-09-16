@@ -18,7 +18,7 @@ class PackageBaseSchema(BaseModel):
     package_type: str
     is_publish: Optional[bool] = None
 
-    # New fields from migration
+    airlines: Optional[str] = None
     duration_range: Optional[Dict[str, Any]] = None
     makkah: Optional[Dict[str, Any]] = None
     madinah: Optional[Dict[str, Any]] = None
