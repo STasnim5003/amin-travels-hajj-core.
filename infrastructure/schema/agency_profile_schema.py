@@ -20,7 +20,16 @@ class AgencyProfileItemSchema(BaseModel):
         from_attributes = True
 
 
+class QuotaSummarySchema(BaseModel):
+    original_pilgrim_quota: int
+    guide_quota: int
+    total_quota: int
+    current_pilgrim_registration_done: int
+    remaining_pilgrim_balance: int
+
+
 class AgencyProfileListResponseSchema(BaseModel):
     success: bool
     count: int
+    summary: QuotaSummarySchema
     data: List[AgencyProfileItemSchema]
