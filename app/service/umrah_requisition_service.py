@@ -191,11 +191,12 @@ async def create_public_requisition(db, request, agency_name):
         request_dict["updated_by"] = "public"
 
         saved = await umrah_requisition_repository.create_public_requisition(db=db, request_dict=request_dict)
-
+        admin_user = saved.get('admin_user')
         return {
             "message": "Umrah requisition created successfully",
-            "assign_to": saved.name,
-            "contract_no": saved.mobile_no
+            "assign_to": admin_user.name,
+            "contract_no": admin_user.mobile_no,
+            "amin_office_code": saved.get("amin_office_code")
         }
     except Exception as e:
         raise e

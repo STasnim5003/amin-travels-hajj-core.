@@ -187,24 +187,41 @@ async def check_requisition_availability(db: AsyncSession, requisition_id: int, 
     return result.scalar_one_or_none()
 
 
-async def create_public_requisition(db:AsyncSession, request_dict:dict):
+async def create_public_requisition(
+    db: AsyncSession,
+    request_dict: dict
+):
     try:
-        stmt = (
+        # Create requisition
+        insert_stmt = (
             insert(UmrahRequisitionModel)
             .values(**request_dict)
-            .returning(UmrahRequisitionModel)
+            .returning(UmrahRequisitionModel.amin_office_code)
         )
-        await db.execute(stmt)
 
-        stmt = (
+        insert_result = await db.execute(insert_stmt)
+        amin_office_code = insert_result.scalar_one()
+
+        # Update assigned admin user
+        update_stmt = (
             update(AdminUserModel)
             .values(latest_assign_time=get_current_time())
-            .where(AdminUserModel.username == request_dict.get('assign_to'))
+            .where(
+                AdminUserModel.username == request_dict.get("assign_to")
+            )
             .returning(AdminUserModel)
         )
-        result = await db.execute(stmt)
+
+        update_result = await db.execute(update_stmt)
+        admin_user = update_result.scalar_one_or_none()
+
         await db.commit()
-        return result.scalar_one_or_none()
-    except Exception as e:
+
+        return {
+            "amin_office_code": amin_office_code,
+            "admin_user": admin_user,
+        }
+
+    except Exception:
         await db.rollback()
-        raise e
+        raise
