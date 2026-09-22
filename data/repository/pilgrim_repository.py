@@ -2,7 +2,7 @@ import json
 from typing import Optional, List
 
 from fastapi import HTTPException
-from sqlalchemy import text, case, update, func, select, distinct, insert
+from sqlalchemy import text, case, update, func, select, distinct, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.pilgrim_data_model import PilgrimDataModel, ReplacedPilgrimModel, \
@@ -598,6 +598,21 @@ async def manual_pre_registration(db:AsyncSession, request_dict:dict):
         result = await db.execute(stmt)
         await db.commit()
         return result.scalar_one_or_none()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+
+async def delete_pilgrim(db:AsyncSession, tracking_id:str):
+    try:
+        stmt = (
+            delete(PilgrimDataModel)
+            .where(PilgrimDataModel.tracking_id == tracking_id)
+        )
+
+        await db.execute(stmt)
+        await db.commit()
+        return True
     except Exception as e:
         await db.rollback()
         raise e

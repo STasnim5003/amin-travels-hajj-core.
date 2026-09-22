@@ -346,3 +346,16 @@ async def manual_pre_registration(db:AsyncSession, agency_name:str, username:str
         return PilgrimDataResponseSchema.model_validate(result)
     except Exception as e:
         raise e
+
+
+async def delete_pilgrim(db:AsyncSession, tracking_id:str, agency_name:str):
+    try:
+        pilgrim = await pilgrim_repository.get_pilgrim_by_tracking_id(db, tracking_id)
+        if not pilgrim:
+            raise HTTPException(status_code=404, detail="Pilgrim not found.")
+        if pilgrim.group_name != agency_name:
+            raise HTTPException(status_code=400, detail="Pilgrim group name does not match.")
+        await pilgrim_repository.delete_pilgrim(db, tracking_id)
+        return {"message": "Pilgrim deleted successfully."}
+    except Exception as e:
+        raise e

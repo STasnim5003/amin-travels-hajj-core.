@@ -222,3 +222,14 @@ async def manual_pre_registration(
     agency_name = current_user["agency_name"]
     username = current_user["username"]
     return await pilgrim_service.manual_pre_registration(db=db, agency_name=agency_name, username=username, request=request)
+
+@private_router.delete("/pilgrim/{tracking_id}", tags=["Pilgrim"])
+async def delete_pilgrim(
+        tracking_id: str,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    check_agency_or_staff_user(current_user=current_user)
+
+    agency_name = current_user["agency_name"]
+    return await pilgrim_service.delete_pilgrim(db=db, tracking_id=tracking_id, agency_name=agency_name)
