@@ -2,7 +2,7 @@ import json
 from typing import Optional, List
 
 from fastapi import HTTPException
-from sqlalchemy import text, case, update, func, select, distinct, insert, delete
+from sqlalchemy import text, case, update, func, select, exists, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.model.pilgrim_data_model import PilgrimDataModel, ReplacedPilgrimModel, \
@@ -399,13 +399,19 @@ async def assign_family_code(db: AsyncSession, request_body: PilgrimFamilyGroupA
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def available_family_codes(db: AsyncSession):
+async def is_family_codes_available(db: AsyncSession, family_code:str ,hajj_year: int):
     try:
-        result = await db.execute(
-            select(distinct(PilgrimDataModel.family_code))
-            .where(PilgrimDataModel.family_code.isnot(None))
+        query = select(
+            exists().where(
+                PilgrimDataModel.family_code == family_code,
+                PilgrimDataModel.hajj_year == hajj_year,
+            )
         )
-        return result.scalars().all()
+
+        result = await db.execute(query)
+
+        return bool(result.scalar())
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
