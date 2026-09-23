@@ -170,7 +170,6 @@ async def assign_family_code_to_pilgrim(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    # agency_name = "Marvellous Air Travels Ltd"
     return await pilgrim_service.assign_family_code(db, request_body, agency_name)
 
 

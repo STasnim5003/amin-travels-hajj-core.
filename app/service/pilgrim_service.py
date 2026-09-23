@@ -163,12 +163,12 @@ async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int) -> PilgrimDataRes
 
 async def assign_family_code(db: AsyncSession, request_body: PilgrimFamilyGroupAssign, agency_name: str):
     pilgrims = await pilgrim_repository.get_pilgrims_by_tracking_ids(db, request_body.tracking_ids)
-    family_codes = await pilgrim_repository.available_family_codes(db)
+    is_family_code_available = await pilgrim_repository.is_family_codes_available(db,request_body.family_code, request_body.hajj_year)
 
     if not pilgrims:
         raise HTTPException(status_code=400, detail="No pilgrims found.")
 
-    if request_body.family_code in family_codes:
+    if is_family_code_available:
         raise HTTPException(status_code=400, detail="Family code already exists.")
 
     for pilgrim in pilgrims:

@@ -142,6 +142,7 @@ class PilgrimResponseForAdminUser(BaseModel):
 class PilgrimFamilyGroupAssign(BaseModel):
     tracking_ids : List[str]
     family_code: str
+    hajj_year: int
 
 class PilgrimReplaceSchema(BaseModel):
     id : int
