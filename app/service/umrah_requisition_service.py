@@ -192,6 +192,13 @@ async def create_public_requisition(db, request, agency_name):
 
         saved = await umrah_requisition_repository.create_public_requisition(db=db, request_dict=request_dict)
         admin_user = saved.get('admin_user')
+
+        if admin_user is None:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Assigned staff '{assign_to}' not found for agency: {agency_name}"
+            )
+
         return {
             "message": "Umrah requisition created successfully",
             "assign_to": admin_user.name,

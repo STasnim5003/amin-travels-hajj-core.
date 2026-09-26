@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
 from app.core.middleware.middleware import get_current_user
-from app.core.utils.authorize_api import has_required_permissions, check_agency_or_staff_user
+from app.core.utils.authorize_api import has_required_permissions, check_agency_or_staff_user, STAFF_ROLES
 from app.service import admin_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_schema import AdminResponseSchema, AdminListResponseSchema, \
@@ -52,7 +52,7 @@ async def get_all_admins(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", "STAFF"])
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", *STAFF_ROLES])
     return await admin_service.get_all_admins(db=db, page=page, limit=limit)
 
 
@@ -109,7 +109,7 @@ async def assign_lead_agency(
         current_user: dict = Depends(get_current_user)
 ):
     user_role = current_user["role"]
-    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", "STAFF"])
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", *STAFF_ROLES])
 
     request_dict = request.model_dump()
     if user_role == "SUPER_ADMIN":
@@ -130,7 +130,7 @@ async def get_lead_agency_pilgrims(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", "STAFF"])
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", *STAFF_ROLES])
 
     lead_agency_name = current_user["agency_name"]
     return await admin_service.get_lead_agency_pilgrims(db, lead_agency_name)
@@ -141,7 +141,7 @@ async def get_lead_agency_assignment_check(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", "STAFF"])
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", *STAFF_ROLES])
 
     agency_name = current_user["agency_name"]
     result = await admin_service.check_lead_agency_assignment(db, agency_name)

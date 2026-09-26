@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from starlette.responses import JSONResponse
 
 from app.core.middleware.middleware import get_current_user
-from app.core.utils.authorize_api import has_required_permissions
+from app.core.utils.authorize_api import has_required_permissions, STAFF_ROLES
 from app.service import file_service
 from infrastructure.schema.file_schema import FileUploadResponseSchema, FileDownloadResponseSchema
 
@@ -21,7 +21,7 @@ async def upload_file(
         name: str = Form(...),
         current_user: dict = Depends(get_current_user)
 ):
-    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", "STAFF"])
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", *STAFF_ROLES])
 
     response = await file_service.upload_file(name=name, file=file)
     return JSONResponse(content=jsonable_encoder(response))
