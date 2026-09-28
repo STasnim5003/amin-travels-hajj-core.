@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from infrastructure.schema.view_field_schema import ViewFieldResponseSchema
 
@@ -141,8 +141,18 @@ class PilgrimResponseForAdminUser(BaseModel):
 
 class PilgrimFamilyGroupAssign(BaseModel):
     tracking_ids : List[str]
-    family_code: str
+    family_code: Optional[str] = None
     hajj_year: int
+
+    @field_validator("family_code")
+    @classmethod
+    def family_code_not_blank(cls, value):
+        if value is None:
+            return value
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("family_code cannot be blank")
+        return stripped
 
 class PilgrimReplaceSchema(BaseModel):
     id : int

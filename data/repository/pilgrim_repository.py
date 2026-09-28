@@ -399,14 +399,16 @@ async def assign_family_code(db: AsyncSession, request_body: PilgrimFamilyGroupA
         raise HTTPException(status_code=400, detail=str(e))
 
 
-async def is_family_codes_available(db: AsyncSession, family_code:str ,hajj_year: int):
+async def is_family_codes_available(db: AsyncSession, family_code: str, hajj_year: int, exclude_tracking_ids: list = None):
     try:
-        query = select(
-            exists().where(
-                PilgrimDataModel.family_code == family_code,
-                PilgrimDataModel.hajj_year == hajj_year,
-            )
-        )
+        conditions = [
+            PilgrimDataModel.family_code == family_code,
+            PilgrimDataModel.hajj_year == hajj_year,
+        ]
+        if exclude_tracking_ids:
+            conditions.append(PilgrimDataModel.tracking_id.notin_(exclude_tracking_ids))
+
+        query = select(exists().where(*conditions))
 
         result = await db.execute(query)
 
