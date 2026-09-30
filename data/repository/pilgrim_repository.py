@@ -515,70 +515,66 @@ async def get_pilgrim_agreement_by_family_code(
     agency_name: str,
 ):
     try:
+        # Every pilgrim of the family is returned, even one whose package no longer matches (LEFT JOIN);
+        # package_info comes from the first pilgrim (by name) that has a matching package of the same agency.
         query = text("""
+            WITH fam AS (
+                SELECT p.*, pk.id AS matched_package_id
+                FROM core.pilgrim_data p
+                LEFT JOIN core.packages pk
+                    ON pk.name = p.package_name
+                   AND pk.duration = p.package_duration
+                   AND pk.agency_name = p.group_name
+                WHERE p.family_code = :family_code
+                  AND p.group_name = :agency_name
+            )
             SELECT
-                p.family_code,
+                :family_code AS family_code,
 
-                jsonb_build_object(
-                    'package_name', pk.name,
-                    'duration', pk.duration,
-                    'makkah', pk.makkah,
-                    'madinah', pk.madinah,
-                    'azizia', pk.azizia,
-                    'flight_date', pk.flight_date,
-                    'bed_type', pk.bed_type,
-                    'return_ticket', pk.return_ticket,
-                    'fixed_or_shifting', pk.fixed_or_shifting,
-                    'air_ticket', pk.air_ticket,
-                    'transportation', pk.transportation,
-                    'mina_and_arafah', pk.mina_and_arafah,
-                    'hajj_guide', pk.hajj_guide,
-                    'qurbani', pk.qurbani,
-                    'tayef_jeddah_ziyara', pk.tayef_jeddah_ziyara,
-                    'additional_services', pk.additional_services,
-                    'important_notes', pk.important_notes,
-                    'required_add_ons', pk.required_add_ons
+                (
+                    SELECT jsonb_build_object(
+                        'package_name', pk.name,
+                        'duration', pk.duration,
+                        'makkah', pk.makkah,
+                        'madinah', pk.madinah,
+                        'azizia', pk.azizia,
+                        'flight_date', pk.flight_date,
+                        'bed_type', pk.bed_type,
+                        'return_ticket', pk.return_ticket,
+                        'fixed_or_shifting', pk.fixed_or_shifting,
+                        'air_ticket', pk.air_ticket,
+                        'transportation', pk.transportation,
+                        'mina_and_arafah', pk.mina_and_arafah,
+                        'hajj_guide', pk.hajj_guide,
+                        'qurbani', pk.qurbani,
+                        'tayef_jeddah_ziyara', pk.tayef_jeddah_ziyara,
+                        'additional_services', pk.additional_services,
+                        'important_notes', pk.important_notes,
+                        'required_add_ons', pk.required_add_ons
+                    )
+                    FROM core.packages pk
+                    WHERE pk.id = (
+                        SELECT f.matched_package_id FROM fam f
+                        WHERE f.matched_package_id IS NOT NULL
+                        ORDER BY f.name_en
+                        LIMIT 1
+                    )
                 ) AS package_info,
 
                 jsonb_agg(
                     jsonb_build_object(
-                        'name_en', p.name_en,
-                        'passport_no', p.passport_no,
-                        'total_payable', p.total_payable,
-                        'package_bed_types', p.package_bed_types,
-                        'add_ons_services', p.add_ons_services
+                        'name_en', fam.name_en,
+                        'passport_no', fam.passport_no,
+                        'total_payable', fam.total_payable,
+                        'package_bed_types', fam.package_bed_types,
+                        'add_ons_services', fam.add_ons_services,
+                        'package_name', fam.package_name,
+                        'package_duration', fam.package_duration
                     )
-                    ORDER BY p.name_en
+                    ORDER BY (fam.matched_package_id IS NULL), fam.name_en
                 ) AS pilgrims
-
-            FROM core.pilgrim_data p
-            JOIN core.packages pk
-                ON p.package_name = pk.name
-               AND p.package_duration = pk.duration
-
-            WHERE p.family_code = :family_code
-              AND p.group_name = :agency_name
-
-            GROUP BY
-                p.family_code,
-                pk.name,
-                pk.duration,
-                pk.makkah,
-                pk.madinah,
-                pk.azizia,
-                pk.flight_date,
-                pk.bed_type,
-                pk.return_ticket,
-                pk.fixed_or_shifting,
-                pk.air_ticket,
-                pk.transportation,
-                pk.mina_and_arafah,
-                pk.hajj_guide,
-                pk.qurbani,
-                pk.tayef_jeddah_ziyara,
-                pk.additional_services,
-                pk.important_notes,
-                pk.required_add_ons;
+            FROM fam
+            HAVING count(*) > 0;
         """)
 
         result = await db.execute(
