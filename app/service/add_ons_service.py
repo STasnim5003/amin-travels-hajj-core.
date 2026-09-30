@@ -42,6 +42,16 @@ async def get_add_on_service_by_id(db: AsyncSession, service_id: int, agency_nam
         raise e
 
 
+def _parse_price(price):
+    if price is None:
+        return None
+    try:
+        value = float(str(price).replace(",", "").strip())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Add-on price must be a number")
+    return int(value) if value.is_integer() else value
+
+
 async def update_add_ons_service(db:AsyncSession, update_request:AddOnsServiceUpdateSchema, agency_name:str, username:str):
     try:
         result = await add_ons_repository.get_add_on_service_by_id(db, update_request.id, agency_name)
@@ -52,7 +62,16 @@ async def update_add_ons_service(db:AsyncSession, update_request:AddOnsServiceUp
         update_request_dict['updated_by'] = username
         update_request_dict['updated_at'] = get_current_time()
 
-        updated_add_ons = await add_ons_repository.update_add_ons_service(db, update_request_dict)
+        package_sync = None
+        if 'name' in update_request_dict or 'price' in update_request_dict:
+            package_sync = {
+                "agency_name": agency_name,
+                "old_name": result.name,
+                "new_name": update_request_dict.get('name') or " ".join(result.name.split()),
+                "new_price": _parse_price(update_request_dict.get('price')),
+            }
+
+        updated_add_ons = await add_ons_repository.update_add_ons_service(db, update_request_dict, package_sync)
         return AddOnsServiceResponse.model_validate(updated_add_ons)
     except Exception as e:
         raise e
