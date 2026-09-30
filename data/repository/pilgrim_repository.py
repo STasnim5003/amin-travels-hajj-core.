@@ -535,6 +535,7 @@ async def get_pilgrim_agreement_by_family_code(
                     SELECT jsonb_build_object(
                         'package_name', pk.name,
                         'duration', pk.duration,
+                        'duration_range', pk.duration_range,
                         'makkah', pk.makkah,
                         'madinah', pk.madinah,
                         'azizia', pk.azizia,
