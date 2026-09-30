@@ -194,8 +194,6 @@ async def get_pre_register_enquiry_training_session_pilgrims(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
-    check_agency_or_staff_user(current_user=current_user)
-
     agency_name = current_user["agency_name"]
     return await pilgrim_service.get_pre_register_enquiry_training_session_pilgrims(db=db, agency_name=agency_name)
 

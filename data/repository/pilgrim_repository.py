@@ -498,10 +498,9 @@ async def pre_register_enquiry_or_book_training_session(db: AsyncSession, reques
 
 async def get_pre_register_enquiry_training_session_pilgrims(db: AsyncSession, agency_name: str):
     try:
-        stmt = (
-            select(TrainingSessionAndPreRegisterEnquiryPilgrim)
-            .where(TrainingSessionAndPreRegisterEnquiryPilgrim.agency_name == agency_name)
-        )
+        stmt = select(TrainingSessionAndPreRegisterEnquiryPilgrim)
+        if agency_name:
+            stmt = stmt.where(TrainingSessionAndPreRegisterEnquiryPilgrim.agency_name == agency_name)
 
         result = await db.execute(stmt)
         return result.scalars().all()
