@@ -550,7 +550,7 @@ async def get_pilgrim_agreement_by_family_code(
                         'qurbani', pk.qurbani,
                         'tayef_jeddah_ziyara', pk.tayef_jeddah_ziyara,
                         'additional_services', pk.additional_services,
-                        'important_notes', pk.important_notes,
+                        'important_notes', NULL::jsonb,
                         'required_add_ons', pk.required_add_ons
                     )
                     FROM core.packages pk
