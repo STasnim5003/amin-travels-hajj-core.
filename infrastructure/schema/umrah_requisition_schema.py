@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, Any, List
-from pydantic import BaseModel
+from pydantic import BaseModel, model_serializer
 
 class UmrahRequisitionVendorPrice(BaseModel):
     vendor_name : Optional[str] = None
@@ -181,6 +181,19 @@ class UmrahRequisitionResponseSchema(UmrahRequisitionAssignedService):
     updated_by : Optional[str] = None
     created_at : Optional[datetime] = None
     updated_at : Optional[datetime] = None
+
+    @model_serializer(mode="wrap")
+    def _assign_after_office_code(self, handler):
+        data = handler(self)
+        ordered = {}
+        for key, value in data.items():
+            if key in ("assign_to", "contract_no"):
+                continue
+            ordered[key] = value
+            if key == "amin_office_code":
+                ordered["assign_to"] = data.get("assign_to")
+                ordered["contract_no"] = data.get("contract_no")
+        return ordered
 
     class Config:
         from_attributes = True
