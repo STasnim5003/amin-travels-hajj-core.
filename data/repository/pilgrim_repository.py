@@ -548,7 +548,10 @@ async def get_pilgrim_agreement_by_family_code(
                         'return_ticket', pk.return_ticket,
                         'fixed_or_shifting', pk.fixed_or_shifting,
                         'air_ticket', pk.air_ticket,
-                        'transportation', pk.transportation,
+                        'transportation', CASE WHEN jsonb_typeof(pk.transportation) = 'array' THEN (
+                            SELECT jsonb_agg(to_jsonb(replace(t.line, 'will be required', 'is added as add ons')) ORDER BY t.ord)
+                            FROM jsonb_array_elements_text(pk.transportation) WITH ORDINALITY AS t(line, ord)
+                        ) ELSE pk.transportation END,
                         'mina_and_arafah', pk.mina_and_arafah,
                         'hajj_guide', pk.hajj_guide,
                         'qurbani', pk.qurbani,
