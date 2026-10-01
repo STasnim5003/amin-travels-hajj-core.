@@ -4,7 +4,6 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
-from app.core.utils.authorize_api import STAFF_ROLES
 from data.model.admin_model import AdminModel
 from data.model.admin_user_model import AdminUserModel
 from data.model.pilgrim_data_model import PilgrimDataModel
@@ -325,7 +324,7 @@ async def get_agency_staffs(db:AsyncSession, agency_name:str):
             select(AdminUserModel)
             .where(
                 AdminUserModel.agency_name == agency_name,
-                AdminUserModel.role.in_(STAFF_ROLES),
+                AdminUserModel.is_umrah_assignee.is_(True),
                 AdminUserModel.username.isnot(None),
                 AdminUserModel.username != ''
             )

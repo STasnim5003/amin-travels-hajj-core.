@@ -36,3 +36,4 @@ class AdminUserModel(Base, BaseMixinModel):
     gender = Column(String, nullable=True)
     mother_agency = Column(String, nullable=True)
     latest_assign_time = Column(DateTime, nullable=True)
+    is_umrah_assignee = Column(Boolean, nullable=False, server_default='false')
