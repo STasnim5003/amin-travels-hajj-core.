@@ -4,6 +4,11 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class PrpDataFetchRequestSchema(BaseModel):
+    email: str
+    password: str
+
+
 class AgencyHajjiCountFetchResponseSchema(BaseModel):
     hl : Optional[str] = None
     agency : Optional[str] = None

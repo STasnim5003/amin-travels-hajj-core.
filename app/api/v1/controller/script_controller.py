@@ -6,6 +6,7 @@ from app.core.middleware.middleware import get_current_user
 from app.core.utils.authorize_api import has_required_permissions, STAFF_ROLES
 from app.service import script_service
 from data.db.db_config import get_async_db
+from infrastructure.schema.script_schema import PrpDataFetchRequestSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 public_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
@@ -13,10 +14,11 @@ public_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public"
 
 @private_router.post("/fetch-prp-data", response_model=None, tags=["prp"])
 async def prp_data_fetch_update(
+        request: PrpDataFetchRequestSchema,
         current_user: dict = Depends(get_current_user)
 ):
     has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", *STAFF_ROLES])
-    return await script_service.prp_data_fetch_update(current_user)
+    return await script_service.prp_data_fetch_update(current_user, request)
 
 
 @public_router.get("/agency-hajji-list", tags=["prp"])

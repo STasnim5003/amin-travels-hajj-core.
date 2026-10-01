@@ -5,18 +5,18 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from data.repository import script_repository
-from infrastructure.schema.script_schema import AgencyHajjiCountFetchResponseSchema
+from infrastructure.schema.script_schema import AgencyHajjiCountFetchResponseSchema, PrpDataFetchRequestSchema
 
 load_dotenv()
 
 
-async def prp_data_fetch_update(current_user: dict):
+async def prp_data_fetch_update(current_user: dict, request: PrpDataFetchRequestSchema):
     try:
         url = "http://localhost:8001/fetch-prp-data"
 
         # The PRP service returns every agency when agency_name is missing,
         # so non-SUPER_ADMIN callers must always be scoped to their own agency.
-        payload = {}
+        payload = {"email": request.email, "password": request.password}
         if current_user.get("role") != "SUPER_ADMIN":
             agency_name = current_user.get("agency_name")
             if not agency_name:
