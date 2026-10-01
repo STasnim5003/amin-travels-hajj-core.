@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, Any, List
-from pydantic import BaseModel, model_serializer
+from pydantic import BaseModel, model_serializer, model_validator
 
 class UmrahRequisitionVendorPrice(BaseModel):
     vendor_name : Optional[str] = None
@@ -75,6 +75,18 @@ class UmrahRequisitionBase(BaseModel):
     b2b_partial_description : Optional[Any] = None
     total_price: Optional[float] = None
     extra_service_charge: Optional[float] = None
+
+    # These columns are NOT NULL in the DB; reject with 422 instead of failing on insert.
+    # PARTIAL b2b sets is_child_included_with_bed_transport server-side.
+    @model_validator(mode='after')
+    def check_required_db_fields(self):
+        required = ['number_of_traveller', 'adult_traveller']
+        if self.b2b_type != 'PARTIAL':
+            required.append('is_child_included_with_bed_transport')
+        missing = [field for field in required if getattr(self, field) is None]
+        if missing:
+            raise ValueError(f"Required fields missing: {', '.join(missing)}")
+        return self
 
 
 class UmrahRequisitionUpdateSchema(BaseModel):

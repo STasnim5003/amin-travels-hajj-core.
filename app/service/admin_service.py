@@ -283,6 +283,8 @@ async def update_logo(db:AsyncSession, request:LogoUpdateSchema, agency_name:str
 async def get_admin_profile(db:AsyncSession, username:str, agency_name:str):
     try:
         admin = await admin_user_repository.get_admin_profile(db=db, username=username, agency_name=agency_name)
+        if not admin:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Admin profile not found')
         if admin['passport_copy']:
             admin['passport_copy'] = await generate_downloadable_urls(admin['passport_copy'])
         if admin['logo']:
