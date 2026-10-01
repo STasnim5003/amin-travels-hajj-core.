@@ -33,12 +33,17 @@ async def create(db: AsyncSession, request_dict: dict, b2b_payment_dict: dict):
 async def get_umrah_requisitions(db, agency_name):
     try:
         stmt = (
-            select(UmrahRequisitionModel)
+            select(UmrahRequisitionModel, AdminUserModel.name, AdminUserModel.mobile_no)
+            .outerjoin(
+                AdminUserModel,
+                (AdminUserModel.username == UmrahRequisitionModel.assign_to)
+                & (AdminUserModel.agency_name == UmrahRequisitionModel.agency_name)
+            )
             .where(UmrahRequisitionModel.agency_name == agency_name)
             .order_by(UmrahRequisitionModel.id.desc())
         )
         result = await db.execute(stmt)
-        return result.scalars().all()
+        return result.all()
     except Exception as e:
         raise e
 

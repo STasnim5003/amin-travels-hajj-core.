@@ -51,7 +51,12 @@ async def get_umrah_requisitions(db: AsyncSession, agency_name: str):
     try:
         result = await umrah_requisition_repository.get_umrah_requisitions(db, agency_name)
 
-        umrah_requisitions = [UmrahRequisitionResponseSchema.model_validate(r) for r in result]
+        umrah_requisitions = []
+        for requisition, assign_to_name, contract_no in result:
+            item = UmrahRequisitionResponseSchema.model_validate(requisition)
+            item.assign_to = assign_to_name
+            item.contract_no = contract_no
+            umrah_requisitions.append(item)
         return UmrahRequisitionListResponseSchema(umrah_requisitions=umrah_requisitions)
     except Exception as e:
         raise e

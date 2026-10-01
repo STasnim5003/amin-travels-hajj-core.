@@ -174,6 +174,8 @@ class UmrahRequisitionAssignedService(BaseModel):
 
 class UmrahRequisitionResponseSchema(UmrahRequisitionAssignedService):
     is_confirmed: Optional[bool] = None
+    assign_to: Optional[str] = None
+    contract_no: Optional[str] = None
     agency_name : Optional[str] = None
     created_by : Optional[str] = None
     updated_by : Optional[str] = None
