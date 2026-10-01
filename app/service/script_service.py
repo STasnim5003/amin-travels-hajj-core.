@@ -23,7 +23,7 @@ async def prp_data_fetch_update(current_user: dict):
                 raise HTTPException(status_code=403, detail="Agency not found for current user")
             payload["agency_name"] = agency_name
 
-        timeout = httpx.Timeout(600.0)
+        timeout = httpx.Timeout(1800.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(url, json=payload)
         response.raise_for_status()
