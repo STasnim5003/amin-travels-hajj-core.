@@ -18,6 +18,8 @@ class PackageAssignSchema(PackageAssignBaseSchema):
 
 class PackageAssignForMultiplePilgrimSchema(PackageAssignBaseSchema):
     tracking_ids: List[str]
+    # Optional per-pilgrim discount {tracking_id: amount}; others get package_price_discount.
+    discounts: Optional[Dict[str, int]] = None
 
 
 class PackageAssignUpdateItemSchema(BaseModel):

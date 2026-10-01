@@ -34,8 +34,18 @@ async def get_package_assigned_pilgrims(db: AsyncSession, agency_name: str):
 
 async def assign_package_for_multiple_pilgrims(db: AsyncSession, request: PackageAssignForMultiplePilgrimSchema,
                                                agency_name: str, username: str):
+    discounts = request.discounts or {}
+    unknown = set(discounts) - set(request.tracking_ids)
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Discount given for pilgrims not selected: {', '.join(sorted(unknown))}")
+
+    shared = request.model_dump(exclude={"tracking_ids", "total_payable", "discounts", "package_price_discount"})
     changes = [
-        PackageAssignUpdateItemSchema(tracking_id=tracking_id, **request.model_dump(exclude={"tracking_ids", "total_payable"}))
+        PackageAssignUpdateItemSchema(
+            tracking_id=tracking_id,
+            package_price_discount=discounts.get(tracking_id, request.package_price_discount),
+            **shared,
+        )
         for tracking_id in request.tracking_ids
     ]
     await _apply_package_changes(db, changes, agency_name, username, fresh=True)
