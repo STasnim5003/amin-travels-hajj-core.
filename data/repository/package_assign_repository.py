@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select, update, insert, delete
+from sqlalchemy import select, update, insert, delete, func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib3 import request
@@ -64,6 +64,7 @@ async def get_package_assigned_pilgrims(db: AsyncSession, agency_name: str):
         stmt = (
             select(PilgrimDataModel)
             .where(PilgrimDataModel.group_name == agency_name, PilgrimDataModel.is_package_assigned == True)
+            .order_by(PilgrimDataModel.updated_at.desc())
         )
         result = await db.execute(stmt)
         return result.scalars().all()
@@ -86,6 +87,7 @@ async def save_pilgrims_package_finance_info(
                 package_bed_types=request.package_bed_types,
                 add_ons_services=request.add_ons_services,
                 updated_by=agency_name,
+                updated_at=func.now(),
                 is_package_assigned=True,
                 total_payable=case_total_payable,
                 total_due=case_total_due,
