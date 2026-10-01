@@ -59,6 +59,8 @@ class PackageResponseSchema(PackageBaseSchema):
     agency_name: Optional[str] = None
     ziara: Optional[ZiaraResponseSchema] = None
     food_menu: Optional[FoodMenuResponseSchema] = None
+    # Set on update: assigned pilgrims that could not be re-billed with the new price.
+    skipped_pilgrims: Optional[List[str]] = None
 
     class Config:
         from_attributes = True

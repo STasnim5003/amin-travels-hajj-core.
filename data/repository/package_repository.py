@@ -150,7 +150,7 @@ async def get_package_by_id_for_agency(db: AsyncSession, package_id: int, agency
         raise e
 
 
-async def update_package(db: AsyncSession, package_id: int, agency_name: str, update_data: dict):
+async def update_package(db: AsyncSession, package_id: int, agency_name: str, update_data: dict, commit: bool = True):
     stmt = (
         update(PackageModel)
         .where(
@@ -162,7 +162,8 @@ async def update_package(db: AsyncSession, package_id: int, agency_name: str, up
     )
     result = await db.execute(stmt)
     updated_package = result.scalar_one_or_none()
-    await db.commit()
+    if commit:
+        await db.commit()
 
     if not updated_package:
         raise HTTPException(status_code=400, detail="Package not found after update")

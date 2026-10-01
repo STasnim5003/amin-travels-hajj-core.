@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
+from app.service import package_assign_service
 from data.repository import package_repository, admin_user_repository
 from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema, PackageCreateSchema, \
     PackageUpdateSchema, PackageNameBaseSchema
@@ -71,9 +72,23 @@ async def update_package(db: AsyncSession, package_id: int, package: PackageUpda
         if not update_data:
             return existing_package
 
-        updated_package = await package_repository.update_package(db, package_id, agency_name, update_data)
+        old_bed_type, old_duration = existing_package.get("bed_type"), existing_package.get("duration")
+        affects_bills = (
+            ("bed_type" in update_data and update_data["bed_type"] != old_bed_type)
+            or ("duration" in update_data and update_data["duration"] != old_duration)
+        )
 
-        return PackageResponseSchema.model_validate(updated_package)
+        updated_package = await package_repository.update_package(
+            db, package_id, agency_name, update_data, commit=not affects_bills)
+        response = PackageResponseSchema.model_validate(updated_package)
+
+        if affects_bills:
+            # Package prices are universal: re-bill every pilgrim on this package (commits), moving them
+            # along if the duration changed.
+            response.skipped_pilgrims = await package_assign_service.reprice_assigned_pilgrims(
+                db, agency_name, username, package_name=existing_package["name"],
+                old_duration=old_duration, new_duration=updated_package.duration)
+        return response
     except Exception as e:
         raise e
 

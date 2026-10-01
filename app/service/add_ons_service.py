@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
+from app.service import package_assign_service
 from data.repository import add_ons_repository
 from infrastructure.schema.add_ons_service_schema import AddOnsServiceBase, AddOnsServiceResponse, \
     AddOnsServiceUpdateSchema
@@ -71,8 +72,24 @@ async def update_add_ons_service(db:AsyncSession, update_request:AddOnsServiceUp
                 "new_price": _parse_price(update_request_dict.get('price')),
             }
 
-        updated_add_ons = await add_ons_repository.update_add_ons_service(db, update_request_dict, package_sync)
-        return AddOnsServiceResponse.model_validate(updated_add_ons)
+        # Captured before the update: the ORM refreshes `result` with the new values.
+        old_name, old_price, old_active = result.name, _parse_price(result.price), result.is_active
+        new_name = " ".join((update_request_dict.get('name') or old_name).split())
+        affects_bills = (
+            new_name != " ".join(old_name.split())
+            or ('price' in update_request_dict and _parse_price(update_request_dict['price']) != old_price)
+            or update_request_dict.get('is_active', old_active) != old_active
+        )
+
+        updated_add_ons = await add_ons_repository.update_add_ons_service(
+            db, update_request_dict, package_sync, commit=not affects_bills)
+        response = AddOnsServiceResponse.model_validate(updated_add_ons)
+
+        if affects_bills:
+            # Add-on prices are universal: re-bill every assigned pilgrim that has this add-on (commits).
+            response.skipped_pilgrims = await package_assign_service.reprice_assigned_pilgrims(
+                db, agency_name, username, add_on_old_name=old_name, add_on_new_name=new_name)
+        return response
     except Exception as e:
         raise e
 

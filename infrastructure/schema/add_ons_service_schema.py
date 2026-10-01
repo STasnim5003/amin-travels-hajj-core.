@@ -31,6 +31,8 @@ class AddOnsServiceResponse(BaseModel):
     updated_at: Optional[datetime] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
+    # Set on update: assigned pilgrims that could not be re-billed with the new price.
+    skipped_pilgrims: Optional[list[str]] = None
 
     class Config:
         from_attributes = True

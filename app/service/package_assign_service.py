@@ -81,16 +81,14 @@ def _key(name) -> str:
     return " ".join(str(name).split()).lower()
 
 
-def _price_add_ons(requested: dict | None, kept: dict | None, catalog: dict) -> dict:
-    # Add-ons the pilgrim already has keep their billed price; newly added ones take the catalog price.
-    kept_by_key = {_key(name): (name, price) for name, price in (kept or {}).items()}
+def _price_add_ons(requested: dict | None, catalog: dict) -> dict:
+    # Add-on prices always come from the current catalog, so every pilgrim pays the same for the same add-on.
     priced = {}
     for name in requested or {}:
-        key = _key(name)
-        source = kept_by_key.get(key) or catalog.get(key)
+        source = catalog.get(_key(name))
         if not source:
             raise HTTPException(status_code=400, detail=f"Add-on '{name}' not found")
-        priced[key] = (source[0], _to_int(source[1], f"Add-on '{name}' price"))
+        priced[_key(name)] = (source[0], _to_int(source[1], f"Add-on '{name}' price"))
     return {name: price for name, price in priced.values()}
 
 
@@ -102,18 +100,49 @@ def _bed_price(package, bed_type: str) -> tuple[str, int]:
     raise HTTPException(status_code=400, detail=f"Bed type '{bed_type}' not found in package {package.name}")
 
 
+async def reprice_assigned_pilgrims(db: AsyncSession, agency_name: str, username: str, *,
+                                    package_name: str | None = None, old_duration: int | None = None,
+                                    new_duration: int | None = None, add_on_old_name: str | None = None,
+                                    add_on_new_name: str | None = None) -> list[str]:
+    """
+    Re-bill every assigned pilgrim affected by a package or add-on catalog edit, with the caller's
+    uncommitted catalog change in the same transaction (this commits). Discounts are kept.
+    Pilgrims that can no longer be priced (bed type / add-on removed) are left as they are and returned.
+    """
+    pilgrims = await package_assign_repository.get_package_assigned_pilgrims(db, agency_name)
+    old_key = _key(add_on_old_name) if add_on_old_name else None
+    changes = []
+    for pilgrim in pilgrims:
+        if package_name and (pilgrim.package_name, pilgrim.package_duration) != (package_name, old_duration):
+            continue
+        if old_key and old_key not in {_key(k) for k in (pilgrim.add_ons_services or {})}:
+            continue
+        add_ons = None
+        if old_key and add_on_new_name:
+            add_ons = {(add_on_new_name if _key(k) == old_key else k): 0 for k in pilgrim.add_ons_services}
+        changes.append(PackageAssignUpdateItemSchema(
+            tracking_id=pilgrim.tracking_id, package_duration=new_duration, add_ons_services=add_ons))
+
+    if not changes:
+        await db.commit()
+        return []
+    return await _apply_package_changes(db, changes, agency_name, username, skip_unpriceable=True)
+
+
 async def _apply_package_changes(db: AsyncSession, changes: list[PackageAssignUpdateItemSchema], agency_name: str,
-                                 username: str, fresh: bool = False, require_assigned: bool = False):
+                                 username: str, fresh: bool = False, require_assigned: bool = False,
+                                 skip_unpriceable: bool = False) -> list[str]:
     """
     Single place that prices a package and writes the pilgrim's finance + ledger, all in one transaction.
 
+    Prices are universal: bed price from the current package + add-on prices from the current catalog.
+    Only the discount is per pilgrim.
     total_payable  = package price (bed + add-ons) + other payables on the ledger
     actual_payable = total_payable - discount
     The package bill row on the ledger = package price - discount (exactly one per pilgrim).
 
-    fresh=True (assign): price everything from the current package/catalog.
-    Otherwise an unchanged package/bed keeps its billed base price, so later package price edits never
-    silently re-bill a pilgrim; a changed package/bed is priced from the current package.
+    fresh=True (assign): discount defaults to 0 instead of the pilgrim's current one.
+    skip_unpriceable=True: pilgrims that cannot be priced are skipped (returned) instead of failing the batch.
     """
     try:
         tracking_ids = [c.tracking_id for c in changes]
@@ -141,37 +170,20 @@ async def _apply_package_changes(db: AsyncSession, changes: list[PackageAssignUp
         packages = {}
         now = get_current_time()
         package_bill_rows = []
+        priced_ids, skipped = [], []
 
         for change in changes:
             pilgrim = pilgrims[change.tracking_id]
-            package_name = change.package_name or pilgrim.package_name
-            duration = change.package_duration or pilgrim.package_duration
-            bed_type = change.package_bed_types or pilgrim.package_bed_types
-            if not (package_name and duration and bed_type):
-                raise HTTPException(status_code=400, detail=f"Package, duration and bed type are required for {pilgrim.tracking_id}")
+            try:
+                package_name = change.package_name or pilgrim.package_name
+                duration = change.package_duration or pilgrim.package_duration
+                bed_type = change.package_bed_types or pilgrim.package_bed_types
+                if not (package_name and duration and bed_type):
+                    raise HTTPException(status_code=400, detail=f"Package, duration and bed type are required for {pilgrim.tracking_id}")
 
-            requested_add_ons = change.add_ons_services if change.add_ons_services is not None else pilgrim.add_ons_services
-            kept_add_ons = None if fresh else pilgrim.add_ons_services
-            add_ons = _price_add_ons(requested_add_ons, kept_add_ons, catalog)
+                requested_add_ons = change.add_ons_services if change.add_ons_services is not None else pilgrim.add_ons_services
+                add_ons = _price_add_ons(requested_add_ons, catalog)
 
-            same_package = (
-                not fresh and pilgrim.is_package_assigned
-                and (package_name, duration, _key(bed_type))
-                == (pilgrim.package_name, pilgrim.package_duration, _key(pilgrim.package_bed_types or ""))
-            )
-            summary = ledger[pilgrim.tracking_id]
-            if same_package:
-                bed_type = pilgrim.package_bed_types
-                last_bill = summary["last_package_amount"]
-                billed_gross = (
-                    last_bill + (pilgrim.package_price_discount or 0) if last_bill is not None
-                    else (pilgrim.total_payable or 0) - summary["other"]
-                )
-                old_add_ons = sum(_to_int(v, "Add-on price") for v in (pilgrim.add_ons_services or {}).values())
-                base_price = billed_gross - old_add_ons
-                if base_price < 0:
-                    raise HTTPException(status_code=400, detail=f"Existing bill of {pilgrim.tracking_id} is inconsistent")
-            else:
                 cache_key = (package_name, duration)
                 if cache_key not in packages:
                     packages[cache_key] = await package_assign_repository.get_hajj_package(db, package_name, duration, agency_name)
@@ -180,14 +192,20 @@ async def _apply_package_changes(db: AsyncSession, changes: list[PackageAssignUp
                     raise HTTPException(status_code=400, detail=f"Package {package_name} ({duration} days) not found")
                 bed_type, base_price = _bed_price(package, bed_type)
 
-            package_price = base_price + sum(add_ons.values())
-            if change.package_price_discount is not None:
-                discount = change.package_price_discount
-            else:
-                discount = 0 if fresh else (pilgrim.package_price_discount or 0)
-            if discount < 0 or discount > package_price:
-                raise HTTPException(status_code=400, detail=f"Discount must be between 0 and {package_price}")
+                package_price = base_price + sum(add_ons.values())
+                if change.package_price_discount is not None:
+                    discount = change.package_price_discount
+                else:
+                    discount = 0 if fresh else (pilgrim.package_price_discount or 0)
+                if discount < 0 or discount > package_price:
+                    raise HTTPException(status_code=400, detail=f"Discount must be between 0 and {package_price}")
+            except HTTPException:
+                if not skip_unpriceable:
+                    raise
+                skipped.append(pilgrim.tracking_id)
+                continue
 
+            summary = ledger[pilgrim.tracking_id]
             total_payable = package_price + summary["other"]
             actual_payable = total_payable - discount
             total_payment = pilgrim.total_payment or 0
@@ -208,6 +226,7 @@ async def _apply_package_changes(db: AsyncSession, changes: list[PackageAssignUp
                 "updated_at": now,
             })
 
+            priced_ids.append(pilgrim.tracking_id)
             package_bill_rows.append({
                 "description": "Package Bill" if fresh else "Updated Package Bill",
                 "date": datetime.today().strftime("%Y-%m-%d"),
@@ -220,8 +239,10 @@ async def _apply_package_changes(db: AsyncSession, changes: list[PackageAssignUp
                 "category": "Payable",
             })
 
-        await package_assign_repository.replace_package_bills(db, tracking_ids, package_bill_rows)
+        if priced_ids:
+            await package_assign_repository.replace_package_bills(db, priced_ids, package_bill_rows)
         await db.commit()
+        return skipped
 
     except Exception as e:
         await db.rollback()

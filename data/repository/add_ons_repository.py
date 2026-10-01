@@ -63,7 +63,7 @@ async def sync_package_required_add_ons(db: AsyncSession, agency_name: str, old_
     )
 
 
-async def update_add_ons_service(db, update_request_dict, package_sync: dict | None = None):
+async def update_add_ons_service(db, update_request_dict, package_sync: dict | None = None, commit: bool = True):
     try:
         if package_sync:
             await sync_package_required_add_ons(db, **package_sync)
@@ -74,8 +74,10 @@ async def update_add_ons_service(db, update_request_dict, package_sync: dict | N
             .returning(AddOnsServiceModel)
         )
 
-        await db.commit()
-        return result.scalar_one_or_none()
+        updated = result.scalar_one_or_none()
+        if commit:
+            await db.commit()
+        return updated
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=400, detail=f"Error updating add-on service: {str(e)}")
