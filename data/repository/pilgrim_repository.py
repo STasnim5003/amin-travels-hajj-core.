@@ -514,16 +514,20 @@ async def get_pilgrim_agreement_by_family_code(
     agency_name: str,
 ):
     try:
-        # Every pilgrim of the family is returned, even one whose package no longer matches (LEFT JOIN);
-        # package_info comes from the first pilgrim (by name) that has a matching package of the same agency.
+        # Every pilgrim of the family is returned, each pointing at its own package via package_id
+        # (null when the package no longer matches). Each package's details are listed once in `packages`.
         query = text("""
             WITH fam AS (
                 SELECT p.*, pk.id AS matched_package_id
                 FROM core.pilgrim_data p
-                LEFT JOIN core.packages pk
-                    ON pk.name = p.package_name
-                   AND pk.duration = p.package_duration
-                   AND pk.agency_name = p.group_name
+                LEFT JOIN LATERAL (
+                    SELECT pk.id FROM core.packages pk
+                    WHERE pk.name = p.package_name
+                      AND pk.duration = p.package_duration
+                      AND pk.agency_name = p.group_name
+                    ORDER BY pk.id DESC
+                    LIMIT 1
+                ) pk ON true
                 WHERE p.family_code = :family_code
                   AND p.group_name = :agency_name
             )
@@ -531,7 +535,8 @@ async def get_pilgrim_agreement_by_family_code(
                 :family_code AS family_code,
 
                 (
-                    SELECT jsonb_build_object(
+                    SELECT coalesce(jsonb_object_agg(pk.id::text, jsonb_build_object(
+                        'package_id', pk.id,
                         'package_name', pk.name,
                         'duration', pk.duration,
                         'duration_range', pk.duration_range,
@@ -551,27 +556,26 @@ async def get_pilgrim_agreement_by_family_code(
                         'additional_services', pk.additional_services,
                         'important_notes', NULL::jsonb,
                         'required_add_ons', pk.required_add_ons
-                    )
+                    )), '{}'::jsonb)
                     FROM core.packages pk
-                    WHERE pk.id = (
-                        SELECT f.matched_package_id FROM fam f
-                        WHERE f.matched_package_id IS NOT NULL
-                        ORDER BY f.name_en
-                        LIMIT 1
-                    )
-                ) AS package_info,
+                    WHERE pk.id IN (SELECT f.matched_package_id FROM fam f)
+                ) AS packages,
 
                 jsonb_agg(
                     jsonb_build_object(
+                        'tracking_id', fam.tracking_id,
                         'name_en', fam.name_en,
                         'passport_no', fam.passport_no,
-                        'total_payable', fam.total_payable,
+                        'package_id', fam.matched_package_id,
+                        'package_name', fam.package_name,
+                        'package_duration', fam.package_duration,
                         'package_bed_types', fam.package_bed_types,
                         'add_ons_services', fam.add_ons_services,
-                        'package_name', fam.package_name,
-                        'package_duration', fam.package_duration
+                        'total_payable', fam.total_payable,
+                        'package_price_discount', coalesce(fam.package_price_discount, 0),
+                        'actual_payable', fam.actual_payable
                     )
-                    ORDER BY (fam.matched_package_id IS NULL), fam.name_en
+                    ORDER BY (fam.matched_package_id IS NULL), fam.matched_package_id, fam.name_en
                 ) AS pilgrims
             FROM fam
             HAVING count(*) > 0;
@@ -585,7 +589,15 @@ async def get_pilgrim_agreement_by_family_code(
             },
         )
 
-        return result.mappings().first()
+        row = result.mappings().first()
+        if not row:
+            return None
+
+        agreement = dict(row)
+        # Deprecated: kept until the frontend reads packages[pilgrim.package_id]. Package of the first pilgrim.
+        first_package_id = agreement["pilgrims"][0].get("package_id") if agreement["pilgrims"] else None
+        agreement["package_info"] = agreement["packages"].get(str(first_package_id)) if first_package_id else None
+        return agreement
 
     except Exception:
         raise

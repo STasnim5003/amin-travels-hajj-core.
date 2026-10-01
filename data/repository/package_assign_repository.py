@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select, update, insert
+from sqlalchemy import select, update, insert, delete
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib3 import request
@@ -132,6 +132,54 @@ async def insert_bulk_payments(db, pilgrim_payments_data, group_leader_payments_
         await db.execute(insert(PaymentModel).values(pilgrim_payments_data))
     if group_leader_payments_data:
         await db.execute(insert(PaymentModel).values(group_leader_payments_data))
+
+PACKAGE_BILL_DESCRIPTIONS = ("Package Bill", "Updated Package Bill")
+
+
+async def get_hajj_package(db: AsyncSession, package_name: str, duration: int, agency_name: str):
+    stmt = (
+        select(PackageModel)
+        .where(
+            PackageModel.name == package_name,
+            PackageModel.duration == duration,
+            PackageModel.package_type == "HAJJ",
+            PackageModel.agency_name == agency_name
+        )
+        .order_by(PackageModel.id.desc())
+    )
+    result = await db.execute(stmt)
+    return result.scalars().first()
+
+
+async def get_payable_summary(db: AsyncSession, tracking_ids: list[str]) -> dict:
+    # Per pilgrim: sum of non-package payables, and the amount of the latest package bill row (None if none).
+    is_package_bill = PaymentModel.description.in_(PACKAGE_BILL_DESCRIPTIONS)
+    result = await db.execute(
+        select(PaymentModel.tracking_id, PaymentModel.amount, is_package_bill.label("is_package_bill"))
+        .where(PaymentModel.tracking_id.in_(tracking_ids), PaymentModel.category == "Payable")
+        .order_by(PaymentModel.id)
+    )
+    summary = {tid: {"other": 0, "last_package_amount": None} for tid in tracking_ids}
+    for tracking_id, amount, package_bill in result.all():
+        if package_bill:
+            summary[tracking_id]["last_package_amount"] = amount or 0
+        else:
+            summary[tracking_id]["other"] += amount or 0
+    return summary
+
+
+async def replace_package_bills(db: AsyncSession, tracking_ids: list[str], package_bill_rows: list[dict]):
+    # Each pilgrim keeps exactly one package bill row in the ledger.
+    await db.execute(
+        delete(PaymentModel).where(
+            PaymentModel.tracking_id.in_(tracking_ids),
+            PaymentModel.category == "Payable",
+            PaymentModel.description.in_(PACKAGE_BILL_DESCRIPTIONS),
+        )
+    )
+    if package_bill_rows:
+        await db.execute(insert(PaymentModel).values(package_bill_rows))
+
 
 async def individual_pilgrim_package_change(db: AsyncSession, pilgrim_package_and_finance_update : dict):
     try:
