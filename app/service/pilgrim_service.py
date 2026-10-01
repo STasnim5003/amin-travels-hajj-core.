@@ -34,7 +34,14 @@ async def get_pilgrim_data(db: AsyncSession,
                            group_leader: Optional[str],
                            show_customers: bool,
                            is_package_assigned: Optional[bool],
-                           hajj_year: Optional[bool],
+                           hajj_year: Optional[int],
+                           family_code: Optional[str] = None,
+                           group_name_filter: Optional[str] = None,
+                           sub_group: Optional[str] = None,
+                           package_name: Optional[str] = None,
+                           passport_no: Optional[str] = None,
+                           package_bed_type: Optional[str] = None,
+                           package_duration: Optional[int] = None,
                            ) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
     try:
@@ -50,7 +57,14 @@ async def get_pilgrim_data(db: AsyncSession,
                                                                                                             show_customers,
                                                                                                             is_package_assigned,
                                                                                                             hajj_year,
-                                                                                                            skip, limit)
+                                                                                                            skip, limit,
+                                                                                                            family_code,
+                                                                                                            group_name_filter,
+                                                                                                            sub_group,
+                                                                                                            package_name,
+                                                                                                            passport_no,
+                                                                                                            package_bed_type,
+                                                                                                            package_duration)
         views = []
         if username:
             views = await view_field_service.get_views(db, username)

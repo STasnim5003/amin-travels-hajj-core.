@@ -32,17 +32,27 @@ async def get_pilgrim_data(
         show_customers: bool = Query(default=True),
         is_package_assigned: bool = Query(None),
         hajj_year: Optional[int] = Query(None),
+        family_code: Optional[str] = Query(None),
+        group_name: Optional[str] = Query(None),
+        sub_group: Optional[str] = Query(None),
+        package_name: Optional[str] = Query(None),
+        passport_no: Optional[str] = Query(None),
+        package_bed_type: Optional[str] = Query(None),
+        package_duration: Optional[int] = Query(None),
         page: int = Query(1, ge=1),
         size: int = Query(10, ge=1),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> PaginatedPilgrimDataListResponseSchema:
+    extra_filters = dict(family_code=family_code, group_name_filter=group_name, sub_group=sub_group,
+                         package_name=package_name, passport_no=passport_no,
+                         package_bed_type=package_bed_type, package_duration=package_duration)
     username = current_user.get("username")
     if current_user["role"] == "SUPER_ADMIN":
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, None,
                                                       allocation_status, registration_status, page, size, table_name,
                                                       username, group_leader, show_customers, is_package_assigned,
-                                                      hajj_year)
+                                                      hajj_year, **extra_filters)
     else:
         if allocation_status == "UNASSIGNED":
             raise HTTPException(status_code=403, detail="Unauthorized")
@@ -50,7 +60,7 @@ async def get_pilgrim_data(
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, group_name,
                                                       allocation_status, registration_status, page,
                                                       size, table_name, username, group_leader, show_customers,
-                                                      is_package_assigned, hajj_year)
+                                                      is_package_assigned, hajj_year, **extra_filters)
 
 
 @private_router.put("/pilgrim-data", response_model=PaginatedPilgrimDataListResponseSchema, tags=["Pilgrim"])

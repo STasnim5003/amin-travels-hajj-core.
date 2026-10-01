@@ -26,6 +26,13 @@ async def fetch_pilgrim_data_json(
         hajj_year: Optional[int] = None,
         skip: int = 0,
         limit: int = 10,
+        family_code: Optional[str] = None,
+        group_name_filter: Optional[str] = None,
+        sub_group: Optional[str] = None,
+        package_name: Optional[str] = None,
+        passport_no: Optional[str] = None,
+        package_bed_type: Optional[str] = None,
+        package_duration: Optional[int] = None,
 ):
     try:
         where_conditions = []
@@ -83,6 +90,25 @@ async def fetch_pilgrim_data_json(
         if hajj_year is not None:
             where_conditions.append("p.hajj_year = :hajj_year")
             params["hajj_year"] = hajj_year
+
+        for column, value in (
+                ("family_code", family_code),
+                ("group_name", group_name_filter),
+                ("sub_group", sub_group),
+                ("package_name", package_name),
+                ("passport_no", passport_no),
+        ):
+            if value:
+                where_conditions.append(f"p.{column} ILIKE :f_{column}")
+                params[f"f_{column}"] = f"%{value}%"
+
+        if package_bed_type:
+            where_conditions.append("p.package_bed_types ILIKE :package_bed_type")
+            params["package_bed_type"] = f"%{package_bed_type}%"
+
+        if package_duration is not None:
+            where_conditions.append("p.package_duration = :package_duration")
+            params["package_duration"] = package_duration
 
         where_clause = (
             "WHERE " + " AND ".join(where_conditions)
