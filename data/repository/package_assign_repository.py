@@ -138,7 +138,9 @@ async def insert_bulk_payments(db, pilgrim_payments_data, group_leader_payments_
 PACKAGE_BILL_DESCRIPTIONS = ("Package Bill", "Updated Package Bill")
 
 
-async def get_hajj_package(db: AsyncSession, package_name: str, duration: int, agency_name: str):
+async def get_hajj_package(db: AsyncSession, package_name: str, duration: int, agency_name: str,
+                           hajj_year: int | None = None):
+    # Prefer the package of the pilgrim's own hajj year; fall back to the latest one with that name.
     stmt = (
         select(PackageModel)
         .where(
@@ -147,7 +149,7 @@ async def get_hajj_package(db: AsyncSession, package_name: str, duration: int, a
             PackageModel.package_type == "HAJJ",
             PackageModel.agency_name == agency_name
         )
-        .order_by(PackageModel.id.desc())
+        .order_by((PackageModel.hajj_year == hajj_year).desc().nulls_last(), PackageModel.id.desc())
     )
     result = await db.execute(stmt)
     return result.scalars().first()

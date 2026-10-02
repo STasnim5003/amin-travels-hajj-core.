@@ -87,7 +87,8 @@ async def update_package(db: AsyncSession, package_id: int, package: PackageUpda
             # along if the duration changed.
             response.skipped_pilgrims = await package_assign_service.reprice_assigned_pilgrims(
                 db, agency_name, username, package_name=existing_package["name"],
-                old_duration=old_duration, new_duration=updated_package.duration)
+                old_duration=old_duration, new_duration=updated_package.duration,
+                package_year=updated_package.hajj_year)
         return response
     except Exception as e:
         raise e
