@@ -14,14 +14,17 @@ async def prp_data_fetch_update(current_user: dict, request: PrpDataFetchRequest
     try:
         url = "http://localhost:8001/fetch-prp-data"
 
-        # The PRP service returns every agency when agency_name is missing,
-        # so non-SUPER_ADMIN callers must always be scoped to their own agency.
-        payload = {"email": request.email, "password": request.password}
-        if current_user.get("role") != "SUPER_ADMIN":
+        if current_user.get("role") == "SUPER_ADMIN":
+            agency_name = (request.agency_name or "").strip()
+            if not agency_name:
+                raise HTTPException(status_code=400, detail="Select the agency these PRP credentials belong to")
+        else:
+            # agency users can only save/sync their own agency's login, whatever the body says
             agency_name = current_user.get("agency_name")
             if not agency_name:
                 raise HTTPException(status_code=403, detail="Agency not found for current user")
-            payload["agency_name"] = agency_name
+
+        payload = {"email": request.email, "password": request.password, "agency_name": agency_name}
 
         timeout = httpx.Timeout(1800.0)
         async with httpx.AsyncClient(timeout=timeout) as client:

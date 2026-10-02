@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class PrpDataFetchRequestSchema(BaseModel):
     email: str
     password: str
+    agency_name: Optional[str] = None
 
 
 class AgencyHajjiCountFetchResponseSchema(BaseModel):
