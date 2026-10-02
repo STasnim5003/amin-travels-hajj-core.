@@ -21,6 +21,15 @@ async def prp_data_fetch_update(
     return await script_service.prp_data_fetch_update(current_user, request)
 
 
+@private_router.get("/prp-agencies", tags=["prp"])
+async def prp_agency_names_fetch(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: dict = Depends(get_current_user)
+):
+    has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN"])
+    return await script_service.prp_agency_names_fetch(db)
+
+
 @public_router.get("/agency-hajji-list", tags=["prp"])
 async def agency_hajji_count_fetch(
         db: AsyncSession = Depends(get_async_db)

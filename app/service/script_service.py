@@ -37,6 +37,9 @@ async def prp_data_fetch_update(current_user: dict, request: PrpDataFetchRequest
     except httpx.RequestError as e:
         raise HTTPException(status_code=500, detail=f"Request error: {str(e)}")
 
+async def prp_agency_names_fetch(db: AsyncSession):
+    return await script_repository.prp_agency_names(db)
+
 async def agency_hajji_count_fetch(db:AsyncSession):
     try:
         results = await script_repository.agency_hajji_count_with_total_raw(db)

@@ -37,3 +37,14 @@ async def agency_hajji_count_with_total_raw(db: AsyncSession):
     except Exception as e:
         await db.rollback()
         raise e
+
+
+async def prp_agency_names(db: AsyncSession):
+    query = text("""
+    SELECT DISTINCT TRIM(group_name) AS agency_name
+    FROM core.pilgrim_data
+    WHERE group_name IS NOT NULL AND TRIM(group_name) <> ''
+    ORDER BY agency_name;
+    """)
+    result = await db.execute(query)
+    return [row.agency_name for row in result.fetchall()]
