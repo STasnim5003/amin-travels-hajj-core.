@@ -13,6 +13,7 @@ class AddOnsServiceModel(Base, BaseMixinModel):
     category = Column(JSONB, nullable=True)
     price = Column(String, nullable=False)
     agency_name = Column(String, nullable=True)
+    hajj_year = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True),server_default=text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),nullable=True)
     updated_at = Column(DateTime(timezone=True),server_default=text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),onupdate=text("(NOW() AT TIME ZONE 'UTC') + interval '6 hours'"),nullable=True)
     created_by = Column(String, nullable=True)

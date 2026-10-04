@@ -14,6 +14,8 @@ class AddOnsServiceBase(BaseModel):
     name: str
     price: str
     is_active: Optional[bool] = True
+    # Defaults to the current open Hajj season.
+    hajj_year: Optional[int] = None
 
     _normalize_name = field_validator("name", mode="before")(_strip_name)
 
@@ -26,6 +28,7 @@ class AddOnsServiceResponse(BaseModel):
     name: Optional[str] = None
     price: Optional[str] = None
     agency_name: Optional[str] = None
+    hajj_year: Optional[int] = None
     is_active: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

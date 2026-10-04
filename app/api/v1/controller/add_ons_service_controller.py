@@ -26,12 +26,13 @@ async def create_add_ons(
 
 @private_router.get("/add-ons-service", response_model=list[AddOnsServiceResponse], tags=["Add-Ons"])
 async def list_add_on_services(
+        hajj_year: int | None = None,
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await add_ons_service.get_all_add_on_services(db, agency_name)
+    return await add_ons_service.get_all_add_on_services(db, agency_name, hajj_year)
 
 
 @private_router.put("/add-ons-service", response_model=AddOnsServiceResponse, tags=["Add-Ons"])

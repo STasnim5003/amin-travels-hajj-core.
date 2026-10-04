@@ -100,6 +100,11 @@ def is_closed_season(hajj_year) -> bool:
     return int(hajj_year) < today.year or (int(hajj_year) == today.year and today.month >= 8)
 
 
+def current_open_year() -> int:
+    today = get_current_time()
+    return today.year + 1 if today.month >= 8 else today.year
+
+
 def _bed_price(package, bed_type: str) -> tuple[str, int]:
     beds = package.bed_type if isinstance(package.bed_type, dict) else {}
     for name, price in beds.items():
@@ -112,7 +117,8 @@ async def reprice_assigned_pilgrims(db: AsyncSession, agency_name: str, username
                                     package_name: str | None = None, old_duration: int | None = None,
                                     new_duration: int | None = None, package_year: int | None = None,
                                     add_on_old_name: str | None = None,
-                                    add_on_new_name: str | None = None) -> list[str]:
+                                    add_on_new_name: str | None = None,
+                                    add_on_year: int | None = None) -> list[str]:
     """
     Re-bill every assigned pilgrim affected by a package or add-on catalog edit, with the caller's
     uncommitted catalog change in the same transaction (this commits). Discounts are kept.
@@ -126,6 +132,8 @@ async def reprice_assigned_pilgrims(db: AsyncSession, agency_name: str, username
         if is_closed_season(pilgrim.hajj_year):
             continue
         if package_year and pilgrim.hajj_year and pilgrim.hajj_year != package_year:
+            continue
+        if add_on_year and (pilgrim.hajj_year or current_open_year()) != add_on_year:
             continue
         if package_name and (pilgrim.package_name, pilgrim.package_duration) != (package_name, old_duration):
             continue
@@ -178,11 +186,16 @@ async def _apply_package_changes(db: AsyncSession, changes: list[PackageAssignUp
                 raise HTTPException(status_code=400,
                                     detail=f"Hajj {pilgrim.hajj_year} is closed; billing of pilgrim {tracking_id} can't be changed")
 
-        catalog = {
-            _key(a.name): (" ".join(a.name.split()), a.price)
-            for a in await add_ons_repository.get_all_add_on_services(db, agency_name)
-            if a.is_active
-        }
+        # Add-on prices are per Hajj year: each pilgrim is priced from the catalog of their own year.
+        catalogs = {}
+        for year in {p.hajj_year or current_open_year() for p in pilgrims.values()}:
+            if not is_closed_season(year):
+                await add_ons_repository.ensure_year_catalog(db, agency_name, year)
+            catalogs[year] = {
+                _key(a.name): (" ".join(a.name.split()), a.price)
+                for a in await add_ons_repository.get_all_add_on_services(db, agency_name, year)
+                if a.is_active
+            }
         ledger = await package_assign_repository.get_payable_summary(db, tracking_ids)
         packages = {}
         now = get_current_time()
@@ -199,7 +212,7 @@ async def _apply_package_changes(db: AsyncSession, changes: list[PackageAssignUp
                     raise HTTPException(status_code=400, detail=f"Package, duration and bed type are required for {pilgrim.tracking_id}")
 
                 requested_add_ons = change.add_ons_services if change.add_ons_services is not None else pilgrim.add_ons_services
-                add_ons = _price_add_ons(requested_add_ons, catalog)
+                add_ons = _price_add_ons(requested_add_ons, catalogs[pilgrim.hajj_year or current_open_year()])
 
                 cache_key = (package_name, duration, pilgrim.hajj_year)
                 if cache_key not in packages:
