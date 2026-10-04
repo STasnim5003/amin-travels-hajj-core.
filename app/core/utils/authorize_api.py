@@ -6,6 +6,8 @@ STAFF_ROLES = ["STAFF", "ACCOUNT_STAFF"]
 # Roles an agency (or its staff) may create for its own agency; AGENCY/ADMIN/SUPER_ADMIN are excluded.
 AGENCY_CREATABLE_ROLES = [*STAFF_ROLES, "GROUP_LEADER", "GUIDE", "SAUDI_REPRESENTATIVE", "SAUDI_REPRESENTATIVES",
                           "GROUND_STAFF"]
+# Per-agency account that can only sync its own agency's pilgrims from PRP (created by super admin, not agencies).
+PRP_FETCHER_ROLE = "PRP_FETCHER"
 
 
 def has_required_permissions(current_user: dict, roles: List[str]):
