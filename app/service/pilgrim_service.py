@@ -375,6 +375,13 @@ async def delete_pilgrim(db:AsyncSession, tracking_id:str, agency_name:str):
             raise HTTPException(status_code=404, detail="Pilgrim not found.")
         if pilgrim.group_name != agency_name:
             raise HTTPException(status_code=400, detail="Pilgrim group name does not match.")
+        # deleting would orphan the pilgrim's payments / package bill; family codes can be changed in place
+        if pilgrim.is_package_assigned or await pilgrim_repository.has_payments(db, tracking_id):
+            raise HTTPException(
+                status_code=400,
+                detail="Pilgrim has payments or an assigned package and cannot be deleted. "
+                       "To change the family code, use Remove Family Code / Assign Family Code instead.",
+            )
         await pilgrim_repository.delete_pilgrim(db, tracking_id)
         return {"message": "Pilgrim deleted successfully."}
     except Exception as e:
