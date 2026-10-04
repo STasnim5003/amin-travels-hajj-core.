@@ -30,6 +30,9 @@ class AdminBaseSchema(BaseModel):
 
 class AdminResponseSchema(AdminBaseSchema):
     id: int
+    # nullable in the DB; one agency without them must not 500 the whole admin list
+    license_number: Optional[str] = None
+    mobile_no: Optional[str] = None
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     created_by: Optional[str]
