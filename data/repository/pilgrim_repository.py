@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy import text, case, update, func, select, exists, insert, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from data.model.payment_model import PaymentModel
 from data.model.pilgrim_data_model import PilgrimDataModel, ReplacedPilgrimModel, \
     TrainingSessionAndPreRegisterEnquiryPilgrim
 from infrastructure.schema.pilgrim_data_schema import BulkUpdatePilgrimRequestSchema, PilgrimRegistrationRequestSchema, \
@@ -646,6 +647,11 @@ async def manual_pre_registration(db:AsyncSession, request_dict:dict):
     except Exception as e:
         await db.rollback()
         raise e
+
+
+async def has_payments(db: AsyncSession, tracking_id: str) -> bool:
+    stmt = select(exists().where(PaymentModel.tracking_id == tracking_id))
+    return bool((await db.execute(stmt)).scalar())
 
 
 async def delete_pilgrim(db:AsyncSession, tracking_id:str):
