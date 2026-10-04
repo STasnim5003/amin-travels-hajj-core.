@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from app.core.utils.feature_flags import get_agency_features
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
@@ -153,12 +154,14 @@ async def update_admin_profile(
             raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        response = await admin_repository.update_admin_profile(db, location, google_map_location, logo_data,
-                                                               passport_data, agency_name)
+        # None (not []) for files not sent, so saving other fields doesn't wipe the stored logo / passport copy
+        response = await admin_repository.update_admin_profile(db, location, google_map_location, logo_data or None,
+                                                               passport_data or None, agency_name)
         if response.passport_copy:
             response.passport_copy = await generate_downloadable_urls(response.passport_copy)
         if response.logo:
             response.logo = await generate_downloadable_urls(response.logo)
+        response.features = get_agency_features(agency_name)
         return response
 
     except HTTPException as e:
@@ -289,6 +292,7 @@ async def get_admin_profile(db:AsyncSession, username:str, agency_name:str):
             admin['passport_copy'] = await generate_downloadable_urls(admin['passport_copy'])
         if admin['logo']:
             admin['logo'] = await generate_downloadable_urls(admin['logo'])
+        admin['features'] = get_agency_features(agency_name)
         return AdminResponseSchema.model_validate(admin)
     except Exception as e:
         raise e

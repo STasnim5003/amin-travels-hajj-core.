@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.api.v1.controller import (file_controller, training_controller, program_controller, pilgrim_controller,
                                    view_field_controller, customer_controller, food_menu_controller, route_controller,
@@ -15,8 +15,10 @@ from app.api.v1.controller import (file_controller, training_controller, program
                                    hotel_purchase_controller, route_purchase_controller,
                                    food_purchase_controller, agency_profile_controller)
 from app.api.v1.controller import (user_controller, package_controller, admin_controller)
+from app.core.utils.feature_flags import require_feature
 
 router = APIRouter()
+umrah_only = [Depends(require_feature("umrah"))]
 
 # routers
 router.include_router(user_controller.router)
@@ -60,11 +62,11 @@ router.include_router(payment_category_controller.private_router)
 router.include_router(bank_info_controller.private_router)
 router.include_router(flight_request_controller.private_router)
 router.include_router(zone_request_controller.private_router)
-router.include_router(umrah_requisition_controller.private_router)
+router.include_router(umrah_requisition_controller.private_router, dependencies=umrah_only)
 
-router.include_router(city_name_controller.private_router)
-router.include_router(transport_controller.private_router)
-router.include_router(vendor_controller.private_router)
+router.include_router(city_name_controller.private_router, dependencies=umrah_only)
+router.include_router(transport_controller.private_router, dependencies=umrah_only)
+router.include_router(vendor_controller.private_router, dependencies=umrah_only)
 router.include_router(hotel_request_controller.private_router)
 router.include_router(payment_request_controller.private_router)
 router.include_router(route_for_request_controller.private_router)
@@ -72,11 +74,11 @@ router.include_router(route_request_controller.private_router)
 router.include_router(sub_agency_billing_controller.private_router)
 router.include_router(dashboard_controller.private_router)
 router.include_router(demand_controller.private_router)
-router.include_router(umrah_customer_billing_controller.private_router)
-router.include_router(umrah_vendor_billing_controller.private_router)
-router.include_router(umrah_b2b_agent_controller.private_router)
-router.include_router(umrah_b2b_payment_controller.private_router)
-router.include_router(umrah_hotel_booking_controller.private_router)
+router.include_router(umrah_customer_billing_controller.private_router, dependencies=umrah_only)
+router.include_router(umrah_vendor_billing_controller.private_router, dependencies=umrah_only)
+router.include_router(umrah_b2b_agent_controller.private_router, dependencies=umrah_only)
+router.include_router(umrah_b2b_payment_controller.private_router, dependencies=umrah_only)
+router.include_router(umrah_hotel_booking_controller.private_router, dependencies=umrah_only)
 router.include_router(flight_purchase_controller.private_router)
 router.include_router(hotel_purchase_controller.private_router)
 router.include_router(route_purchase_controller.private_router)
