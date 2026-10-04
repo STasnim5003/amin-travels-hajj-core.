@@ -36,6 +36,8 @@ class AdminResponseSchema(AdminBaseSchema):
     updated_by: Optional[str]
 
     password: Optional[str] = Field(default=None, exclude=True)
+    # per-agency feature flags (e.g. {"umrah": true}); only filled on the logged-in profile endpoints
+    features: Dict[str, bool] = Field(default_factory=dict)
 
 class AdminListResponseSchema(BaseModel):
     data: List[AdminResponseSchema]
