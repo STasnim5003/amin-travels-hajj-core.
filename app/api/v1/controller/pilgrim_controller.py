@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, List
 
 import fastapi
@@ -17,6 +18,9 @@ from infrastructure.schema.pilgrim_data_schema import PaginatedPilgrimDataListRe
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
 
 public_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
+
+# who deleted a pilgrim / changed a family code; the rows themselves keep no trace of it
+audit_logger = logging.getLogger("pilgrim_audit")
 
 
 @private_router.get("/pilgrim-data", response_model=PaginatedPilgrimDataListResponseSchema, tags=["Pilgrim"])
@@ -180,7 +184,13 @@ async def assign_family_code_to_pilgrim(
 ):
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await pilgrim_service.assign_family_code(db, request_body, agency_name)
+    result = await pilgrim_service.assign_family_code(db, request_body, agency_name)
+    audit_logger.info(
+        "AUDIT family_code %s by user=%s role=%s agency=%s family_code=%s tracking_ids=%s",
+        "assign" if request_body.family_code else "remove", current_user.get("username"),
+        current_user.get("role"), agency_name, request_body.family_code, request_body.tracking_ids,
+    )
+    return result
 
 
 @public_router.post("/pilgrim/pre-register-enquiry", tags=["Pilgrim"])
@@ -239,4 +249,9 @@ async def delete_pilgrim(
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
-    return await pilgrim_service.delete_pilgrim(db=db, tracking_id=tracking_id, agency_name=agency_name)
+    result = await pilgrim_service.delete_pilgrim(db=db, tracking_id=tracking_id, agency_name=agency_name)
+    audit_logger.info(
+        "AUDIT pilgrim delete by user=%s role=%s agency=%s tracking_id=%s",
+        current_user.get("username"), current_user.get("role"), agency_name, tracking_id,
+    )
+    return result
