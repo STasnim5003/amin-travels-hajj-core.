@@ -1,12 +1,12 @@
 from typing import List
 
 import fastapi
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.middleware.middleware import get_current_user, get_current_admin_user
-from app.core.utils.authorize_api import check_agency_or_staff_user
+from app.core.utils.authorize_api import check_agency_or_staff_user, AGENCY_CREATABLE_ROLES
 from app.service import admin_user_service
 from data.db.db_config import get_async_db
 from infrastructure.schema.admin_user_schema import AdminUserResponse, AdminUserCreate, GroupLeaderAssignSchema, \
@@ -60,6 +60,8 @@ async def create_admin_user(
         current_user: dict = Depends(get_current_user)
 ):
     check_agency_or_staff_user(current_user=current_user)
+    if user_data.role not in AGENCY_CREATABLE_ROLES:
+        raise HTTPException(status_code=400, detail=f"Role must be one of {AGENCY_CREATABLE_ROLES}")
     agency_name = current_user["agency_name"]
     # agency_name = "AMIN 26"
     username = current_user['username']
