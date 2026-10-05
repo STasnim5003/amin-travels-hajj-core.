@@ -387,3 +387,8 @@ tests/
 pytest.ini
 requirements-dev.txt
 .env.test.example
+# Frontend repo, cloned locally for reference only — never push from here
+frontend-ref/
+
+# Scraper service, its own git repo (amin-scraping-service) — commit/push from inside that folder
+amin-scraping-service/
