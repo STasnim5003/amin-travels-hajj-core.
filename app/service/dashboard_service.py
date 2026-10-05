@@ -28,3 +28,8 @@ async def get_dashboard_data(db: AsyncSession, agency_name: str):
 
     except Exception as e:
         raise e
+
+
+async def get_all_agencies_dashboard_data(db: AsyncSession):
+    data = await dashboard_repository.get_all_agencies_dashboard_data(db=db)
+    return DashboardResponseSchema(agency_name="All Agencies", **data)

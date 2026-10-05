@@ -16,6 +16,8 @@ async def get_dashboard_data(
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
+    if current_user["role"] == "SUPER_ADMIN":
+        return await dashboard_service.get_all_agencies_dashboard_data(db=db)
     check_agency_or_staff_user(current_user=current_user)
 
     agency_name = current_user["agency_name"]
