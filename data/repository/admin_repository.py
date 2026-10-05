@@ -12,6 +12,8 @@ from data.model.pilgrim_data_model import PilgrimDataModel
 from data.repository import admin_user_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AssignLeadAgencySchema
 
+DEFAULT_LEAD_AGENCY = "Taiba Alliance"
+
 
 async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminResponseSchema:
     stmt = select(AdminModel).where(
@@ -28,6 +30,8 @@ async def insert_admin(admin: AdminBaseSchema, db: AsyncSession) -> AdminRespons
         raise HTTPException(status_code=400, detail="User Already Exists")
 
     user_data = admin.model_dump(exclude_unset=True, exclude_none=True)
+    if admin.agency_name != DEFAULT_LEAD_AGENCY:
+        user_data.setdefault("lead_agency", DEFAULT_LEAD_AGENCY)
     query = insert(AdminModel).values(**user_data).returning(AdminModel)
     try:
         result = await db.execute(query)
