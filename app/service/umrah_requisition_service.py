@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
 from app.core.utils.umrah_requisition_utils import generate_amin_office_code
+from app.service import admin_service
 from data.repository import umrah_requisition_repository, umrah_b2b_payment_repository, admin_user_repository
 from infrastructure.schema.umrah_requisition_schema import UmrahRequisitionBase, UmrahRequisitionResponseSchema, \
     UmrahRequisitionListResponseSchema, UmrahRequisitionAssignedService, UmrahRequisitionUpdateSchema, \
@@ -208,7 +209,9 @@ async def create_public_requisition(db, request, agency_name):
             "message": "Umrah requisition created successfully",
             "assign_to": admin_user.name,
             "contract_no": admin_user.mobile_no,
-            "amin_office_code": saved.get("amin_office_code")
+            "amin_office_code": saved.get("amin_office_code"),
+            # issuing agency for the request PDF the public page builds from this response
+            "agency": await admin_service.get_public_agency(db, agency_name),
         }
     except Exception as e:
         raise e

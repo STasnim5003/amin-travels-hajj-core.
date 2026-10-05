@@ -15,6 +15,13 @@ from infrastructure.schema.payment_schema import PaymentResponseSchema, Paginate
     PilgrimsPaymentSummaryListSchema
 
 private_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/private")
+public_router = fastapi.APIRouter(prefix="/amin-travels-hajj-core/api/v1/public")
+
+
+# No auth: the frontend's server-side receipt / invoice PDF routes call this.
+@public_router.get("/payment/{payment_id}", tags=["payment"])
+async def get_public_payment(payment_id: int, db: AsyncSession = Depends(get_async_db)):
+    return await payment_service.get_public_payment(db, payment_id)
 
 
 @private_router.post("/group-leader/create-payable", tags=["payment"])

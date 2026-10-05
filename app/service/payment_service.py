@@ -5,6 +5,7 @@ from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils import num_to_words
+from app.service import admin_service
 from app.core.utils.file_downloadable_url import generate_downloadable_urls
 from app.core.utils.get_current_time import get_current_time
 from data.repository import payment_repository, admin_user_repository, pilgrim_repository, file_repository, \
@@ -336,6 +337,31 @@ async def get_payment_by_id_for_receipt(db: AsyncSession, payment_id: int, agenc
 
     except Exception as e:
         raise e
+
+
+# Only what the receipt / invoice PDFs print: this endpoint has no auth.
+PUBLIC_PAYMENT_FIELDS = ["id", "date", "amount", "description", "category", "payment_category", "way_of_payment",
+                         "transaction_id", "transfer_no", "cheque_no", "cheque_bank", "voucher_no", "group_leader",
+                         "tracking_id", "pilgrim_name", "name_en", "nid", "passport_no", "no_of_hajji", "hajj_year"]
+
+
+async def get_public_payment(db: AsyncSession, payment_id: int):
+    agency_name = await payment_repository.get_payment_agency_name(db, payment_id)
+    if not agency_name:
+        raise HTTPException(status_code=404, detail=f"No payment found for ID {payment_id}")
+    rows = await payment_repository.get_payment_by_id_for_receipt(db, payment_id, agency_name)
+    row = rows[0]
+    bank = row.get("bank_info") or {}
+    payment = {field: row.get(field) for field in PUBLIC_PAYMENT_FIELDS}
+    payment.update(
+        payer_name=row.get("pilgrim_name") or row.get("name_en") or row.get("group_leader"),
+        number_of_pilgrims=row.get("no_of_hajji"),
+        bank_name=bank.get("name"),
+        bank_account_no=bank.get("account_no"),
+        amount_in_words=num_to_words.amount_to_words(row["amount"]) if row.get("amount") is not None else None,
+        agency=await admin_service.get_public_agency(db, agency_name),
+    )
+    return payment
 
 
 async def get_payment_by_id_for_update(db: AsyncSession, payment_id: int, agency_name: str):

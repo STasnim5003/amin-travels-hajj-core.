@@ -1,7 +1,9 @@
+import json
 from typing import Optional
 
 from fastapi import HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -11,7 +13,8 @@ from app.core.utils.get_current_time import get_current_time
 from app.core.utils.utils import hash_password, verify_password, create_access_token, create_refresh_token
 from data.repository import admin_repository, file_repository, admin_user_repository
 from infrastructure.schema.admin_schema import AdminBaseSchema, AdminResponseSchema, AdminListResponseSchema, \
-    AdminProfileUpdateResponseSchema, SubAgencyAmountUpdateSchema, LogoUpdateSchema
+    AdminProfileUpdateResponseSchema, SubAgencyAmountUpdateSchema, LogoUpdateSchema, BillingContactSchema, \
+    BankAccountSchema, PublicAgencySchema, clean_email, normalize_bank_accounts
 
 
 async def create_admin(db: AsyncSession,
@@ -88,10 +91,7 @@ async def get_all_admins(db: AsyncSession, page: int, limit: int) -> AdminListRe
 async def get_admin_by_id(db: AsyncSession, admin_id: int) -> AdminResponseSchema:
     try:
         admin = await admin_repository.get_admin_by_id(db, admin_id=admin_id)
-        if admin.passport_copy:
-            admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
-        if admin.logo:
-            admin.logo = await generate_downloadable_urls(admin.logo)
+        await sign_admin_files(admin)
         return AdminResponseSchema.model_validate(admin)
     except HTTPException as http_exc:
         raise http_exc
@@ -103,10 +103,7 @@ async def get_admin_by_id(db: AsyncSession, admin_id: int) -> AdminResponseSchem
 async def get_admin_by_username(db: AsyncSession, username: str) -> AdminResponseSchema:
     try:
         admin = await admin_repository.get_admin_by_username(db, username=username)
-        if admin.passport_copy:
-            admin.passport_copy = await generate_downloadable_urls(admin.passport_copy)
-        if admin.logo:
-            admin.logo = await generate_downloadable_urls(admin.logo)
+        await sign_admin_files(admin)
 
         return AdminResponseSchema.model_validate(admin)
     except HTTPException as http_exc:
@@ -128,39 +125,100 @@ async def delete_admin_by_id(db: AsyncSession, admin_id: int) -> AdminProfileUpd
         raise HTTPException(status_code=500, detail="Unexpected error occurred while deleting the admin.")
 
 
-async def update_admin_profile(
-        db: AsyncSession,
-        location: str,
-        google_map_location: str,
-        logo: UploadFile,
-        passport_copy: UploadFile,
-        agency_name: str
-):
-    logo_data = []
-    if logo:
-        try:
-            logo_resp = await file_repository.upload_file(file=logo, name="logo")
-            logo_data.append(logo_resp.model_dump())
+# Profile text fields: a sent key with a blank value clears the column, a missing key leaves it unchanged.
+PROFILE_TEXT_FIELDS = ["agency_name_bn", "umrah_license_number", "address", "office_phone", "office_email", "website",
+                       "signatory_name", "signatory_designation"]
+# Legacy fields keep their old rule (blank = no change), since the frontend may send them blank on every save.
+PROFILE_LEGACY_TEXT_FIELDS = ["location", "google_map_location"]
+# column -> R2 folder; images reject SVG (it can carry scripts and doesn't render in the PDFs)
+PROFILE_FILE_FIELDS = {"logo": "logo", "passport_copy": "passport", "signature": "signature", "seal": "seal"}
+IMAGE_FIELDS = {"logo", "signature", "seal"}
+CLEARABLE_FILE_FIELDS = {"signature", "seal"}
+SIGNED_FILE_FIELDS = ["logo", "passport_copy", "signature", "seal"]
 
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
 
-    passport_data = []
-    if passport_copy:
-        try:
-            passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
-            passport_data.append(passport_resp.model_dump())
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+def _validate_image(field: str, file: UploadFile):
+    name = (file.filename or "").lower()
+    content_type = (file.content_type or "").lower()
+    if name.endswith((".svg", ".svgz")) or "svg" in content_type:
+        raise HTTPException(status_code=400, detail=f"{field}: SVG images are not allowed")
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail=f"{field}: only image files are allowed")
 
+
+def _parse_json_field(field: str, raw: str):
     try:
-        # None (not []) for files not sent, so saving other fields doesn't wipe the stored logo / passport copy
-        response = await admin_repository.update_admin_profile(db, location, google_map_location, logo_data or None,
-                                                               passport_data or None, agency_name)
-        if response.passport_copy:
-            response.passport_copy = await generate_downloadable_urls(response.passport_copy)
-        if response.logo:
-            response.logo = await generate_downloadable_urls(response.logo)
+        return json.loads(raw)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"{field} must be valid JSON")
+
+
+async def sign_admin_files(admin):
+    """Swap stored file URLs for presigned ones; works on a dict or a schema object."""
+    for field in SIGNED_FILE_FIELDS:
+        value = admin.get(field) if isinstance(admin, dict) else getattr(admin, field, None)
+        if value:
+            signed = await generate_downloadable_urls(value)
+            if isinstance(admin, dict):
+                admin[field] = signed
+            else:
+                setattr(admin, field, signed)
+    return admin
+
+
+async def update_admin_profile(db: AsyncSession, form, agency_name: str, username: str):
+    values = {}
+    try:
+        for field in PROFILE_LEGACY_TEXT_FIELDS:
+            value = form.get(field)
+            if isinstance(value, str) and value.strip():
+                values[field] = value.strip()
+        for field in PROFILE_TEXT_FIELDS:
+            if field in form and isinstance(form.get(field), str):
+                values[field] = form.get(field).strip() or None
+        if "office_email" in values:
+            values["office_email"] = clean_email(values["office_email"])
+
+        if "billing_contact" in form:
+            raw = (form.get("billing_contact") or "").strip()
+            if raw:
+                contact = BillingContactSchema.model_validate(_parse_json_field("billing_contact", raw)).model_dump()
+                values["billing_contact"] = contact if any(contact.values()) else None
+            else:
+                values["billing_contact"] = None
+
+        if "bank_accounts" in form:
+            raw = (form.get("bank_accounts") or "").strip()
+            parsed = _parse_json_field("bank_accounts", raw) if raw else []
+            if not isinstance(parsed, list):
+                raise HTTPException(status_code=400, detail="bank_accounts must be a JSON list")
+            accounts = [BankAccountSchema.model_validate(item) for item in parsed]
+            values["bank_accounts"] = normalize_bank_accounts(accounts) or None
+    except (ValueError, ValidationError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    for field, folder in PROFILE_FILE_FIELDS.items():
+        if field not in form:
+            continue
+        file = form.get(field)
+        if isinstance(file, str):
+            # blank clears signature / seal; logo and passport keep the old rule (blank = keep)
+            if not file.strip() and field in CLEARABLE_FILE_FIELDS:
+                values[field] = None
+            continue
+        if field in IMAGE_FIELDS:
+            _validate_image(field, file)
+        try:
+            uploaded = await file_repository.upload_file(file=file, name=folder)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        values[field] = [uploaded.model_dump()]
+
+    values["updated_by"] = username
+    values["updated_at"] = get_current_time()
+    try:
+        response = await admin_repository.update_admin_profile(db, values, agency_name)
+        await sign_admin_files(response)
         response.features = get_agency_features(agency_name)
         return response
 
@@ -168,6 +226,17 @@ async def update_admin_profile(
         raise HTTPException(status_code=e.status_code, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+async def get_public_agency(db: AsyncSession, agency_name: str) -> Optional[dict]:
+    """Issuing-agency block for the public (no-auth) PDF endpoints."""
+    admin = await admin_repository.get_agency_by_agency_name(db, agency_name)
+    if not admin:
+        return None
+    agency = PublicAgencySchema.model_validate(admin).model_dump()
+    if agency["logo"]:
+        agency["logo"] = await generate_downloadable_urls(agency["logo"])
+    return agency
 
 
 async def assign_lead_agency(db: AsyncSession, request: dict):
@@ -288,10 +357,7 @@ async def get_admin_profile(db:AsyncSession, username:str, agency_name:str):
         admin = await admin_user_repository.get_admin_profile(db=db, username=username, agency_name=agency_name)
         if not admin:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Admin profile not found')
-        if admin['passport_copy']:
-            admin['passport_copy'] = await generate_downloadable_urls(admin['passport_copy'])
-        if admin['logo']:
-            admin['logo'] = await generate_downloadable_urls(admin['logo'])
+        await sign_admin_files(admin)
         admin['features'] = get_agency_features(agency_name)
         return AdminResponseSchema.model_validate(admin)
     except Exception as e:

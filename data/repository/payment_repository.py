@@ -745,6 +745,11 @@ async def get_agency_pilgrims_for_payment(db:AsyncSession, agency_name:str, hajj
         raise e
 
 
+async def get_payment_agency_name(db: AsyncSession, payment_id: int):
+    result = await db.execute(select(PaymentModel.agency_name).where(PaymentModel.id == payment_id))
+    return result.scalar_one_or_none()
+
+
 async def get_payment_by_id_for_receipt(db:AsyncSession, payment_id:int, agency_name:str):
     try:
         query = text("""

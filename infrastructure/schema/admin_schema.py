@@ -1,7 +1,83 @@
+import re
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def clean_email(value: Optional[str]) -> Optional[str]:
+    value = (value or "").strip()
+    if not value:
+        return None
+    if not EMAIL_RE.match(value):
+        raise ValueError(f"Invalid email: {value}")
+    return value
+
+
+class _TrimmedModel(BaseModel):
+    # trims every string; blank becomes None
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def _blank_to_none(cls, v):
+        return None if v == "" else v
+
+
+class BillingContactSchema(_TrimmedModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def _email(cls, v):
+        return clean_email(v)
+
+
+class BankAccountSchema(_TrimmedModel):
+    account_name: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    account_type: Optional[Literal["CURRENT", "SAVINGS"]] = None
+    branch: Optional[str] = None
+    routing_number: Optional[str] = None
+    is_primary: bool = False
+
+    @field_validator("account_type", mode="before")
+    @classmethod
+    def _account_type(cls, v):
+        return v.strip().upper() or None if isinstance(v, str) else v
+
+
+def normalize_bank_accounts(accounts: List[BankAccountSchema]) -> List[Dict[str, Any]]:
+    """At most one primary; when none is marked the first one is primary."""
+    if sum(a.is_primary for a in accounts) > 1:
+        raise ValueError("Only one bank account can be primary")
+    if accounts and not any(a.is_primary for a in accounts):
+        accounts[0].is_primary = True
+    return [a.model_dump() for a in accounts]
+
+
+class PublicAgencySchema(BaseModel):
+    """Issuing agency block on public (no-auth) PDF endpoints."""
+    model_config = ConfigDict(from_attributes=True)
+
+    agency_name: str
+    agency_name_bn: Optional[str] = None
+    license_number: Optional[str] = None
+    umrah_license_number: Optional[str] = None
+    logo: Optional[List[Dict[str, Any]]] = None
+    address: Optional[str] = None
+    office_phone: Optional[str] = None
+    office_email: Optional[str] = None
+    website: Optional[str] = None
+    mobile_no: Optional[str] = None
+    email: Optional[str] = None
+    billing_contact: Optional[Dict[str, Any]] = None
+    bank_accounts: Optional[List[Dict[str, Any]]] = None
 
 
 class AdminBaseSchema(BaseModel):
@@ -22,6 +98,18 @@ class AdminBaseSchema(BaseModel):
     sar : Optional[float] = None
     bdt : Optional[float] = None
     rfq_no : Optional[int] = None
+    agency_name_bn: Optional[str] = None
+    umrah_license_number: Optional[str] = None
+    address: Optional[str] = None
+    office_phone: Optional[str] = None
+    office_email: Optional[str] = None
+    website: Optional[str] = None
+    billing_contact: Optional[Dict[str, Any]] = None
+    bank_accounts: Optional[List[Dict[str, Any]]] = None
+    signature: Optional[List[Dict[str, Any]]] = None
+    seal: Optional[List[Dict[str, Any]]] = None
+    signatory_name: Optional[str] = None
+    signatory_designation: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -1,7 +1,7 @@
 from typing import Optional
 
 import fastapi
-from fastapi import Depends, Form, UploadFile, File, HTTPException, Query
+from fastapi import Depends, Form, UploadFile, File, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
@@ -89,17 +89,32 @@ async def delete_admin_by_id(
 
 @private_router.put("/admin/profile", response_model=AdminResponseSchema, tags=["admin"])
 async def update_admin_profile(
+        request: Request,
+        # Declared for the API docs. The service reads the raw form, because FastAPI turns "" into None and
+        # here "" means "clear the value" while a missing key means "leave unchanged".
         location: str = Form(None),
         google_map_location: str = Form(None),
+        agency_name_bn: str = Form(None),
+        umrah_license_number: str = Form(None),
+        address: str = Form(None),
+        office_phone: str = Form(None),
+        office_email: str = Form(None),
+        website: str = Form(None),
+        billing_contact: str = Form(None, description='JSON: {"name", "phone", "email"}'),
+        bank_accounts: str = Form(None, description='JSON list; replaces the whole list'),
+        signatory_name: str = Form(None),
+        signatory_designation: str = Form(None),
         logo: UploadFile = File(None),
         passport_copy: UploadFile = File(None),
+        signature: UploadFile = File(None),
+        seal: UploadFile = File(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ) -> AdminResponseSchema:
     check_agency_or_staff_user(current_user=current_user)
     agency_name = current_user["agency_name"]
-    return await admin_service.update_admin_profile(db, location, google_map_location, logo, passport_copy,
-                                                    agency_name)
+    form = await request.form()
+    return await admin_service.update_admin_profile(db, form, agency_name, current_user["username"])
 
 
 @private_router.put("/admin/assign-lead-agency", tags=["admin"])

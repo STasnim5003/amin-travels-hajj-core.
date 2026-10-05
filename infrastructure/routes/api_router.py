@@ -51,6 +51,7 @@ router.include_router(admin_user_controller.private_router)
 
 router.include_router(admin_user_controller.public_router)
 router.include_router(payment_controller.private_router)
+router.include_router(payment_controller.public_router)
 
 router.include_router(add_ons_service_controller.private_router)
 router.include_router(package_assign_controller.private_router)

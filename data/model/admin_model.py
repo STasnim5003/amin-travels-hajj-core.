@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, String, BigInteger, Boolean, Float, Integer
+from sqlalchemy import Column, String, BigInteger, Boolean, Float, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -30,3 +30,16 @@ class AdminModel(Base, BaseMixinModel):
     flight_requested = Column(Integer, nullable=True)
     route_requested = Column(Integer, nullable=True)
     hotel_requested = Column(Integer, nullable=True)
+    # letterhead / signing details printed on receipts, invoices and umrah requests
+    agency_name_bn = Column(Text, nullable=True)
+    umrah_license_number = Column(Text, nullable=True)
+    address = Column(Text, nullable=True)
+    office_phone = Column(Text, nullable=True)
+    office_email = Column(Text, nullable=True)
+    website = Column(Text, nullable=True)
+    billing_contact = Column(JSONB, nullable=True)
+    bank_accounts = Column(JSONB, nullable=True)
+    signature = Column(JSONB, nullable=True)
+    seal = Column(JSONB, nullable=True)
+    signatory_name = Column(Text, nullable=True)
+    signatory_designation = Column(Text, nullable=True)

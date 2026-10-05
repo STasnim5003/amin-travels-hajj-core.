@@ -177,24 +177,9 @@ async def delete_admin_by_id(db: AsyncSession, admin_id: int):
         raise HTTPException(status_code=500, detail="Unexpected error occurred while deleting the admin.")
 
 
-async def update_admin_profile(
-        db: AsyncSession,
-        location: str,
-        google_map_location: str,
-        logo: List[Dict[str, Any]],
-        passport_copy: List[Dict[str, Any]],
-        agency_name: str
-):
+async def update_admin_profile(db: AsyncSession, request_dict: Dict[str, Any], agency_name: str):
+    """request_dict holds only the columns to change; a None value clears that column."""
     try:
-        request_dict = {
-            "location": location,
-            "google_map_location": google_map_location,
-            "logo": logo,
-            "passport_copy": passport_copy
-        }
-
-        request_dict = {k: v for k, v in request_dict.items() if v is not None}
-
         stmt = (
             update(AdminModel)
             .where(AdminModel.agency_name == agency_name)
