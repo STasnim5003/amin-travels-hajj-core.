@@ -58,8 +58,6 @@ async def get_pilgrim_data(
                                                       username, group_leader, show_customers, is_package_assigned,
                                                       hajj_year, **extra_filters)
     else:
-        if allocation_status == "UNASSIGNED":
-            raise HTTPException(status_code=403, detail="Unauthorized")
         group_name = current_user["agency_name"]
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, group_name,
                                                       allocation_status, registration_status, page,

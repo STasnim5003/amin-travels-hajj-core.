@@ -67,7 +67,7 @@ async def customer_applied_for_registration(db: AsyncSession, tracking_ids: Cust
             PilgrimDataModel.tracking_id.in_(ids),
             or_(
                 PilgrimDataModel.registration_status != "PREREGISTERED",
-                PilgrimDataModel.allocation_status != "ASSIGNED",
+                PilgrimDataModel.allocation_status.not_in(("ASSIGNED", "UNASSIGNED")),
                 PilgrimDataModel.group_name != group_name,
             )
         )

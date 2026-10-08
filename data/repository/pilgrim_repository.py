@@ -63,11 +63,9 @@ async def fetch_pilgrim_data_json(
             params["allocation_status"] = allocation_status
 
         if group_name:
+            # Agencies see every pilgrim in their group, assigned or not.
             where_conditions.append("p.group_name ILIKE :group_name")
-            where_conditions.append("p.allocation_status != :assigned_status")
-
             params["group_name"] = f"%{group_name}%"
-            params["assigned_status"] = "UNASSIGNED"
 
         if registration_status:
             where_conditions.append(
@@ -121,7 +119,7 @@ async def fetch_pilgrim_data_json(
         if group_name:
             status_count_conditions = [
                 "group_name = :status_group_name",
-                "allocation_status IN ('ASSIGNED', 'WALK_IN')"
+                "allocation_status IN ('ASSIGNED', 'UNASSIGNED', 'WALK_IN')"
             ]
 
             params["status_group_name"] = group_name
