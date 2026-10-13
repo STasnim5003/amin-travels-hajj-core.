@@ -1,9 +1,11 @@
+import math
+
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
 from app.service import package_assign_service
-from data.repository import package_repository, admin_user_repository
+from data.repository import package_repository, admin_user_repository, package_assign_repository
 from infrastructure.schema.package_schema import PackageBaseSchema, PackageResponseSchema, PackageCreateSchema, \
     PackageUpdateSchema, PackageNameBaseSchema
 
@@ -27,8 +29,42 @@ async def get_package_master_data_for_filter(db, package_type, description_type)
     return result
 
 
+def _validate_bed_type(bed_type) -> None:
+    # Room types: {"<name>": <price>}; any number of them (at least one), names unique ignoring case.
+    if not isinstance(bed_type, dict) or not bed_type:
+        raise HTTPException(status_code=400, detail="bed_type must have at least one room type")
+    seen = {}
+    for name, price in bed_type.items():
+        if not isinstance(name, str) or not name.strip():
+            raise HTTPException(status_code=400, detail="Room type names can't be blank")
+        if isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price):
+            raise HTTPException(status_code=400, detail=f"Price of room type '{name}' must be a number")
+        if price < 0:
+            raise HTTPException(status_code=400, detail=f"Price of room type '{name}' can't be negative")
+        key = package_assign_service._key(name)
+        if key in seen:
+            raise HTTPException(status_code=400,
+                                detail=f"Room type '{name}' is repeated (same as '{seen[key]}'); names must be unique ignoring case")
+        seen[key] = name
+
+
+async def _reject_if_room_types_in_use(db: AsyncSession, existing_package: dict, new_bed_type: dict, agency_name: str):
+    # A room type pilgrims are assigned to can't be removed or renamed; they'd keep a room type the package no longer has.
+    kept = {package_assign_service._key(name) for name in new_bed_type}
+    in_use = await package_assign_repository.count_assigned_pilgrims_by_bed_type(
+        db, agency_name, existing_package["name"], existing_package.get("duration"), existing_package.get("hajj_year"))
+    affected = [(name, count) for name, count in in_use if package_assign_service._key(name) not in kept]
+    if affected:
+        listing = ", ".join(f"'{name}' ({count} pilgrim{'s' if count != 1 else ''})" for name, count in sorted(affected))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Can't remove or rename room types that pilgrims are assigned to: {listing}. "
+                   f"Move those pilgrims to another room type first.")
+
+
 async def create_package(db: AsyncSession, package: PackageBaseSchema, agency_name: str,
                          username: str) -> PackageResponseSchema:
+    _validate_bed_type(package.bed_type)
     try:
         package_data = package.model_dump()
         package_data["agency_name"] = agency_name
@@ -67,6 +103,9 @@ async def update_package(db: AsyncSession, package_id: int, package: PackageUpda
             raise HTTPException(status_code=400, detail="Package not found")
 
         update_data = package.model_dump(exclude_unset=True)
+        if "bed_type" in update_data:
+            _validate_bed_type(update_data["bed_type"])
+            await _reject_if_room_types_in_use(db, existing_package, update_data["bed_type"], agency_name)
         update_data["updated_by"] = username
         update_data["updated_at"] = get_current_time()
         if not update_data:

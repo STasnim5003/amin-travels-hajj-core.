@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select, update, insert, delete, func
+from sqlalchemy import select, update, insert, delete, func, or_
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib3 import request
@@ -58,6 +58,25 @@ async def get_bed_types_by_package_name(db: AsyncSession, package_name: str, dur
     result = await db.execute(stmt)
     bed_type_json = result.scalars().first()
     return bed_type_json
+
+async def count_assigned_pilgrims_by_bed_type(db: AsyncSession, agency_name: str, package_name: str,
+                                              duration: int | None, hajj_year: int | None):
+    # Pilgrims assigned to this package (same year; pilgrims without a year count for any), per room type text.
+    stmt = (
+        select(PilgrimDataModel.package_bed_types, func.count())
+        .where(
+            PilgrimDataModel.group_name == agency_name,
+            PilgrimDataModel.is_package_assigned == True,
+            PilgrimDataModel.package_name == package_name,
+            PilgrimDataModel.package_duration == duration,
+            PilgrimDataModel.package_bed_types.isnot(None),
+            or_(PilgrimDataModel.hajj_year.is_(None), PilgrimDataModel.hajj_year == hajj_year),
+        )
+        .group_by(PilgrimDataModel.package_bed_types)
+    )
+    result = await db.execute(stmt)
+    return [(bed_type, count) for bed_type, count in result.all()]
+
 
 async def get_package_assigned_pilgrims(db: AsyncSession, agency_name: str):
     try:

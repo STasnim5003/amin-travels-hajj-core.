@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Date, Boolean
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, JSON
 from sqlalchemy.orm import relationship
 
 from data.model.base_mixin_model import Base, BaseMixinModel
@@ -32,7 +32,8 @@ class PackageModel(Base, BaseMixinModel):
     # New fields from migration
     duration_range = Column(JSONB(astext_type=String), nullable=True)
     flight_date = Column(JSONB(astext_type=String), nullable=True)
-    bed_type = Column(JSONB(astext_type=String), nullable=True)
+    # json (not jsonb) so the room types keep the order the admin entered them in
+    bed_type = Column(JSON(astext_type=String), nullable=True)
     return_ticket = Column(String, nullable=True)
     fixed_or_shifting = Column(String, nullable=True)
     food_menu_id = Column(Integer, ForeignKey("core.food_menu.id"),nullable=True)

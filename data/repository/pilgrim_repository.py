@@ -1,4 +1,5 @@
 import json
+import json
 from typing import Optional, List
 
 from fastapi import HTTPException
@@ -569,7 +570,6 @@ async def get_pilgrim_agreement_by_family_code(
                         'madinah', pk.madinah,
                         'azizia', pk.azizia,
                         'flight_date', pk.flight_date,
-                        'bed_type', pk.bed_type,
                         'return_ticket', pk.return_ticket,
                         'fixed_or_shifting', pk.fixed_or_shifting,
                         'air_ticket', pk.air_ticket,
@@ -588,6 +588,13 @@ async def get_pilgrim_agreement_by_family_code(
                     FROM core.packages pk
                     WHERE pk.id IN (SELECT f.matched_package_id FROM fam f)
                 ) AS packages,
+
+                -- json (not jsonb) keeps the room types in the order the admin entered them
+                (
+                    SELECT json_object_agg(pk.id::text, pk.bed_type)
+                    FROM core.packages pk
+                    WHERE pk.id IN (SELECT f.matched_package_id FROM fam f)
+                ) AS bed_types,
 
                 jsonb_agg(
                     jsonb_build_object(
@@ -622,6 +629,11 @@ async def get_pilgrim_agreement_by_family_code(
             return None
 
         agreement = dict(row)
+        bed_types = agreement.pop("bed_types") or {}
+        if isinstance(bed_types, str):
+            bed_types = json.loads(bed_types)
+        for package_id, package in agreement["packages"].items():
+            package["bed_type"] = bed_types.get(package_id)
         # Deprecated: kept until the frontend reads packages[pilgrim.package_id]. Package of the first pilgrim.
         first_package_id = agreement["pilgrims"][0].get("package_id") if agreement["pilgrims"] else None
         agreement["package_info"] = agreement["packages"].get(str(first_package_id)) if first_package_id else None
