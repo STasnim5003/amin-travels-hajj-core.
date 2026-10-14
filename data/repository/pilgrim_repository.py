@@ -35,6 +35,7 @@ async def fetch_pilgrim_data_json(
         passport_no: Optional[str] = None,
         package_bed_type: Optional[str] = None,
         package_duration: Optional[int] = None,
+        is_nrb: Optional[bool] = None,
 ):
     try:
         where_conditions = []
@@ -109,6 +110,10 @@ async def fetch_pilgrim_data_json(
         if package_duration is not None:
             where_conditions.append("p.package_duration = :package_duration")
             params["package_duration"] = package_duration
+
+        if is_nrb is not None:
+            has_second_nationality = "COALESCE(BTRIM(p.second_nationality), '') <> ''"
+            where_conditions.append(has_second_nationality if is_nrb else f"NOT ({has_second_nationality})")
 
         where_clause = (
             "WHERE " + " AND ".join(where_conditions)
@@ -330,7 +335,8 @@ async def get_pilgrim_by_tracking_id(db: AsyncSession, tracking_id: str):
                 p.vaccination_center, p.comment_on_package, p.package_name, p.package_duration, p.package_bed_types,
                 p.total_payable, p.total_payment, p.total_available_amount,
                  p.total_due, p.add_ons_services, p.is_package_assigned,
-                p.payment_against, p.group_leader, p.actual_payable, p.package_price_discount
+                p.payment_against, p.group_leader, p.actual_payable, p.package_price_discount,
+                p.second_nationality
             FROM core.pilgrim_data p
             WHERE p.tracking_id = :tracking_id
         """)

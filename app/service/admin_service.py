@@ -276,6 +276,7 @@ async def get_lead_agency_pilgrims(db: AsyncSession, lead_agency_name: str):
                 "gender": None,
                 "passport_dob": None,
                 "passport_type": None,
+                "second_nationality": None,
                 "pilgrims": row["pilgrims"]
             })
 

@@ -42,6 +42,7 @@ async def get_pilgrim_data(db: AsyncSession,
                            passport_no: Optional[str] = None,
                            package_bed_type: Optional[str] = None,
                            package_duration: Optional[int] = None,
+                           is_nrb: Optional[bool] = None,
                            ) -> PaginatedPilgrimDataListResponseSchema:
     skip = (page - 1) * limit
     try:
@@ -64,7 +65,8 @@ async def get_pilgrim_data(db: AsyncSession,
                                                                                                             package_name,
                                                                                                             passport_no,
                                                                                                             package_bed_type,
-                                                                                                            package_duration)
+                                                                                                            package_duration,
+                                                                                                            is_nrb)
         views = []
         if username:
             views = await view_field_service.get_views(db, username)
