@@ -43,6 +43,7 @@ async def get_pilgrim_data(
         passport_no: Optional[str] = Query(None),
         package_bed_type: Optional[str] = Query(None),
         package_duration: Optional[int] = Query(None),
+        is_nrb: Optional[bool] = Query(None),
         page: int = Query(1, ge=1),
         size: int = Query(10, ge=1),
         db: AsyncSession = Depends(get_async_db),
@@ -50,7 +51,7 @@ async def get_pilgrim_data(
 ) -> PaginatedPilgrimDataListResponseSchema:
     extra_filters = dict(family_code=family_code, group_name_filter=group_name, sub_group=sub_group,
                          package_name=package_name, passport_no=passport_no,
-                         package_bed_type=package_bed_type, package_duration=package_duration)
+                         package_bed_type=package_bed_type, package_duration=package_duration, is_nrb=is_nrb)
     username = current_user.get("username")
     if current_user["role"] == "SUPER_ADMIN":
         return await pilgrim_service.get_pilgrim_data(db, name_en, tracking_id, serial_no, mobile_no, None,

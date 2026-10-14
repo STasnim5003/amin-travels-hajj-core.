@@ -4,6 +4,8 @@ from typing import List, Optional, Dict, Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
+from infrastructure.schema.pilgrim_data_schema import NrbFlagMixin
+
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
@@ -167,7 +169,7 @@ class CheckLeadAssignResponseSchema(BaseModel):
     agency_name: Optional[str] = None
     lead_agency_name: Optional[str] = None
 
-class PilgrimInfoSchemaForLeadAgency(BaseModel):
+class PilgrimInfoSchemaForLeadAgency(NrbFlagMixin):
     name_en: Optional[str] = None
     name_bn: Optional[str] = None
     gender: Optional[str] = None

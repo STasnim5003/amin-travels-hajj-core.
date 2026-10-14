@@ -1,9 +1,19 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, computed_field, field_validator
 
 from infrastructure.schema.view_field_schema import ViewFieldResponseSchema
+
+
+class NrbFlagMixin(BaseModel):
+    second_nationality: Optional[str] = None
+
+    # PRP's "Second Nationality" is only filled in for Non-Resident Bangladeshi pilgrims
+    @computed_field
+    @property
+    def is_nrb(self) -> bool:
+        return bool(self.second_nationality and self.second_nationality.strip())
 
 
 class PilgrimDataBaseSchema(BaseModel):
@@ -52,7 +62,7 @@ class PilgrimDataBaseSchema(BaseModel):
         populate_by_name = True
 
 
-class PilgrimDataResponseSchema(PilgrimDataBaseSchema):
+class PilgrimDataResponseSchema(NrbFlagMixin, PilgrimDataBaseSchema):
     id: int
     package_id: Optional[int] = None
     package_name: Optional[str] = None
