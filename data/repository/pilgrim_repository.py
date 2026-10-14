@@ -402,10 +402,11 @@ async def get_pilgrim_by_id(db: AsyncSession, pilgrim_id: int):
         )
 
 
-async def get_pilgrims_by_tracking_ids(db, tracking_ids: list[str]):
-    result = await db.execute(
-        select(PilgrimDataModel).where(PilgrimDataModel.tracking_id.in_(tracking_ids))
-    )
+async def get_pilgrims_by_tracking_ids(db, tracking_ids: list[str], for_update: bool = False):
+    stmt = select(PilgrimDataModel).where(PilgrimDataModel.tracking_id.in_(tracking_ids))
+    if for_update:
+        stmt = stmt.with_for_update()
+    result = await db.execute(stmt)
     return result.scalars().all()
 
 

@@ -37,3 +37,7 @@ class PackageAssignUpdateSchema(PackageAssignUpdateItemSchema):
     tracking_id: Optional[str] = None
     total_payable: Optional[int] = None  # ignored, see PackageAssignBaseSchema
     items: Optional[List[PackageAssignUpdateItemSchema]] = None
+
+
+class PackageUnassignSchema(BaseModel):
+    tracking_ids: List[str]
