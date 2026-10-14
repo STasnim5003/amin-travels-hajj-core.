@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger, Boolean, JSON, Integer
+from sqlalchemy import Column, String, BigInteger, Boolean, JSON, Integer, text
 
 from data.model.base_mixin_model import Base, BaseMixinModel
 
@@ -46,7 +46,7 @@ class PilgrimDataModel(Base, BaseMixinModel):
     package_duration = Column(Integer, nullable=True)
     package_bed_types = Column(String, nullable=True)
     add_ons_services = Column(JSON, nullable=True)
-    is_package_assigned = Column(Boolean, nullable=True)
+    is_package_assigned = Column(Boolean, nullable=False, server_default=text('false'))
     total_due = Column(Integer, nullable=True)
     total_available_amount = Column(Integer, nullable=True)
     actual_payable = Column(Integer, nullable=True)
