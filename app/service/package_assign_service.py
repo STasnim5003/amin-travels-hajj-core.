@@ -3,12 +3,13 @@ import string
 from datetime import datetime
 
 from fastapi import HTTPException
+from sqlalchemy import null
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.utils.get_current_time import get_current_time
 from data.repository import package_assign_repository, pilgrim_repository, add_ons_repository
 from infrastructure.schema.package_assign_schema import PackageAssignSchema, PackageAssignUpdateSchema, \
-    PackageAssignForMultiplePilgrimSchema, PackageAssignUpdateItemSchema
+    PackageAssignForMultiplePilgrimSchema, PackageAssignUpdateItemSchema, PackageUnassignSchema
 from infrastructure.schema.pilgrim_data_schema import PilgrimDataResponseSchema
 
 
@@ -68,6 +69,64 @@ async def update_assigned_package(db: AsyncSession, request: PackageAssignUpdate
 
     await _apply_package_changes(db, changes, agency_name, username, require_assigned=True)
     return {"message": "package updated successfully"}
+
+
+async def unassign_package(db: AsyncSession, request: PackageUnassignSchema, agency_name: str, username: str):
+    """
+    Remove the package from the pilgrims: clear the package fields, delete the package bill rows from the
+    ledger and recompute the totals from the remaining payables. Payments are never touched; money already
+    paid stays in total_payment and shows up as available amount. All or nothing.
+    """
+    try:
+        tracking_ids = request.tracking_ids
+        if not tracking_ids:
+            raise HTTPException(status_code=400, detail="No pilgrims given")
+        if len(set(tracking_ids)) != len(tracking_ids):
+            raise HTTPException(status_code=400, detail="Duplicate tracking IDs")
+
+        pilgrims = {p.tracking_id: p for p in
+                    await pilgrim_repository.get_pilgrims_by_tracking_ids(db, tracking_ids, for_update=True)}
+        for tracking_id in tracking_ids:
+            pilgrim = pilgrims.get(tracking_id)
+            if not pilgrim:
+                raise HTTPException(status_code=400, detail=f"Pilgrim {tracking_id} not found")
+            if pilgrim.group_name != agency_name:
+                raise HTTPException(status_code=403, detail=f"Pilgrim {tracking_id} is not in your agency")
+            if not pilgrim.is_package_assigned:
+                raise HTTPException(status_code=400, detail=f"Pilgrim {tracking_id} has no package assigned")
+            if is_closed_season(pilgrim.hajj_year):
+                raise HTTPException(status_code=400,
+                                    detail=f"Hajj {pilgrim.hajj_year} is closed; billing of pilgrim {tracking_id} can't be changed")
+
+        ledger = await package_assign_repository.get_payable_summary(db, tracking_ids)
+        now = get_current_time()
+        for tracking_id in tracking_ids:
+            total_payable = ledger[tracking_id]["other"]
+            total_payment = pilgrims[tracking_id].total_payment or 0
+            await package_assign_repository.individual_pilgrim_package_change(db, {
+                "tracking_id": tracking_id,
+                "package_name": None,
+                "package_duration": None,
+                "package_bed_types": None,
+                "add_ons_services": null(),  # SQL NULL; a plain None would store JSON 'null'
+                "package_id": None,
+                "package_price_discount": 0,
+                "is_package_assigned": False,
+                "total_payable": total_payable,
+                "actual_payable": total_payable,
+                "total_due": max(0, total_payable - total_payment),
+                "total_available_amount": max(0, total_payment - total_payable),
+                "updated_by": username,
+                "updated_at": now,
+            })
+
+        await package_assign_repository.replace_package_bills(db, tracking_ids, [])
+        await db.commit()
+        return {"message": "Package unassigned successfully", "unassigned": tracking_ids}
+
+    except Exception as e:
+        await db.rollback()
+        raise e
 
 
 def _to_int(value, label: str) -> int:
