@@ -392,3 +392,6 @@ frontend-ref/
 
 # Scraper service, its own git repo (amin-scraping-service) — commit/push from inside that folder
 amin-scraping-service/
+
+# Postman collection
+postman/
