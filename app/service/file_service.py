@@ -8,6 +8,8 @@ async def upload_file(name:str, file: UploadFile):
 
         result = await file_repository.upload_file(name=name,file=file)
         return result
+    except HTTPException:
+        raise
     except Exception as err:
         raise HTTPException(status_code=500, detail=str(err))
 
