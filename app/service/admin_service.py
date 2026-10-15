@@ -257,9 +257,11 @@ async def assign_lead_agency(db: AsyncSession, request: dict):
         raise e
 
 
-async def get_lead_agency_pilgrims(db: AsyncSession, lead_agency_name: str):
+async def get_lead_agency_pilgrims(db: AsyncSession, lead_agency_name: str, agency_name: Optional[str] = None):
     try:
-        records = await admin_repository.get_lead_agency_pilgrims(db, lead_agency_name)
+        records = await admin_repository.get_lead_agency_pilgrims(db, lead_agency_name, agency_name or None)
+        # full list for the agency filter dropdown, even when one agency is selected
+        agency_options = await admin_repository.get_child_agencies(db, lead_agency_name)
 
         agencies = []
         for row in records:
@@ -284,6 +286,7 @@ async def get_lead_agency_pilgrims(db: AsyncSession, lead_agency_name: str):
 
         return {
             "lead_agency_name": lead_agency_name,
+            "agency_options": sorted(agency_options),
             "agencies": agencies
         }
     except Exception as e:

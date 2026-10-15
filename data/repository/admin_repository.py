@@ -226,13 +226,14 @@ async def assign_lead_agency(db: AsyncSession, request: dict):
         raise e
 
 # TODO: more fields will be added in pilgrim data and also change here
-async def get_lead_agency_pilgrims(db, lead_agency_name):
+async def get_lead_agency_pilgrims(db, lead_agency_name, agency_name=None):
     try:
         query = text("""
             WITH agencies AS (
                 SELECT agency_name
                 FROM core.admin
                 WHERE lead_agency = :lead_agency_name
+                  AND (CAST(:agency_name AS TEXT) IS NULL OR agency_name = :agency_name)
             )
             SELECT 
                 a.agency_name,
@@ -264,7 +265,7 @@ async def get_lead_agency_pilgrims(db, lead_agency_name):
             GROUP BY a.agency_name
             ORDER BY a.agency_name;
         """)
-        result = await db.execute(query, {"lead_agency_name": lead_agency_name})
+        result = await db.execute(query, {"lead_agency_name": lead_agency_name, "agency_name": agency_name})
         return result.mappings().all()
 
     except Exception as e:

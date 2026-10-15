@@ -142,13 +142,14 @@ async def assign_lead_agency(
 
 @private_router.get("/lead-agency/pilgrims", tags=["admin"])
 async def get_lead_agency_pilgrims(
+        agency_name: Optional[str] = Query(None),
         db: AsyncSession = Depends(get_async_db),
         current_user: dict = Depends(get_current_user)
 ):
     has_required_permissions(current_user=current_user, roles=["SUPER_ADMIN", "AGENCY", *STAFF_ROLES])
 
     lead_agency_name = current_user["agency_name"]
-    return await admin_service.get_lead_agency_pilgrims(db, lead_agency_name)
+    return await admin_service.get_lead_agency_pilgrims(db, lead_agency_name, agency_name)
 
 
 @private_router.get("/lead-agency-assignment-check", tags=["admin"])
