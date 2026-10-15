@@ -7,6 +7,8 @@ import boto3
 from dotenv import load_dotenv
 from fastapi import Query, UploadFile, HTTPException
 from PIL import Image, ImageOps, UnidentifiedImageError
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from infrastructure.schema.file_schema import FileUploadResponseSchema, \
@@ -118,16 +120,73 @@ async def upload_file(file: UploadFile, name: str = "default"):
     )
 
 
+def get_object_key(file_url: str) -> str:
+    path_parts = urlparse(file_url).path.lstrip("/").split("/", 1)
+    if len(path_parts) < 2 or not path_parts[1]:
+        raise HTTPException(status_code=400, detail="Invalid file URL")
+    return path_parts[1]  # everything after the bucket folder (hajj/...)
+
+
+# Tables whose JSON columns hold uploaded file URLs, with the column naming the owning agency
+AGENCY_FILE_COLUMNS = {
+    "admin": ("agency_name", ["logo", "passport_copy", "signature", "seal"]),
+    "admin_user": ("agency_name", ["ekama_file"]),
+    "payment": ("agency_name", ["receipt"]),
+    "umrah_customer_billing": ("agency_name", ["receipt"]),
+    "hotel_request": ("agency_name", ["document", "tasria_copy"]),
+    "payment_request_b2b": ("agency_name", ["money_receipt_payment_slip_file"]),
+    "flight_purchase": ("agency_name", ["ticket_file"]),
+    "hotel_purchase": ("agency_name", ["booking_file"]),
+    "food_purchase": ("agency_name", ["booking_file"]),
+    "route_purchase": ("agency_name", ["booking_file"]),
+    "pilgrim_data": ("group_name", ["passport_copy"]),
+}
+
+_AGENCY_FILE_SQL = text(" UNION ".join(
+    f"SELECT LOWER(BTRIM({owner})) AS agency FROM core.{table} WHERE "
+    + " OR ".join(f"{col}::text LIKE :pattern" for col in cols)
+    for table, (owner, cols) in AGENCY_FILE_COLUMNS.items()
+))
+
+# Records a pilgrim token may download from: their own passport copy and their own payment receipts
+_PILGRIM_FILE_SQL = text("""
+    SELECT 1 FROM core.pilgrim_data
+        WHERE tracking_id = :tracking_id AND passport_copy::text LIKE :pattern
+    UNION ALL
+    SELECT 1 FROM core.payment
+        WHERE (tracking_id = :tracking_id OR pilgrims_tracking_id::text LIKE :tracking_pattern)
+          AND receipt::text LIKE :pattern
+    LIMIT 1
+""")
+
+
+def _like_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _stored_url_pattern(object_key: str) -> str:
+    # matches the whole stored URL ending in this key, e.g. "https://host/bucket/receipt/<uuid>.jpg"
+    return f'%/{_like_escape(object_key)}"%'
+
+
+async def get_file_agencies(db: AsyncSession, object_key: str) -> set:
+    """Lower-cased agency names whose records hold this file; empty if no known record does."""
+    result = await db.execute(_AGENCY_FILE_SQL, {"pattern": _stored_url_pattern(object_key)})
+    return {row.agency for row in result if row.agency}
+
+
+async def is_pilgrim_file(db: AsyncSession, tracking_id: str, object_key: str) -> bool:
+    result = await db.execute(_PILGRIM_FILE_SQL, {
+        "tracking_id": tracking_id,
+        "tracking_pattern": f'%"{_like_escape(tracking_id)}"%',
+        "pattern": _stored_url_pattern(object_key),
+    })
+    return result.first() is not None
+
+
 async def get_download_url(file_url: str):
     try:
-        # Parse the URL
-        parsed = urlparse(file_url)
-
-        path_parts = parsed.path.lstrip("/").split("/", 1)
-        if len(path_parts) < 2:
-            raise HTTPException(status_code=400, detail="Invalid file URL")
-
-        object_key = path_parts[1]  # everything after the bucket folder (hajj/...)
+        object_key = get_object_key(file_url)
 
         # Generate presigned URL for R2
         presigned_url = s3.generate_presigned_url(

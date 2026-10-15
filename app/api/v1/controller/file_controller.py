@@ -2,11 +2,13 @@ import fastapi
 from dotenv import load_dotenv
 from fastapi import Form, UploadFile, File, Depends
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
-from app.core.middleware.middleware import get_current_user
+from app.core.middleware.middleware import get_current_user, get_current_user_or_pilgrim
 from app.core.utils.authorize_api import has_required_permissions, STAFF_ROLES
 from app.service import file_service
+from data.db.db_config import get_async_db
 from infrastructure.schema.file_schema import FileUploadResponseSchema, FileDownloadResponseSchema
 
 load_dotenv()
@@ -30,9 +32,8 @@ async def upload_file(
 @private_router.get("/download-url", response_model=FileDownloadResponseSchema, tags=["files"])
 async def get_download_url(
         key: str,
-        # current_user: dict = Depends(get_current_user)
+        db: AsyncSession = Depends(get_async_db),
+        current: dict = Depends(get_current_user_or_pilgrim)
 ):
-    # if current_user["role"] not in ["SUPER_ADMIN", "AGENCY"]:
-    #     raise HTTPException(status_code=403, detail="Not authorized")
-    response = await file_service.get_download_url(key=key)
+    response = await file_service.get_download_url(db=db, current=current, key=key)
     return JSONResponse(content=jsonable_encoder(response))
