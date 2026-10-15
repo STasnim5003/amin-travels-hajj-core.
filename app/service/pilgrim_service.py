@@ -139,6 +139,8 @@ async def pilgrim_register(db: AsyncSession, tracking_id: str, vaccination_cente
     try:
         passport_resp = await file_repository.upload_file(file=passport_copy, name="passport")
         passport_data.append(passport_resp.model_dump())
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

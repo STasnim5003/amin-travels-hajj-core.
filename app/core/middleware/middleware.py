@@ -46,6 +46,17 @@ def get_current_pilgrim(token: str = Depends(oauth2_scheme)) -> Dict:
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
+def get_current_user_or_pilgrim(token: str = Depends(oauth2_scheme)) -> Dict:
+    """Accepts a staff/agency token or a pilgrim token, for endpoints both portals call."""
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token",
+                            headers={"WWW-Authenticate": "Bearer"})
+    if not (payload.get("username") or payload.get("tracking_id")):
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return payload
+
 def get_current_admin_user(token: str = Depends(oauth2_scheme)) -> Dict:
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
