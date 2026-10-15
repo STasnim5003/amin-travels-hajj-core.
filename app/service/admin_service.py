@@ -210,6 +210,8 @@ async def update_admin_profile(db: AsyncSession, form, agency_name: str, usernam
             _validate_image(field, file)
         try:
             uploaded = await file_repository.upload_file(file=file, name=folder)
+        except HTTPException as e:
+            raise HTTPException(status_code=e.status_code, detail=f"{field}: {e.detail}")
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
         values[field] = [uploaded.model_dump()]
